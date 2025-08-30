@@ -616,6 +616,7 @@
       this.mode = "normal";
       this.root.addEventListener("focusin", this.onFocusIn.bind(this));
       this.root.addEventListener("focusout", this.onFocusOut.bind(this));
+      this.root.addEventListener("keydown", this.universelKeyboardCapture.bind(this), true);
       this.root.addEventListener("keydown", this.onKeyDown.bind(this));
       this._keylistener = this.onKeyDownModeNormal.bind(this);
       this.searchInput = this.root.querySelector("input#search-input");
@@ -638,11 +639,11 @@
       this._mode = mode;
       switch (mode) {
         case "edit":
-          console.log("Passage du mode clavier au mode edit");
+          console.log("[VimLikeManager.mode] Passage du mode clavier au mode edit");
           this._keylistener = this.onKeyDownModeEdit.bind(this);
           break;
         case "normal":
-          console.log("Passage du mode clavier au mode normal");
+          console.log("[VimLikeManager.mode] Passage du mode clavier au mode normal");
           this._keylistener = this.onKeyDownModeNormal.bind(this);
       }
       this.root.dataset.mode = `mode-${mode}`;
@@ -651,6 +652,10 @@
     }
     searchInput;
     consoleInput;
+    universelKeyboardCapture(ev) {
+      console.log("[universel capture] Key up = ", ev.key, ev);
+      return true;
+    }
     onFocusIn(ev) {
       console.log("Focus dans ", ev);
       this.mode = this.targetEventIsEditable(ev) ? "edit" : "normal";
@@ -665,6 +670,7 @@
       return this._keylistener(ev);
     }
     onKeyDownModeNormal(ev) {
+      console.log("-> VimLikeManager.onKeyDownModeNormal", ev.key, ev);
       if (ev.metaKey) {
         return true;
       }
@@ -885,8 +891,10 @@
       this.form = data.form;
     }
     setPanelFocus(actif) {
+      console.log("[setPanelFocu] Focus mis sur le panneau %s", this.titName);
       document.body.classList[actif ? "add" : "remove"]("actif");
       this._actif = actif;
+      document.body.querySelector("input#search-input").focus();
     }
   };
 
@@ -909,16 +917,19 @@
      * @param item Objet Entry, Oeuvre ou Exemple à éditer/créer
      */
     editItem(item) {
+      console.log("\xC9dition de l'item", item);
       this.openForm();
-      this.dispatchValues(item);
+      this.dispatchValues(item.data);
     }
     // Met les données dans le formulaire
-    dispatchValues(item) {
+    dispatchValues(data) {
       this.reset();
       this.properties.forEach((dprop) => {
         const prop = dprop.propName;
-        if (item[prop]) {
-          this.field(prop).value = String(item[prop]);
+        if (data[prop]) {
+          dprop.field.value = String(data[prop]);
+        } else {
+          console.log("La valeur de la propri\xE9t\xE9 %s n'est pas d\xE9finie dans ", prop, data);
         }
       });
     }

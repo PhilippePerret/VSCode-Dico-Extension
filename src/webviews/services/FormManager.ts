@@ -14,7 +14,8 @@ export interface FormProperty {
 }
 
 interface ConcreteElement {
-  [k: string]: string | number | boolean | null;
+  data: { [k: string]: any}
+  [k: string]: any; 
 } 
 
 type FieldType = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
@@ -47,15 +48,19 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   editItem(item: T): void {
     console.log("Édition de l'item", item);
     this.openForm();
-    this.dispatchValues(item);
+    this.dispatchValues(item.data);
   }
 
   // Met les données dans le formulaire
-  dispatchValues(item: T){
+  dispatchValues(data: {[x: string]: any}){
     this.reset();
     this.properties.forEach( dprop => {
       const prop = dprop.propName;
-      if ( item[prop] ) { this.field(prop).value = String(item[prop]);}
+      if ( data[prop] ) { 
+        dprop.field.value = String(data[prop]);
+      } else {
+        console.log("La valeur de la propriété %s n'est pas définie dans ", prop, data);
+      }
     });
   }
 

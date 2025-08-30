@@ -23,11 +23,11 @@ export class VimLikeManager {
     // Le mode détermine le capteur d'évènement
     switch(mode) {
       case 'edit':
-        console.log("Passage du mode clavier au mode edit");
+        console.log("[VimLikeManager.mode] Passage du mode clavier au mode edit");
         this._keylistener = this.onKeyDownModeEdit.bind(this);
         break;
       case 'normal':
-        console.log("Passage du mode clavier au mode normal");
+        console.log("[VimLikeManager.mode] Passage du mode clavier au mode normal");
         this._keylistener = this.onKeyDownModeNormal.bind(this);
     }
     // Indiquer dans l'interface le mode
@@ -40,18 +40,25 @@ export class VimLikeManager {
   readonly consoleInput: HTMLInputElement;
 
   constructor(
-    private root: HTMLElement, 
+    private root: HTMLBodyElement, 
     private panel: PanelClient<any, any>, 
     private klass: typeof Entry | typeof Oeuvre | typeof Exemple,
   ) {
     this.mode = 'normal';
     this.root.addEventListener('focusin', this.onFocusIn.bind(this));
     this.root.addEventListener('focusout', this.onFocusOut.bind(this));
+    this.root.addEventListener('keydown', this.universelKeyboardCapture.bind(this), true);
     this.root.addEventListener('keydown', this.onKeyDown.bind(this));
     this._keylistener = this.onKeyDownModeNormal.bind(this);
     this.searchInput = this.root.querySelector('input#search-input') as HTMLInputElement;
     this.consoleInput = this.root.querySelector('input#panel-console') as HTMLInputElement;
   }
+
+  universelKeyboardCapture(ev: KeyboardEvent){
+    console.log("[universel capture] Key up = ", ev.key, ev);
+    return true;
+  }
+
   onFocusIn(ev: FocusEvent) {
     console.log("Focus dans ", ev);
     this.mode = this.targetEventIsEditable(ev) ? 'edit' : 'normal'; 
@@ -65,6 +72,7 @@ export class VimLikeManager {
     return this._keylistener(ev);
   }
   onKeyDownModeNormal(ev: KeyboardEvent) {
+    console.log("-> VimLikeManager.onKeyDownModeNormal", ev.key, ev);
     if ( ev.metaKey ) { return true ; }
     stopEvent(ev);
     switch(ev.key) {

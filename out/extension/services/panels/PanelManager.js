@@ -69,8 +69,10 @@ class PanelManager {
         });
     }
     static activatePanelEntries() {
-        this._panels[0].panel.reveal(); // on force son activation
         this.activatePanel(this._panels[0]);
+        this._panels[0].panel.reveal(); // on force son activation
+        this._panels[0].panel.reveal(); // on force son activation
+        this._panels[0].panel.reveal(); // on force son activation
     }
     static activatePanel(panel) {
         // panel.webview.postMessage({ command: 'activate' });

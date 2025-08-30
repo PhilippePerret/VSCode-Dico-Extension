@@ -103,7 +103,7 @@ export class PanelClient<T extends Tplus, C> {
 
   // ========== PRIVATE METHODS ==============
   initKeyManager() {
-    this._keyManager = new VimLikeManager(document.body, this, this._klass);
+    this._keyManager = new VimLikeManager(document.body as HTMLBodyElement, this, this._klass);
   }
 
   private setSelectState(itemId: string, state: boolean){
@@ -180,7 +180,11 @@ export class PanelClient<T extends Tplus, C> {
   }
 
   private setPanelFocus(actif: boolean) {
+    console.log("[setPanelFocu] Focus mis sur le panneau %s", this.titName);
     document.body.classList[actif ?'add':'remove']('actif');
     this._actif = actif ;
+    // Je tente de focusser sur le premier élément pour générer un
+    // focusin sur le body
+    (document.body.querySelector('input#search-input') as HTMLInputElement).focus();
   }
 }
