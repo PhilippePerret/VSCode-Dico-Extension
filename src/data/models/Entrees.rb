@@ -24,7 +24,7 @@ class Entry
         entree, reste = lines.shift.split('@').map { |s| s.strip }
         id, genre = reste.split('/').map { |s| s.strip }
         cat = if lines[0].start_with?('@')
-          lines.shift[1..-1]
+          lines.shift.split(' ').map{|s| s.strip[1..-1]}.join(', ')
         else
           nil
         end
