@@ -114,7 +114,7 @@
       this.panel.form.editItem(this.get(itemId));
     }
     static createNewItem() {
-      this.panel.form.editItem(new this.klass());
+      this.panel.form.editItem(new this.klass({ id: "" }));
     }
     toRow() {
       return {};
@@ -900,7 +900,7 @@
 
   // src/webviews/services/FormManager.ts
   var FormManager = class {
-    // Fonction appelée en cas d'annulation
+    // fonction d'observation propre du formulaire
     // L'item qui sera travaillé ici, pour ne pas toucher l'item original
     fakeItem;
     checked = false;
@@ -920,6 +920,9 @@
       console.log("\xC9dition de l'item", item);
       this.openForm();
       this.dispatchValues(item.data);
+      if ("function" === typeof this.afterEdit) {
+        this.afterEdit.call(this);
+      }
     }
     // Met les données dans le formulaire
     dispatchValues(data) {
@@ -937,6 +940,7 @@
     // Retourne le champ de la propriété +prop+
     // (note : ces champs ont été vérifiés au début)
     field(prop) {
+      console.log("field(%s)", prop, this.obj.querySelector(`.${this.prefix}-${prop}`));
       return this.obj.querySelector(`.${this.prefix}-${prop}`);
     }
     // Récupère les données dans le formulaire et retourne l'item
@@ -1022,6 +1026,7 @@
         return false;
       }
       console.info("Formulaire %s valide.", this.formId);
+      this.observeForm();
       this.checked = true;
     }
     checkBoutonsValidity() {
@@ -1118,6 +1123,10 @@
     onSave(item) {
       console.log("Il faut que j'apprendre \xE0 sauver : ", item);
       return true;
+    }
+    observeForm() {
+    }
+    afterEdit() {
     }
   };
 

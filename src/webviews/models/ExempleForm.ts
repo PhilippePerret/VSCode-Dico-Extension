@@ -14,4 +14,12 @@ export class ExempleForm extends FormManager<typeof Exemple, FExemple> {
     console.log("Il faut que j'apprendre à sauver l'exemple : ", item);
     return true;
   }
+
+  observeForm(): void {
+    // TODO
+  }
+
+  afterEdit(): void {
+    // TODO
+  }
 }

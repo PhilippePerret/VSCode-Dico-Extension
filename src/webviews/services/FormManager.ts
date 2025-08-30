@@ -1,8 +1,5 @@
-import { AnyElementType } from "../models/AnyClientElement";
-import { Entry } from "../models/Entry";
-import { Exemple } from "../models/Exemple";
-import { Oeuvre } from "../models/Oeuvre";
 
+// Type pour la définition d'une propriété
 export interface FormProperty {
   propName: string;
   type: typeof String | typeof Number | typeof Boolean;
@@ -25,8 +22,10 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   abstract formId: string; // Identifiant unique du formulaire
   abstract prefix: string; // utilisé pour nommer les champs
   abstract properties: FormProperty[];
+  abstract afterEdit(): void; // à faire après l'édition d'un élément
   abstract onSave(item: T): boolean; // Fonction pour sauver (appelée quand on sauve la donnée)
   onCancel?(): void; // Fonction appelée en cas d'annulation
+  abstract observeForm(): void; // fonction d'observation propre du formulaire
 
   // L'item qui sera travaillé ici, pour ne pas toucher l'item original
   fakeItem?: any;
@@ -49,6 +48,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
     console.log("Édition de l'item", item);
     this.openForm();
     this.dispatchValues(item.data);
+    if ( 'function' === typeof this.afterEdit ) { this.afterEdit.call(this); }
   }
 
   // Met les données dans le formulaire
@@ -68,6 +68,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   // Retourne le champ de la propriété +prop+
   // (note : ces champs ont été vérifiés au début)
   field(prop: string): FieldType {
+    console.log("field(%s)", prop, this.obj.querySelector(`.${this.prefix}-${prop}`));
     return this.obj.querySelector(`.${this.prefix}-${prop}`) as FieldType;
   }
   // Récupère les données dans le formulaire et retourne l'item
@@ -160,6 +161,13 @@ export abstract class FormManager<C, T extends ConcreteElement> {
     if ( false === this.checkPropertiesValidity() ) { return false ; }
 
     console.info("Formulaire %s valide.", this.formId);
+
+    /**
+     * Observation propre de chaque formulaire (la fonction est 
+     * impérativement implémenté)
+     */
+    this.observeForm();
+
     this.checked = true;
   }
   checkBoutonsValidity(): boolean {

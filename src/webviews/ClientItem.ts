@@ -44,7 +44,7 @@ export abstract class ClientItem<Tel, Tel_u> {
   static selectFirstItem() { this.panel.select(this.accessTable.firstItem);}
 
   static editItem(itemId: string): void { this.panel.form.editItem(this.get(itemId)); }
-  static createNewItem(){ this.panel.form.editItem(new this.klass()); }
+  static createNewItem(){ this.panel.form.editItem(new this.klass({id: ''})); }
 
   toRow(){ return {};}
   /**

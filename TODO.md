@@ -1,5 +1,7 @@
 # Todo list
 
+* [BUG] Quand on "renonce" dans le formulaire, ça ferme complètement le panneau
+* Faire quelque chose quand on focus vraiment dans le panneau pour indiquer qu'on est bon (peut-être un troisième mode 'NULL' quand il n'y en a pas, comme au début)
 * Travailler l'édition
   - le plus simple : un formulaire qui s'affiche en bas de l'écran, qui permet de régler toutes les données. 
   - enregistrement

@@ -14,4 +14,12 @@ export class OeuvreForm extends FormManager<typeof Oeuvre, FOeuvre> {
     console.log("Il faut que j'apprendre à sauver : ", item);
     return true;
   }
+
+  observeForm(): void {
+    // TODO
+  }
+
+  afterEdit(): void {
+    // TODO
+  }
 }

@@ -18,8 +18,44 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
     {propName: 'categorie_id', type: String, required: false, fieldType: 'text'},
     {propName: 'definition', type: String, required: false, fieldType: 'textarea'}
   ];
+
+  // À faire après l'édition d'une Entrée
+  afterEdit(): void {
+    const id = this.field('id').value ;
+    const isNewItem = id === '' ;
+
+    if (isNewItem) {
+      this.unlockId();
+    }
+  }
+
   onSave(item: Entry){
     console.log("Je dois apprendre à sauver l'entrée", item);
     return true; // quand ça a été bien enregistré
+  }
+
+  /**
+   * Observation propre du formulaire des Entrées
+   * 
+   */
+  observeForm(): void {
+    // Le bouton pour changer l'ID
+    this.btnLockId.addEventListener('click', this.onLockId.bind(this));
+  }
+  get btnLockId() { return this.obj.querySelector('button.btn-lock-id') as HTMLButtonElement; }
+  onLockId() {
+    const field = this.field('id');
+    const isLocked = field.dataset.state === 'locked';
+    if (isLocked) { this.unlockId(); } else { this.lockId(); }
+  }
+  lockId(){
+    const field = this.field('id');
+    field.dataset.state = 'locked';
+    field.disabled = true;
+  }
+  unlockId(){
+    const field = this.field('id');
+    field.dataset.state = 'unlocked';
+    field.disabled = false;
   }
 }

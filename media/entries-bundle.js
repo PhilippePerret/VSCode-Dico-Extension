@@ -72,7 +72,7 @@
       this.panel.form.editItem(this.get(itemId));
     }
     static createNewItem() {
-      this.panel.form.editItem(new this.klass());
+      this.panel.form.editItem(new this.klass({ id: "" }));
     }
     toRow() {
       return {};
@@ -912,7 +912,7 @@
 
   // src/webviews/services/FormManager.ts
   var FormManager = class {
-    // Fonction appelée en cas d'annulation
+    // fonction d'observation propre du formulaire
     // L'item qui sera travaillé ici, pour ne pas toucher l'item original
     fakeItem;
     checked = false;
@@ -932,6 +932,9 @@
       console.log("\xC9dition de l'item", item);
       this.openForm();
       this.dispatchValues(item.data);
+      if ("function" === typeof this.afterEdit) {
+        this.afterEdit.call(this);
+      }
     }
     // Met les données dans le formulaire
     dispatchValues(data) {
@@ -949,6 +952,7 @@
     // Retourne le champ de la propriété +prop+
     // (note : ces champs ont été vérifiés au début)
     field(prop) {
+      console.log("field(%s)", prop, this.obj.querySelector(`.${this.prefix}-${prop}`));
       return this.obj.querySelector(`.${this.prefix}-${prop}`);
     }
     // Récupère les données dans le formulaire et retourne l'item
@@ -1034,6 +1038,7 @@
         return false;
       }
       console.info("Formulaire %s valide.", this.formId);
+      this.observeForm();
       this.checked = true;
     }
     checkBoutonsValidity() {
@@ -1135,9 +1140,46 @@
       { propName: "categorie_id", type: String, required: false, fieldType: "text" },
       { propName: "definition", type: String, required: false, fieldType: "textarea" }
     ];
+    // À faire après l'édition d'une Entrée
+    afterEdit() {
+      const id = this.field("id").value;
+      const isNewItem = id === "";
+      if (isNewItem) {
+        this.unlockId();
+      }
+    }
     onSave(item) {
       console.log("Je dois apprendre \xE0 sauver l'entr\xE9e", item);
       return true;
+    }
+    /**
+     * Observation propre du formulaire des Entrées
+     * 
+     */
+    observeForm() {
+      this.btnLockId.addEventListener("click", this.onLockId.bind(this));
+    }
+    get btnLockId() {
+      return this.obj.querySelector("button.btn-lock-id");
+    }
+    onLockId() {
+      const field = this.field("id");
+      const isLocked = field.dataset.state === "locked";
+      if (isLocked) {
+        this.unlockId();
+      } else {
+        this.lockId();
+      }
+    }
+    lockId() {
+      const field = this.field("id");
+      field.dataset.state = "locked";
+      field.disabled = true;
+    }
+    unlockId() {
+      const field = this.field("id");
+      field.dataset.state = "unlocked";
+      field.disabled = false;
     }
   };
 
