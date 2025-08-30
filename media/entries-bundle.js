@@ -898,6 +898,18 @@
     }
   };
 
+  // src/bothside/UConstants.ts
+  var Constants = class {
+    static ENTRIES_GENRES = {
+      "nm": "n.m.",
+      "nf": "n.f.",
+      "np": "n.pl.",
+      "vb": "verbe",
+      "adj": "adj.",
+      "adv": "adv."
+    };
+  };
+
   // src/webviews/services/FormManager.ts
   var FormManager = class {
     // Fonction appelée en cas d'annulation
@@ -927,6 +939,7 @@
       this.properties.forEach((dprop) => {
         const prop = dprop.propName;
         if (data[prop]) {
+          console.log("Propri\xE9t\xE9 %s mise \xE0 %s", prop, data[prop]);
           dprop.field.value = String(data[prop]);
         } else {
           console.log("La valeur de la propri\xE9t\xE9 %s n'est pas d\xE9finie dans ", prop, data);
@@ -1088,7 +1101,18 @@
           ok = false;
         }
         if (dproperty.fieldType === "select") {
-          if (!dproperty.values) {
+          if (dproperty.values) {
+            const field = dproperty.field;
+            field.innerHTML = "";
+            dproperty.values.forEach((paire) => {
+              let [value, title] = paire;
+              title = title || value;
+              const opt = document.createElement("option");
+              opt.value = value;
+              opt.innerHTML = title;
+              field.appendChild(opt);
+            });
+          } else {
             console.error("Le champ %s, de type select, devrait d\xE9finir ses valeurs (values)", prop);
             ok = false;
           }
@@ -1099,13 +1123,17 @@
   };
 
   // src/webviews/models/EntryForm.ts
+  var allg = Constants.ENTRIES_GENRES;
+  var genres = Object.keys(allg).map((key) => [key, allg[key]]);
   var EntryForm = class extends FormManager {
     formId = "entry-form";
     prefix = "entry";
     properties = [
+      { propName: "id", type: String, required: true, fieldType: "text" },
       { propName: "entree", type: String, required: true, fieldType: "text" },
-      { propName: "genre", type: String, required: true, fieldType: "select", values: [["nf"], ["nm"], ["vb"]] },
-      { propName: "categorie_id", type: String, required: false, fieldType: "text" }
+      { propName: "genre", type: String, required: true, fieldType: "select", values: genres },
+      { propName: "categorie_id", type: String, required: false, fieldType: "text" },
+      { propName: "definition", type: String, required: false, fieldType: "textarea" }
     ];
     onSave(item) {
       console.log("Je dois apprendre \xE0 sauver l'entr\xE9e", item);

@@ -57,6 +57,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
     this.properties.forEach( dprop => {
       const prop = dprop.propName;
       if ( data[prop] ) { 
+        console.log("Propriété %s mise à %s", prop, data[prop]);
         dprop.field.value = String(data[prop]);
       } else {
         console.log("La valeur de la propriété %s n'est pas définie dans ", prop, data);
@@ -184,6 +185,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   get btnSave(){return this.obj.querySelector('button.btn-save') as HTMLButtonElement;}
   get btnCancel(){return this.obj.querySelector('button.btn-cancel') as HTMLButtonElement;}
   get btnSaveNQuit(){return this.obj.querySelector('button.btn-save-and-quit') as HTMLButtonElement;}
+
   checkPropertiesValidity(): boolean {
     let ok = true ;
     this.properties.forEach( dproperty => {
@@ -215,8 +217,20 @@ export abstract class FormManager<C, T extends ConcreteElement> {
         ok = false;
       }
       // Un champ select doit avoir des valeurs
+      // Et on en profite pour les mettre
       if ( dproperty.fieldType === 'select' ) {
-        if ( ! dproperty.values ) {
+        if ( dproperty.values ) {
+          const field = dproperty.field;
+          field.innerHTML = '';
+          dproperty.values.forEach( paire => {
+            let [value, title] = paire;
+            title = title || value;
+            const opt = document.createElement('option');
+            opt.value = value;
+            opt.innerHTML = title;
+            field.appendChild(opt);
+          });
+        } else {
           console.error('Le champ %s, de type select, devrait définir ses valeurs (values)', prop);
           ok = false;
         }

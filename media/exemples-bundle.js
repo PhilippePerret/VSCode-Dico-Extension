@@ -927,6 +927,7 @@
       this.properties.forEach((dprop) => {
         const prop = dprop.propName;
         if (data[prop]) {
+          console.log("Propri\xE9t\xE9 %s mise \xE0 %s", prop, data[prop]);
           dprop.field.value = String(data[prop]);
         } else {
           console.log("La valeur de la propri\xE9t\xE9 %s n'est pas d\xE9finie dans ", prop, data);
@@ -1088,7 +1089,18 @@
           ok = false;
         }
         if (dproperty.fieldType === "select") {
-          if (!dproperty.values) {
+          if (dproperty.values) {
+            const field = dproperty.field;
+            field.innerHTML = "";
+            dproperty.values.forEach((paire) => {
+              let [value, title] = paire;
+              title = title || value;
+              const opt = document.createElement("option");
+              opt.value = value;
+              opt.innerHTML = title;
+              field.appendChild(opt);
+            });
+          } else {
             console.error("Le champ %s, de type select, devrait d\xE9finir ses valeurs (values)", prop);
             ok = false;
           }

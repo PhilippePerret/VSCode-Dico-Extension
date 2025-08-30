@@ -2,8 +2,12 @@
  * Ce module contient les éléments utiles aussi bien côté extension (serveur)
  * que côté client (webview)
  */
+import { Constants } from './UConstants';
 import { Entry } from '../extension/models/Entry';
 import { UniversalDicoElement } from './UniversalDicoElement';
+
+const GENRES: { [x: string]: string } = Constants.ENTRIES_GENRES;
+
 
 export class UEntry extends UniversalDicoElement {
   [key: string]: any;
@@ -16,16 +20,7 @@ export class UEntry extends UniversalDicoElement {
       tech: { sing: "entry", plur: "entries"}
   };
   
-   static readonly GENRES = {
-    'nm': 'n.m.',
-    'nf': 'n.f.',
-    'np': 'n.pl.',
-    'vb': 'verbe',
-    'adj': 'adj.',
-    'adv': 'adv.'
-  };
-
-  static genre(id:string):string { return this.GENRES[id as keyof typeof this.GENRES];}
+  static genre(id:string):string { return GENRES[id as keyof typeof GENRES];}
 
   constructor(data: {[key: string]: any}){
     super(data);
