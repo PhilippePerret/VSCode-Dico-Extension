@@ -1,0 +1,84 @@
+# Internal development notes — for AI assistant only
+Purpose: maintain project context and continuity.
+
+## RÈGLES DE COMMUNICATION
+• **Règle silence = accord** : Si pas de réponse dans 5 secondes après une proposition d'étape, continuer automatiquement
+
+2025-08-16
+• Development approach: Test Driven Development (TDD).
+  – Write failing tests first, then implement code until they pass.
+  – IMPORTANT: ALWAYS write tests FIRST, never implement code before tests!
+  – Order: 1) Write failing test, 2) Run test to confirm failure, 3) Write minimal code to pass test
+  – Progress by logical entity: First test ONE fixture displays correctly (all elements, data, buttons, links, etc.), then ONLY AFTER that, test that ALL fixtures display
+  – NEVER impose naming conventions or decisions - ALWAYS ask questions for validation
+  – ⚠️ CRITICAL RULE: ALWAYS fix ALL failing tests before moving forward. Never ignore existing failures when adding new features.
+• Project: VSCode extension "Dico Scénario"
+  – Personal tool to help conceive a dictionary on screenplay/narrative writing for paper book publication
+  – Uses SQLite database with Entry, Example, Film models
+  – WebView panels for Dictionary, Films, Examples
+  – UI: Everything keyboard-controllable (buttons are secondary)
+  – Test data: Fixed test fixtures in src/test/fixtures/TestData.ts (no need to clean DB between tests)
+  – Data loading: All data loaded and displayed immediately on 'dico-cnario.ouvre' command
+
+• Database locations (IMPORTANT - for copies and troubleshooting):
+  – Test database: /tmp/vscode-test/dico-test.db
+  – Development database (VSCode Insiders): /Users/philippeperret/Library/Application Support/Code - Insiders/User/globalStorage/undefined_publisher.dico-cnario/dico.db
+  – NOTE: User uses VSCode Insiders, NOT regular VSCode!
+  – Test DB contains: 24 entries, 4 films, 7 examples (after removing orphaned examples)
+  – Tests NEVER affect development database (completely separate)
+
+## TRAVAIL À REPRENDRE DEMAIN (2025-08-17)
+
+### PROBLÈME URGENT À RÉSOUDRE
+La base de données de test (dico-test.db) est ENCORE vide alors qu'on avait résolu ce problème !
+Il faut comprendre pourquoi les fixtures ne se chargent plus et corriger cela en priorité.
+
+### OBJECTIF PRINCIPAL : Implémentation du filtrage des mots côté client
+
+#### APPROCHE TDD (COMMENCER PAR LES TESTS !)
+
+1. **D'ABORD : Réparer la base de données de test**
+   - Vérifier pourquoi les fixtures ne se chargent plus
+   - S'assurer que `ensureDatabaseFixtures` fonctionne correctement
+   - Remplir la base avec les données de test
+
+2. **Identifier des préfixes pour les tests**
+   Algorithme simple pour trouver des groupes de mots :
+   - Récupérer tous les mots (entrees) de la base
+   - Prendre le premier mot, extraire ses 3 premières lettres
+   - Chercher tous les mots qui commencent par ces 3 lettres
+   - S'il y en a au moins 3, on a notre préfixe de test
+   - Sinon, passer au mot suivant
+   - Si aucun groupe avec 3 lettres, recommencer avec 2 lettres
+   - Si aucun groupe avec 2 lettres, utiliser 1 lettre
+
+3. **Écrire le test d'intégration pour le filtrage (panel Entries)**
+   - Ouvrir le panel Entries
+   - Attendre que les données soient chargées (allPanelsReady)
+   - Taper un préfixe dans le champ de recherche
+   - Vérifier que seules les entrées qui commencent par ce préfixe sont visibles
+   - Vérifier que les autres entrées sont cachées (display: none)
+
+4. **Implémenter le filtrage côté client**
+   - Ajouter un input de recherche dans le template HTML
+   - Ajouter un listener sur l'input pour filtrer en temps réel
+   - Fonction de filtre : startsWith() avec au minimum 2 caractères
+   - Masquer/afficher les éléments DOM (display: block/none)
+
+#### STATUT ACTUEL
+- Le système allPanelsReady() fonctionne et accélère les tests
+- Le refactor avec BaseModel/classes est terminé
+- Il reste le test TDD pour le groupement par film (todo en attente)
+- La base de données de test est vide et doit être réparée
+
+#### ORDRE DES PRIORITÉS DEMAIN
+1. ✅ Réparer la base de données de test
+2. ✅ Trouver des préfixes de test 
+3. ✅ Écrire le test de filtrage (TDD)
+4. 🚧 Implémenter le filtrage côté client
+   - ✅ Fix test methods (getElements, getVisibleElements, etc.)
+   - 📝 TODO: Implement cache system first, then filtering
+   - Cache structure: entries{id,entree}, films{id,titre_*}, exemples{id,content,film_titles,entry_name}
+   - Generic filterMatch() method in each panel class
+   - Wire search input to cache-based filtering
+5. Faire passer le test

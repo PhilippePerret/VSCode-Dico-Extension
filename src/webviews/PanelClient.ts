@@ -1,0 +1,186 @@
+import { AnyElementType } from "./models/AnyClientElement";
+import { Entry } from "./models/Entry";
+import { Exemple } from "./models/Exemple";
+import { Oeuvre } from "./models/Oeuvre";
+import { AccedableItem, AccessTable } from "./services/AccessTable";
+import { FormManager } from "./services/FormManager";
+import { VimLikeManager } from "./services/VimLikeManager";
+
+interface PanelConstructorData {
+  minName: string;
+  titName: string;
+  klass: typeof Entry | typeof Oeuvre | typeof Exemple;
+  form: FormManager<any, any>; // gestionnaire de formulaire
+}
+
+type Tplus = {
+  [k: string]: any;
+  data: Record<string, any>
+}
+export class PanelClient<T extends Tplus, C> {
+  
+  // ========== A P I ================
+
+  public form!: FormManager<any, any>;
+  public get isActif(): boolean { return this._actif === true ; }
+  public get isInactif(): boolean { return this._actif === false ; }
+  // Pour marquer le panneau actif ou inactif
+  public activate() { this.setPanelFocus(true); }
+  public desactivate() { this.setPanelFocus(false); }
+  
+  // ========== MÉTHODES D'ÉLÉMENT =============
+  // La sélection, sous la forme d'identifiant de l'élément
+  private selection: string | undefined = undefined;
+  public getSelection(){ return this.selection ; }
+
+  /**
+   * Méthode sélectionnant un élément. L'opération est complexe car
+   * elle met non seulement en forme l'élément dans le DOM, mais elle
+   * conserve en plus l'état de l'élément dans l'accessTable et gère
+   * la sélection (sélection qui le moment est simple).
+   */
+  select(itemId: string) {
+    this.selection && this.deselect(this.selection);
+    this.setSelectState(itemId, true); 
+    this.scrollTo(this._klass.getObj(itemId));
+  }
+  deselect(itemId: string) { this.setSelectState(itemId, false); }
+
+  // Scroll jusqu'à l'élément et le sélectionne
+  scrollToAndSelect(itemId: string){
+    const klass = this._klass;
+    const item = klass.get(itemId);
+    if ( ! item ) { return ; }
+    klass.isVisible(itemId) || klass.setVisible(itemId) ; 
+    const ak = klass.getAccKey(itemId) ;
+    this.select(itemId);
+  }
+  public scrollTo(obj: HTMLElement) {
+    obj.scrollIntoView({behavior: 'auto', block: 'center'});
+  }
+
+  // Pour peupler le panneau
+  public populate(accessTable: AccessTable<any>): void {
+    const container = this.container;
+    container.innerHTML = '';
+    let index = -1 ;
+    accessTable.each((item: AnyElementType) => { // <========= FAIRE LA MÊME CHOSE (INSTANCE AU LIEU DE CLASSE POUR POUVOIR "TYPER")
+      ++ index ;
+      const data = item.data;
+      const clone = this.cloneItemTemplate() as DocumentFragment;
+      const mainElement = clone.querySelector('.' + this.minName);
+      if (mainElement) {
+        mainElement.setAttribute('data-id', data.id);
+        mainElement.setAttribute('data-index', index.toString());
+      }
+      // Régler les props
+      Object.keys(data).forEach(prop => {
+        let value = ((data as unknown) as Record<string, string>)[prop] as string;
+        // value = String(value);
+        value = this.formateProp(item, prop, value);
+        clone
+          .querySelectorAll(`[data-prop="${prop}"]`)
+          .forEach(element => {
+            if (value.startsWith('<')) {
+              element.innerHTML = value;
+            } else {
+              element.textContent = value;
+            }
+          });
+      });
+      // Et on l'ajoute au conteneur
+      this.container.appendChild(clone);
+    });
+
+    // Pour opérer après le peuplement du panneau. Par exemple, pour 
+    // les exemples, on va ajouter les titres des œuvres.
+    this.afterDisplayItems(accessTable);
+
+    // Pour observer le panneau (les boutons, le champ de filtre, etc.)
+    this.observePanel();
+  }
+
+
+  // ========== PRIVATE METHODS ==============
+  initKeyManager() {
+    this._keyManager = new VimLikeManager(document.body, this, this._klass);
+  }
+
+  private setSelectState(itemId: string, state: boolean){
+    const obj = this.accessTable.getObj(itemId);
+    obj.classList[state?'add':'remove']('selected');
+    this.accessTable.setSelectState(itemId, state);
+    this.selection = state ? itemId : undefined ;
+  }
+  private cloneItemTemplate(): DocumentFragment {
+    return this.itemTemplate.content.cloneNode(true) as DocumentFragment;
+  }
+  // Méthode à surclasser pour traitement particulier de certaines valeurs
+  // à afficher. Mais normalement, elles sont surtout traitées lors de la
+  // mise en cache
+  /* surclassed */ protected formateProp(item: any, prop: string, value: string | number | boolean) { return String(value); }
+  /* surclassed */protected afterDisplayItems(accessTable: AccessTable<any>):void {}
+  /* surclassed */ protected searchMatchingItems(searched: string): T[] { return []; }
+  protected observePanel(): void {
+    // Écouter le champ de filtre
+    const field = this.searchInput;
+    field.addEventListener('input', this.filterItems.bind(this));
+    field.addEventListener('keyup', this.filterItems.bind(this));
+  };
+  // Méthode générique de filtrage des items du panneau
+  private filterItems(ev: Event ) {
+    const searched = this.searchInput.value.trim();
+    const matchingItems: T[] = this.searchMatchingItems(searched);
+    const matchingCount = matchingItems.length;
+    console.log('[CLIENT %s] Filtrage %s - %i founds / %i élément', this.titName, searched, matchingCount, this.accessTable.size);
+    const matchingIds = new Set(matchingItems.map((item: T) => item.data.id));
+    // Avant, on bouclait sur les items (dans accessTable). Mais maintenant,
+    // l'état des éléments n'étant pas consigné dans leur item, on boucle
+    // sur leur 'accKey'
+    this.accessTable.eachAccKey((ak: AccedableItem) => {
+      const visible = matchingIds.has(ak.id);
+      const display = visible ? 'block' : 'none';
+      if ( ak.display !== display ) {
+        // Pour le moment, on prend le parti de ne définir l'obj qu'au besoin,
+        // plutôt que de faire une boucle pour tous les traiter.
+        if (ak.obj === undefined) { ak.obj = this.accessTable.DOMElementOf(ak.id); }
+        ak.obj.style.display = display;
+        ak.display = display ;
+        ak.visible = visible; 
+      }
+    });
+  }
+  filter(accessTable: AccessTable<any>, fnFiltre: (item: AnyElementType) => boolean): AnyElementType[] {
+    return accessTable.findAll(
+      (item: AnyElementType) => { return fnFiltre(item); },
+      {}
+    );
+  }
+
+  // ========== PRIVATE PROPERTIES ===========
+  protected get container(){ return this._container || (this._container = document.querySelector('main#items') as HTMLDivElement);}
+  private get itemTemplate(){ return this._itemTemplate || (this._itemTemplate = document.querySelector('template#item-template') as HTMLTemplateElement);}
+  private get searchInput(){ return this._searchInput || (this._searchInput = document.querySelector('input#search-input') as HTMLInputElement);}
+
+  private minName:string;
+  private titName: string;
+  private _klass: typeof Entry | typeof Oeuvre | typeof Exemple;
+  protected get accessTable(): AccessTable<any> { return {} as AccessTable<any>; };
+  private _actif: boolean = false;
+  private _container!: HTMLDivElement;
+  private _itemTemplate!: HTMLTemplateElement;
+  private _searchInput!: HTMLInputElement;
+  protected _keyManager!: VimLikeManager;
+  
+  constructor(data: PanelConstructorData) {
+    this.minName = data.minName;
+    this.titName = data.titName;
+    this._klass = data.klass;
+    this.form = data.form;
+  }
+
+  private setPanelFocus(actif: boolean) {
+    document.body.classList[actif ?'add':'remove']('actif');
+    this._actif = actif ;
+  }
+}

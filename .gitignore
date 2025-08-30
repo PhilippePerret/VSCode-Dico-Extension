@@ -1,0 +1,15 @@
+.DS_Store
+
+node_modules/
+
+entrees.txt
+entrees.yaml
+entrees.xml
+exemples.yaml
+exemples.xml
+
+.vscode-test/
+
+dist/
+coverage/
+*.log

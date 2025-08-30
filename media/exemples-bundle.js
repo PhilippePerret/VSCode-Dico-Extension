@@ -1,0 +1,1054 @@
+"use strict";
+(() => {
+  // src/bothside/StringUtils.ts
+  var StringNormalizer = class {
+    /**
+     * Normalise une chaîne en minuscules
+     */
+    static toLower(text) {
+      return text.toLowerCase();
+    }
+    /**
+     * Normalise une chaîne en supprimant les accents et diacritiques
+     * TODO: À améliorer avec une vraie fonction de normalisation
+     */
+    static rationalize(text) {
+      return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "");
+    }
+  };
+
+  // src/webviews/services/SelectionManager.ts
+  var SelectionManager = class {
+    constructor(klass) {
+      this.klass = klass;
+    }
+    _currentSelection;
+    select(item) {
+      this._currentSelection && this.deselect(this._currentSelection);
+      item.obj.classList.add("selected");
+      this._currentSelection = item;
+    }
+    deselect(item) {
+      item.obj.classList.remove("selected");
+    }
+  };
+
+  // src/webviews/ClientItem.ts
+  var ClientItem = class {
+    static klass;
+    static get accessTable() {
+      return this._accessTable;
+    }
+    static _accessTable;
+    static _selector;
+    static get Selector() {
+      return this._selector || (this._selector = new SelectionManager(this.klass));
+    }
+    // Raccourcis
+    static get(itemId) {
+      return this.accessTable.getById(itemId);
+    }
+    static getObj(itemId) {
+      return this.accessTable.getObj(itemId);
+    }
+    static each(method) {
+      this.accessTable.each(method);
+    }
+    static isVisible(id) {
+      return this.accessTable.isVisible(id);
+    }
+    static setVisible(id) {
+      this.accessTable.setVisibility(id, true);
+    }
+    static setInvisible(id) {
+      this.accessTable.setVisibility(id, false);
+    }
+    toRow() {
+      return {};
+    }
+    /**
+     * Méthode qui reçoit les items sérialisés depuis l'extension et va les
+     * consigner dans le panneau, dans une AccessTable qui permettra de 
+     * parcourrir les éléments. 
+     */
+    static deserializeItems(items, klass) {
+      const allItems = items.map((item) => new this.klass(JSON.parse(item)));
+      this.klass.setAccessTable(allItems);
+    }
+    data;
+    constructor(itemData) {
+      this.data = itemData;
+    }
+    // Pour obtenir l'AccKey (ak) de l'item
+    static getAccKey(id) {
+      return this.accessTable.getAccKeyById(id);
+    }
+    // public get obj(){ return this._obj ;}
+    // protected get isNotVisible(){ return this._visible === false;}
+    // protected get isVisible(){ return this._visible === true ;}
+    // private _obj!: HTMLDivElement;
+    // private _visible: boolean = true;
+  };
+
+  // src/bothside/RpcChannel.ts
+  var RpcChannel = class {
+    constructor(sender, receiver) {
+      this.sender = sender;
+      this.receiver = receiver;
+      this.receiver(this.handleMessage.bind(this));
+    }
+    counter = 0;
+    pending = /* @__PURE__ */ new Map();
+    handlers = /* @__PURE__ */ new Map();
+    handleMessage(msg) {
+      if ("id" in msg && "method" in msg) {
+        const handler = this.handlers.get(msg.method);
+        if (handler) {
+          Promise.resolve(handler(msg.params)).then((result) => {
+            this.sender({ id: msg.id, result });
+          });
+        }
+      } else if ("id" in msg && "result" in msg) {
+        const cb = this.pending.get(msg.id);
+        if (cb) {
+          cb(msg.result);
+          this.pending.delete(msg.id);
+        }
+      } else if ("method" in msg) {
+        const handler = this.handlers.get(msg.method);
+        if (handler) {
+          handler(msg.params);
+        }
+      }
+    }
+    ask(method, params) {
+      const id = this.counter++;
+      const req = { id, method, params };
+      this.sender(req);
+      return new Promise((resolve) => {
+        this.pending.set(id, resolve);
+      });
+    }
+    notify(method, params) {
+      const notif = { method, params };
+      this.sender(notif);
+    }
+    on(method, handler) {
+      this.handlers.set(method, handler);
+    }
+  };
+
+  // src/webviews/RpcClient.ts
+  function createRpcClient() {
+    const vscode = acquireVsCodeApi();
+    return new RpcChannel(
+      // sender : envoie vers l'extension
+      (msg) => vscode.postMessage(msg),
+      // receiver : reçoit les messages de l'extension
+      (cb) => window.addEventListener("message", (event) => cb(event.data))
+    );
+  }
+
+  // src/webviews/services/DomUtils.ts
+  var stopEvent = function(ev) {
+    ev.preventDefault();
+    ev.stopImmediatePropagation();
+    return false;
+  };
+
+  // src/webviews/services/VimLikeManager.ts
+  var VimLikeManager = class {
+    constructor(root, panel, klass) {
+      this.root = root;
+      this.panel = panel;
+      this.klass = klass;
+      this.mode = "normal";
+      this.root.addEventListener("focusin", this.onFocusIn.bind(this));
+      this.root.addEventListener("focusout", this.onFocusOut.bind(this));
+      this.root.addEventListener("keydown", this.onKeyDown.bind(this));
+      this._keylistener = this.onKeyDownModeNormal.bind(this);
+      this.searchInput = this.root.querySelector("input#search-input");
+      this.consoleInput = this.root.querySelector("input#panel-console");
+    }
+    // 
+    /**
+     * MODE DU PANNEAU
+     * 
+     * Pour le moment, le panneau peut être dans deux états, en
+     * fonction du fait que le curseur se trouve dans un champ
+     * éditable ou non.
+     */
+    _keylistener;
+    _mode = "normal";
+    get mode() {
+      return this._mode;
+    }
+    set mode(mode) {
+      this._mode = mode;
+      switch (mode) {
+        case "edit":
+          console.log("Passage du mode clavier au mode edit");
+          this._keylistener = this.onKeyDownModeEdit.bind(this);
+          break;
+        case "normal":
+          console.log("Passage du mode clavier au mode normal");
+          this._keylistener = this.onKeyDownModeNormal.bind(this);
+      }
+      this.root.dataset.mode = `mode-${mode}`;
+      const spanName = this.root.querySelector("span#mode-name");
+      spanName.innerHTML = mode.toLocaleUpperCase();
+    }
+    searchInput;
+    consoleInput;
+    onFocusIn(ev) {
+      console.log("Focus dans ", ev);
+      this.mode = this.targetEventIsEditable(ev) ? "edit" : "normal";
+      console.log("Mode apr\xE8s focus : %s", this.mode);
+    }
+    onFocusOut(ev) {
+      if (this.targetEventIsEditable(ev)) {
+        this.mode = "normal";
+      }
+    }
+    onKeyDown(ev) {
+      return this._keylistener(ev);
+    }
+    onKeyDownModeNormal(ev) {
+      if (ev.metaKey) {
+        return true;
+      }
+      stopEvent(ev);
+      switch (ev.key) {
+        case "j":
+          this.klass.accessTable.selectNextItem(this.panel);
+          break;
+        case "k":
+          this.klass.accessTable.selectPrevItem(this.panel);
+          break;
+        case "s":
+          this.searchInput.focus();
+          break;
+        case "c":
+          this.consoleInput.focus();
+          break;
+        case "e":
+          if (this.panel.getSelection()) {
+            console.log("Il y a une s\xE9lection, je vais l'\xE9diter");
+          } else {
+            console.log("Pas de s\xE9lection \xE0 \xE9ditre");
+          }
+          break;
+        default:
+          console.log("Pour le moment, je ne fais rien de '%s'", ev.key);
+      }
+      return false;
+    }
+    /**
+     * Gestionnaire des touches de clavier en mode EDIT (dans un
+     * champ d'édition) 
+     */
+    onKeyDownModeEdit(ev) {
+      switch (ev.key) {
+        case "Tab":
+          this.searchInput.blur();
+          this.klass.selectFirstItem();
+          return stopEvent(ev);
+      }
+      return true;
+    }
+    // @return true si la cible de l'évènement +ev+ est un champ éditable
+    targetEventIsEditable(ev) {
+      return ev.target.matches("input, textarea, [contenteditable]");
+    }
+  };
+
+  // src/webviews/services/AccessTable.ts
+  var AccessTable = class {
+    constructor(klass, items) {
+      this.klass = klass;
+      this.populateInTable(items);
+    }
+    keysMap = /* @__PURE__ */ new Map();
+    arrayItems = [];
+    _size;
+    // après un ajout ou une suppression, par exemple
+    reset() {
+      this._size = null;
+    }
+    get size() {
+      return this._size || (this._size = this.keysMap.size);
+    }
+    isVisible(id) {
+      return this.getAccKeyById(id).visible === true;
+    }
+    setVisibility(id, state) {
+      const ak = this.getAccKeyById(id);
+      if (ak.visible !== state) {
+        ak.visible = state;
+        if (ak.obj === void 0) {
+          ak.obj = this.DOMElementOf(id);
+        }
+        const display = state ? "block" : "none";
+        ak.display = display;
+        ak.obj.style.display = display;
+      }
+    }
+    selectNextItem(panel) {
+      const selection = panel.getSelection();
+      let nextId;
+      if (selection) {
+        let nextItemVisible;
+        nextItemVisible = this.getNextVisibleById(selection);
+        if (nextItemVisible) {
+          nextId = nextItemVisible.data.id;
+        }
+      }
+      nextId = nextId || this.firstItem.data.id;
+      panel.select(nextId);
+    }
+    selectPrevItem(panel) {
+      const selection = panel.getSelection();
+      let prevId;
+      if (selection) {
+        let prevItemVisible;
+        prevItemVisible = this.getPrevVisibleById(selection);
+        if (prevItemVisible) {
+          prevId = prevItemVisible.data.id;
+        }
+      }
+      prevId = prevId || this.firstItem.data.id;
+      panel.select(prevId);
+    }
+    getNextVisibleById(refId) {
+      let ak;
+      let nextAk;
+      while (ak = this.getNextAccKeyById(refId)) {
+        if (ak.visible) {
+          return this.getById(ak.id);
+        }
+      }
+    }
+    getPrevVisibleById(refId) {
+      let ak;
+      let prevAk;
+      while (ak = this.getPrevAccKeyById(refId)) {
+        if (ak.visible) {
+          return this.getById(ak.id);
+        }
+      }
+    }
+    setSelectState(id, state) {
+      this.getAccKeyById(id).selected = state;
+    }
+    traverseAnyTypeWith(value, fnIfId, fnIfIndex, fnIfAccKey, fnIfItem) {
+      switch (typeof value) {
+        case "string":
+          return fnIfId(value);
+        case "number":
+          return fnIfIndex(value);
+        case "object":
+          switch (value.type) {
+            case "accedable-item":
+              return fnIfAccKey(value);
+            case "entry":
+            case "oeuvre":
+            case "exemple":
+              return fnIfItem(value);
+          }
+      }
+    }
+    /**
+     * Retourne l'item d'identifiant +id+ 
+     * 
+     * On peut l'obtenir en envoyant l'identifiant (string), l'index dans
+     * la liste (number), l'accedable-key (AccedableItem) ou l'item 
+     * lui-même.
+     */
+    get(foo) {
+      return this.traverseAnyTypeWith(
+        foo,
+        this.getById.bind(this),
+        this.getByIndex.bind(this),
+        this.getByAccKey.bind(this),
+        (foo2) => {
+          return foo2;
+        }
+      );
+    }
+    getById(id) {
+      return this.arrayItems[this.keysMap.get(id).index];
+    }
+    getByIndex(index) {
+      return this.arrayItems[index];
+    }
+    getByAccKey(ak) {
+      return this.getById(ak.id);
+    }
+    /**
+     * Retourne l'objet DOM de l'item en s'assurant qu'il est défini
+     * dans l'AccKey (ce qui n'est pas fait par défaut)
+     */
+    getObj(id) {
+      const ak = this.getAccKeyById(id);
+      ak.obj || Object.assign(ak, { obj: this.DOMElementOf(id) });
+      return ak.obj;
+    }
+    /**
+     *  Retourne l'accKey de l'élément foo
+     * TODO : doit fonctionner pour tout élément (cf. getNextAccKey)
+     */
+    getAccKey(foo) {
+      return this.traverseAnyTypeWith(
+        foo,
+        this.getAccKeyById.bind(this),
+        this.getAccKeyByIndex.bind(this),
+        (foo2) => {
+          return foo2;
+        },
+        this.getAccKeyByItem.bind(this)
+      );
+    }
+    getAccKeyById(itemId) {
+      return this.keysMap.get(itemId);
+    }
+    getAccKeyByIndex(index) {
+      return this.getAccKeyById(this.getByIndex(index).data.id);
+    }
+    getAccKeyByItem(item) {
+      return this.getAccKeyById(item.data.id);
+    }
+    /**
+     *  Retourne l'Item (Entry, Oeuvre, Exemple) de l'élément foo
+     */
+    getNextItem(foo) {
+      return this.traverseAnyTypeWith(
+        foo,
+        this.getNextItemById.bind(this),
+        this.getNextItemByIndex.bind(this),
+        this.getNextItemByAccKey.bind(this),
+        this.getNextItemByItem.bind(this)
+      );
+    }
+    getNextItemById(id) {
+      const nextAK = this.getNextAccKeyById(id);
+      return nextAK ? this.getById(nextAK.id) : void 0;
+    }
+    getNextItemByIndex(index) {
+      return this.getNextItemById(this.arrayItems[index].data.id);
+    }
+    getNextItemByAccKey(ak) {
+      return ak.next ? this.getById(ak.next) : void 0;
+    }
+    getNextItemByItem(item) {
+      return this.getNextItemById(item.data.id);
+    }
+    /**
+     *  Retourne l'Item (Entry, Oeuvre, Exemple) qui suit l'élément
+     * défini par +foo+ qui peut être l'id, l'index, l'accessKey
+     * {AccedableItem} ou l'item lui-mêmeK
+     */
+    getPrevItem(foo) {
+      return this.traverseAnyTypeWith(
+        foo,
+        this.getPrevItemById.bind(this),
+        this.getPrevItemByIndex.bind(this),
+        this.getPrevItemByAccKey.bind(this),
+        this.getPrevItemByItem.bind(this)
+      );
+    }
+    getPrevItemById(id) {
+      const prevAK = this.getPrevAccKeyById(id);
+      return prevAK ? this.getById(prevAK.id) : void 0;
+    }
+    getPrevItemByIndex(index) {
+      return this.getPrevItemById(this.arrayItems[index].data.id);
+    }
+    getPrevItemByAccKey(ak) {
+      return ak.prev ? this.getById(ak.prev) : void 0;
+    }
+    getPrevItemByItem(item) {
+      return this.getPrevItemById(item.data.id);
+    }
+    /**
+     *  Retourne l'accedableKey {AccedableItem} de l'élément désigné
+     * par +foo+ qui peut être l'identifiant, l'index, l'access-key ou
+     * l'item lui-même de l'item de référence. 
+     *
+     * Note : la version LA PLUS RAPIDE (O)1 consiste à fournir l'IDENTIFIANT
+     * 
+     */
+    getNextAccKey(foo) {
+      return this.traverseAnyTypeWith(
+        foo,
+        this.getNextAccKeyById.bind(this),
+        this.getNextAccKeyByIndex.bind(this),
+        this.getNextAccKeyByAccKey.bind(this),
+        this.getNextAccKeyByItem.bind(this)
+      );
+    }
+    getNextAccKeyById(id) {
+      const ak = this.getAccKey(id);
+      return ak.next ? this.getAccKey(ak.next) : void 0;
+    }
+    getNextAccKeyByIndex(index) {
+      return this.getNextAccKeyById(this.arrayItems[index].data.id);
+    }
+    getNextAccKeyByAccKey(ak) {
+      return ak.next ? this.getNextAccKeyById(ak.next) : void 0;
+    }
+    getNextAccKeyByItem(item) {
+      return this.getNextAccKeyById(item.data.id);
+    }
+    /**
+     * Retourne l'AccessKey {AccedableItem} précédent de l'élément 
+     * désigné par +foo+ qui peut être l'id, l'index, l'access-key ou
+     * l'item lui-même de l'élément.
+     */
+    getPrevAccKey(foo) {
+      return this.traverseAnyTypeWith(
+        foo,
+        this.getPrevAccKeyById.bind(this),
+        this.getPrevAccKeyByIndex.bind(this),
+        this.getPrevAccKeyByAccKey.bind(this),
+        this.getPrevAccKeyByItem.bind(this)
+      );
+    }
+    getPrevAccKeyById(id) {
+      const ak = this.getAccKey(id);
+      return ak.prev ? this.getAccKey(ak.prev) : void 0;
+    }
+    getPrevAccKeyByIndex(index) {
+      return this.getPrevAccKeyById(this.arrayItems[index].data.id);
+    }
+    getPrevAccKeyByAccKey(ak) {
+      return ak.prev ? this.getPrevAccKeyById(ak.prev) : void 0;
+    }
+    getPrevAccKeyByItem(item) {
+      return this.getPrevAccKeyById(item.data.id);
+    }
+    // Boucle sur tous les éléments (sans retour)
+    each(traverseMethod) {
+      this.eachSince(traverseMethod, this.firstItem.data.id);
+    }
+    // Boucle depuis l'élément d'identifiant +id+
+    eachSince(traverseMethod, id) {
+      let item = this.getById(id);
+      do {
+        if (item) {
+          traverseMethod(item);
+          item = this.getNextItemById(item.data.id);
+        } else {
+          break;
+        }
+      } while (item);
+    }
+    /**
+     * Boucle sur toutes les AcceedableItem (AccKey/ak)
+     */
+    eachAccKey(fnEach) {
+      this.keysMap.forEach(fnEach);
+    }
+    /**
+     * Boucle sur tous les items à partir de l'item d'id +id+ en
+     * collectant une donnée quelconque.
+     */
+    mapSince(traverseMethod, id) {
+      const collected = [];
+      let item = this.getById(id);
+      do {
+        if (item) {
+          let retour = traverseMethod(item);
+          collected.push(retour);
+          item = this.getNextItemById(item.data.id);
+        } else {
+          break;
+        }
+      } while (item);
+      return collected;
+    }
+    // Boucle sur TOUTES les données en collectant une donnée
+    map(traverseMethod) {
+      return this.mapSince(traverseMethod, this.firstItem.data.id);
+    }
+    /**
+     * Méthode qui boucle sur tous les éléments depuis l'élément d'id
+     * +itemId+ et retourne une Map avec en clé l'identifiant de
+     * l'item et en valeur la valeur retournée par la méthode
+     * +traverseMethod+
+     */
+    collectSince(traverseMethod, itemId) {
+      const collected = /* @__PURE__ */ new Map();
+      let item = this.getById(itemId);
+      do {
+        if (item) {
+          let retour = traverseMethod(item);
+          collected.set(item.data.id, retour);
+          item = this.getNextItemById(item.data.id);
+        } else {
+          break;
+        }
+      } while (item);
+      return collected;
+    }
+    // Boucle sur tous les éléments en récoltant une valeur qu'on met
+    // dans une Map qui a en clé l'identifiant de l'item
+    collect(traverseMethod) {
+      return this.collectSince(traverseMethod, this.firstItem.data.id);
+    }
+    /**
+     * Retourne le premier item. Par convention, c'est le premier
+     * de la liste.
+     */
+    get firstItem() {
+      return this.arrayItems[0];
+    }
+    /**
+     * Boucle sur les items, depuis l'item d'identifiant +id+ ou depuis le premier et 
+     * retourne le premier qui répond à la condition +condition+
+     */
+    find(condition) {
+      return this.findAfter(condition, void 0);
+    }
+    findAfter(condition, id) {
+      let item;
+      if (id === void 0) {
+        item = this.firstItem;
+      } else {
+        item = this.getNextItemById(id);
+      }
+      let found;
+      do {
+        if (item) {
+          if (condition(item) === true) {
+            found = item;
+            break;
+          }
+          item = this.getNextItemById(item.data.id);
+        }
+      } while (item);
+      return found;
+    }
+    /**
+     * Recherche dans l'ordre tous les éléments répondant à la condition +condition+
+     * 
+     * @param condition Methode qui doit retourner true pour que l'item soit retenu
+     * @param options   Table d'options {count: nombre attendu} 
+     * @returns 
+     */
+    findAll(condition, options) {
+      return this.findAllAfter(condition, void 0, options);
+    }
+    // Idem que précédente mais permet de spécifier le premier élément
+    findAllAfter(condition, id, options) {
+      const collected = [];
+      let collected_count = 0;
+      let item;
+      if (id === void 0) {
+        item = this.firstItem;
+      } else {
+        item = this.getNextItemById(id);
+      }
+      do {
+        if (item) {
+          if (condition(item) === true) {
+            collected.push(item);
+            collected_count++;
+            if (options.count && collected_count === options.count) {
+              break;
+            }
+          }
+          item = this.getNextItemById(item.data.id);
+        }
+      } while (item);
+      return collected;
+    }
+    /**
+     * Peuplement de la table d'accès avec création des 'chainedItem'
+     * 
+     * @param items Les éléments transmis, tels que relevés dans les tables (Entry, Oeuvre, Exemple);
+     */
+    // Méthode qui "initie" la table d'accès en transformant chaque
+    // item (Entry, Oeuvre, Exemple) en un AccedableItem, en prenant
+    // son index et son index suivant pour les mettres dans la Map
+    // qui consignes les valeurs d'accès
+    populateInTable(items) {
+      this.keysMap = /* @__PURE__ */ new Map();
+      this.arrayItems = [];
+      for (let i = 0, len = items.length; i < len; ++i) {
+        const item = items[i];
+        const nextItem = items[i + 1] || void 0;
+        const prevItem = items[i - 1] || void 0;
+        const chained = {
+          type: "accedable-item",
+          id: item.data.id,
+          obj: void 0,
+          index: i,
+          next: nextItem ? nextItem.data.id : void 0,
+          prev: prevItem ? prevItem.data.id : void 0,
+          visible: true,
+          display: "block",
+          selected: false,
+          modified: false
+        };
+        this.keysMap.set(item.data.id, chained);
+        this.arrayItems.push(item);
+      }
+    }
+    DOMElementOf(id) {
+      return document.querySelector(`main#items > div[data-id="${id}"]`);
+    }
+  };
+
+  // src/webviews/PanelClient.ts
+  var PanelClient = class {
+    // ========== A P I ================
+    get isActif() {
+      return this._actif === true;
+    }
+    get isInactif() {
+      return this._actif === false;
+    }
+    // Pour marquer le panneau actif ou inactif
+    activate() {
+      this.setPanelFocus(true);
+    }
+    desactivate() {
+      this.setPanelFocus(false);
+    }
+    // ========== MÉTHODES D'ÉLÉMENT =============
+    // La sélection, sous la forme d'identifiant de l'élément
+    selection = void 0;
+    getSelection() {
+      return this.selection;
+    }
+    /**
+     * Méthode sélectionnant un élément. L'opération est complexe car
+     * elle met non seulement en forme l'élément dans le DOM, mais elle
+     * conserve en plus l'état de l'élément dans l'accessTable et gère
+     * la sélection (sélection qui le moment est simple).
+     */
+    select(itemId) {
+      this.selection && this.deselect(this.selection);
+      this.setSelectState(itemId, true);
+      this.scrollTo(this._klass.getObj(itemId));
+    }
+    deselect(itemId) {
+      this.setSelectState(itemId, false);
+    }
+    // Scroll jusqu'à l'élément et le sélectionne
+    scrollToAndSelect(itemId) {
+      const klass = this._klass;
+      const item = klass.get(itemId);
+      if (!item) {
+        return;
+      }
+      klass.isVisible(itemId) || klass.setVisible(itemId);
+      const ak = klass.getAccKey(itemId);
+      this.select(itemId);
+    }
+    scrollTo(obj) {
+      obj.scrollIntoView({ behavior: "auto", block: "center" });
+    }
+    // Pour peupler le panneau
+    populate(accessTable) {
+      const container = this.container;
+      container.innerHTML = "";
+      let index = -1;
+      accessTable.each((item) => {
+        ++index;
+        const data = item.data;
+        const clone = this.cloneItemTemplate();
+        const mainElement = clone.querySelector("." + this.minName);
+        if (mainElement) {
+          mainElement.setAttribute("data-id", data.id);
+          mainElement.setAttribute("data-index", index.toString());
+        }
+        Object.keys(data).forEach((prop) => {
+          let value = data[prop];
+          value = this.formateProp(item, prop, value);
+          clone.querySelectorAll(`[data-prop="${prop}"]`).forEach((element) => {
+            if (value.startsWith("<")) {
+              element.innerHTML = value;
+            } else {
+              element.textContent = value;
+            }
+          });
+        });
+        this.container.appendChild(clone);
+      });
+      this.afterDisplayItems(accessTable);
+      this.observePanel();
+    }
+    // ========== PRIVATE METHODS ==============
+    initKeyManager() {
+      this._keyManager = new VimLikeManager(document.body, this, this._klass);
+    }
+    setSelectState(itemId, state) {
+      const obj = this.accessTable.getObj(itemId);
+      obj.classList[state ? "add" : "remove"]("selected");
+      this.accessTable.setSelectState(itemId, state);
+      this.selection = state ? itemId : void 0;
+    }
+    cloneItemTemplate() {
+      return this.itemTemplate.content.cloneNode(true);
+    }
+    // Méthode à surclasser pour traitement particulier de certaines valeurs
+    // à afficher. Mais normalement, elles sont surtout traitées lors de la
+    // mise en cache
+    /* surclassed */
+    formateProp(item, prop, value) {
+      return String(value);
+    }
+    /* surclassed */
+    afterDisplayItems(accessTable) {
+    }
+    /* surclassed */
+    searchMatchingItems(searched) {
+      return [];
+    }
+    observePanel() {
+      const field = this.searchInput;
+      field.addEventListener("input", this.filterItems.bind(this));
+      field.addEventListener("keyup", this.filterItems.bind(this));
+    }
+    // Méthode générique de filtrage des items du panneau
+    filterItems(ev) {
+      const searched = this.searchInput.value.trim();
+      const matchingItems = this.searchMatchingItems(searched);
+      const matchingCount = matchingItems.length;
+      console.log("[CLIENT %s] Filtrage %s - %i founds / %i \xE9l\xE9ment", this.titName, searched, matchingCount, this.accessTable.size);
+      const matchingIds = new Set(matchingItems.map((item) => item.data.id));
+      this.accessTable.eachAccKey((ak) => {
+        const visible = matchingIds.has(ak.id);
+        const display = visible ? "block" : "none";
+        if (ak.display !== display) {
+          if (ak.obj === void 0) {
+            ak.obj = this.accessTable.DOMElementOf(ak.id);
+          }
+          ak.obj.style.display = display;
+          ak.display = display;
+          ak.visible = visible;
+        }
+      });
+    }
+    filter(accessTable, fnFiltre) {
+      return accessTable.findAll(
+        (item) => {
+          return fnFiltre(item);
+        },
+        {}
+      );
+    }
+    // ========== PRIVATE PROPERTIES ===========
+    get container() {
+      return this._container || (this._container = document.querySelector("main#items"));
+    }
+    get itemTemplate() {
+      return this._itemTemplate || (this._itemTemplate = document.querySelector("template#item-template"));
+    }
+    get searchInput() {
+      return this._searchInput || (this._searchInput = document.querySelector("input#search-input"));
+    }
+    minName;
+    titName;
+    _klass;
+    get accessTable() {
+      return {};
+    }
+    _actif = false;
+    _container;
+    _itemTemplate;
+    _searchInput;
+    _keyManager;
+    constructor(data) {
+      this.minName = data.minName;
+      this.titName = data.titName;
+      this._klass = data.klass;
+    }
+    setPanelFocus(actif) {
+      document.body.classList[actif ? "add" : "remove"]("actif");
+      this._actif = actif;
+    }
+  };
+
+  // src/webviews/models/Exemple.ts
+  var Exemple = class _Exemple extends ClientItem {
+    type = "exemple";
+    static minName = "exemple";
+    static klass = _Exemple;
+    static currentItem;
+    static setAccessTable(items) {
+      this._accessTable = new AccessTable(_Exemple, items);
+    }
+  };
+  var ExemplePanelClass = class extends PanelClient {
+    get accessTable() {
+      return Exemple.accessTable;
+    }
+    modeFiltre = "by-title";
+    BlockTitres = /* @__PURE__ */ new Map();
+    initialize() {
+      document.querySelector("#search-by-div").classList.remove("hidden");
+    }
+    // Certaines propriétés reçoivent un traitement particulier :
+    // - l'entrée reçoit un lien pour rejoindre la définition dans le panneau des définitions
+    formateProp(ex, prop, value) {
+      switch (prop) {
+        case "entree_formated":
+          return `<a data-type="entry" data-id="${ex.data.entry_id}">${value}</a>`;
+        default:
+          return String(value);
+      }
+    }
+    observePanel() {
+      super.observePanel();
+      this.menuModeFiltre.addEventListener("change", this.onChangeModeFiltre.bind(this));
+      this.container.querySelectorAll("a[data-type][data-id]").forEach((link) => {
+        link.addEventListener("click", this.onClickLinkToEntry.bind(this, link));
+      });
+    }
+    onClickLinkToEntry(link, _ev) {
+      const entryId = link.dataset.id;
+      console.log("[CLIENT] Demande d'affichage de l'entr\xE9e '%s'", entryId);
+      RpcEx.notify("display-entry", { entry_id: entryId });
+    }
+    onClickLinkToOeuvre(obj, _ev) {
+      const oeuvreId = obj.dataset.id;
+      console.log("[CLIENT Exemple] Demande d'affichage de l'\u0153uvre %s", oeuvreId);
+      RpcEx.notify("display-oeuvre", { oeuvreId });
+    }
+    onChangeModeFiltre(_ev) {
+      this.modeFiltre = this.menuModeFiltre.value;
+      console.info("Le mode de filtrage a \xE9t\xE9 mis \xE0 '%s'", this.modeFiltre);
+    }
+    get menuModeFiltre() {
+      return document.querySelector("#search-by");
+    }
+    /**
+     * Appelée après l'affichage des exemples, principalement pour
+     * afficher les titres des oeuvres dans le DOM.
+     */
+    afterDisplayItems(accessTable) {
+      let currentOeuvreId = "";
+      accessTable.each((item) => {
+        const ditem = item.data;
+        if (ditem.oeuvre_id === currentOeuvreId) {
+          return;
+        }
+        currentOeuvreId = ditem.oeuvre_id;
+        const obj = document.createElement("h2");
+        obj.dataset.id = currentOeuvreId;
+        obj.addEventListener("click", this.onClickLinkToOeuvre.bind(this, obj));
+        obj.className = "titre-oeuvre";
+        const spanTit = document.createElement("span");
+        spanTit.className = "titre";
+        spanTit.innerHTML = ditem.oeuvre_titre;
+        obj.appendChild(spanTit);
+        const titre = {
+          id: ditem.oeuvre_id,
+          obj,
+          titre: ditem.oeuvre_titre,
+          display: "block"
+        };
+        this.BlockTitres.set(titre.id, titre);
+        const firstEx = document.querySelector(`main#items > div[data-id="${ditem.id}"]`);
+        this.container.insertBefore(obj, firstEx);
+      });
+    }
+    initKeyManager() {
+      this._keyManager = new VimLikeManager(document.body, this, Exemple);
+    }
+    /**
+     * Filtrage des exemples 
+     * Méthode spécifique Exemple
+     * 
+     * En mode "normal"
+     * Le filtrage, sauf indication contraire, se fait par rapport aux
+     * titres de film. Le mécanisme est le suivant : l'user tape un
+     * début de titres de film. On en déduit les titres grâce à la
+     * méthode de la classe Oeuvre. On prend l'identifiant et on 
+     * affiche tous les exemples du film voulu.
+     * 
+     * En mode "Entrée", l'utilisateur tape une entrée du dictionnaire
+     * et la méthode renvoie tous les exemples concernant cette entrée.
+     * 
+     * En mode "Contenu", la recherche se fait sur le contenu, partout
+     * et sur toutes les entrées.
+     * 
+     */
+    searchMatchingItems(searched) {
+      const searchLow = StringNormalizer.toLower(searched);
+      const searchRa = StringNormalizer.rationalize(searched);
+      let exemplesFound;
+      switch (this.modeFiltre) {
+        case "by-title":
+          exemplesFound = this.filter(Exemple.accessTable, (ex) => {
+            ex = ex;
+            return ex.data.titresLookUp.some((titre) => {
+              return titre.substring(0, searchLow.length) === searchLow;
+            });
+          });
+          break;
+        case "by-entry":
+          exemplesFound = this.filter(Exemple.accessTable, (ex) => {
+            const seg = ex.data.entry4filter.substring(0, searchLow.length);
+            return seg === searchLow || seg === searchRa;
+          });
+          break;
+        case "by-content":
+          exemplesFound = this.filter(Exemple.accessTable, (ex) => {
+            ex = ex;
+            console.log("ex", ex.data);
+            return ex.data.content_min.includes(searchLow) || ex.data.content_min_ra.includes(searchRa);
+          });
+          break;
+        default:
+          return [];
+      }
+      const titres2aff = /* @__PURE__ */ new Map();
+      exemplesFound.forEach((ex) => {
+        if (titres2aff.has(ex.data.oeuvre_id)) {
+          return;
+        }
+        titres2aff.set(ex.data.oeuvre_id, true);
+      });
+      this.BlockTitres.forEach((btitre) => {
+        const dispWanted = titres2aff.has(btitre.id) ? "block" : "none";
+        if (btitre.display === dispWanted) {
+          return;
+        }
+        btitre.display = dispWanted;
+        btitre.obj.style.display = dispWanted;
+      });
+      return exemplesFound;
+    }
+  };
+  var ExemplePanel = new ExemplePanelClass({
+    minName: "exemple",
+    titName: "Exemples",
+    klass: Exemple
+  });
+  var RpcEx = createRpcClient();
+  RpcEx.on("activate", () => {
+    if (ExemplePanel.isActif) {
+      return;
+    }
+    console.log("[CLIENT EXEMPLES] Je dois marquer le panneau Ex actif");
+    ExemplePanel.activate();
+  });
+  RpcEx.on("desactivate", () => {
+    if (ExemplePanel.isInactif) {
+      return;
+    }
+    console.log("[CLIENT EXEMPLES] Je dois marquer le panneau Ex comme inactif.");
+    ExemplePanel.desactivate();
+  });
+  RpcEx.on("populate", (params) => {
+    const items = Exemple.deserializeItems(params.data, Exemple);
+    ExemplePanel.populate(Exemple.accessTable);
+    ExemplePanel.initialize();
+    ExemplePanel.initKeyManager();
+  });
+  window.Exemple = Exemple;
+})();
+//# sourceMappingURL=exemples-bundle.js.map
