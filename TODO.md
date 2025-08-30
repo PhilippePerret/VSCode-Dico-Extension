@@ -2,6 +2,9 @@
 
 * Travailler l'édition
   - le plus simple : un formulaire qui s'affiche en bas de l'écran, qui permet de régler toutes les données. 
+  - enregistrement
+* Quand on clique sur un élément : ça le sélectionne
+* Bien activer le premier panneau au lancement, pour pouvoir utiliser les raccourcis tout de suite
 * Script Donnée DB -> Fichier YAML/XML
   - avec tous les contrôles possibes pour ne rien perdre
   - Pour le fichier XML, faire une DTD pour vérifier le bon format ?

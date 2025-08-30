@@ -889,13 +889,14 @@
 
   // src/webviews/services/FormManager.ts
   var FormManager = class {
+    // Fonction appelée en cas d'annulation
+    // L'item qui sera travaillé ici, pour ne pas toucher l'item original
+    fakeItem;
     checked = false;
     _obj;
     // le formulaire complet
     get obj() {
       return this._obj || (this._obj = document.querySelector(`form#${this.formId}`));
-    }
-    constructor() {
     }
     /**
      * API
@@ -905,27 +906,45 @@
      * @param item Objet Entry, Oeuvre ou Exemple à éditer/créer
      */
     editItem(item) {
-      console.log("Je dois apprendre \xE0 \xE9diter ou cr\xE9er un \xE9l\xE9ment.");
       this.openForm();
-      this.setData(item);
+      this.dispatchValues(item);
     }
     // Met les données dans le formulaire
-    setData(item) {
+    dispatchValues(item) {
       this.properties.forEach((dprop) => {
+        const prop = dprop.propName;
+        this.field(prop).value = String(item[prop]);
       });
+    }
+    // Retourne le champ de la propriété +prop+
+    // (note : ces champs ont été vérifiés au début)
+    field(prop) {
+      return this.obj.querySelector(`.${this.prefix}-${prop}`);
     }
     // Récupère les données dans le formulaire et retourne l'item
     // avec ses nouvelles données.
-    getData(item) {
+    collectValues() {
+      this.fakeItem = {};
       this.properties.forEach((dprop) => {
         const prop = dprop.propName;
         const value = this.getValueOf(dprop);
-        Object.assign(item, { [prop]: value });
+        Object.assign(this.fakeItem, { [prop]: value });
       });
-      return item;
+      return this.fakeItem;
     }
     getValueOf(property) {
-      let value = null;
+      const prop = property.propName;
+      const field = this.field(prop);
+      let value = ((ft) => {
+        switch (ft) {
+          case "checkbox":
+            return field.checked;
+          case "radio":
+            return field.checked;
+          default:
+            return field.value;
+        }
+      })(property.fieldType);
       return value;
     }
     openForm() {
@@ -946,7 +965,15 @@
     onSaveElement() {
       console.log("Je dois apprendre \xE0 sauver ou cr\xE9er l'\xE9l\xE9ment.");
     }
-    onCancel() {
+    __onSave() {
+      this.collectValues();
+      this.onSave(this.fakeItem);
+    }
+    __onSaveAndQuit() {
+      this.__onSave();
+      this.closeForm();
+    }
+    __onCancel() {
       this.closeForm();
     }
     get form() {
@@ -955,16 +982,53 @@
     // === MÉTHODES DE VALIDATION DES DONNÉES D'IMPLÉMENTATION ===
     // (les données suivantes s'assurent que le formulaire est
     //  conforme aux attentes)
+    // La méthode sert aussi à observer les éléments
     checkFormManagerValidity() {
       if (!this.obj) {
         console.error("Le formulaire form#%s est introuvable.", this.formId);
         return false;
       }
-      this.checkPropertiesValidity();
+      if (false === this.checkBoutonsValidity()) {
+        return false;
+      }
+      this.observeButtons();
+      if (false === this.checkPropertiesValidity()) {
+        return false;
+      }
       console.info("Formulaire %s valide.", this.formId);
       this.checked = true;
     }
+    checkBoutonsValidity() {
+      let ok = true;
+      if (this.btnSave) {
+        if ("function" !== typeof this.onSave) {
+          console.error("Il faut d\xE9finir la m\xE9thode onSave(item): boolean");
+        }
+      } else {
+        console.error("Le formulaire devrait contenir un bouton de class btn-save.");
+        ok = false;
+      }
+      if (!this.btnCancel) {
+        console.error('Le formulaire doit contenir un bouton pour annuler (class "btn-cancel")');
+      }
+      return ok;
+    }
+    observeButtons() {
+      this.btnSave.addEventListener("click", this.__onSave.bind(this));
+      this.btnCancel.addEventListener("click", this.__onCancel.bind(this));
+      this.btnSaveNQuit && this.btnSaveNQuit.addEventListener("click", this.__onSaveAndQuit.bind(this));
+    }
+    get btnSave() {
+      return this.obj.querySelector("button.btn-save");
+    }
+    get btnCancel() {
+      return this.obj.querySelector("button.btn-cancel");
+    }
+    get btnSaveNQuit() {
+      return this.obj.querySelector("button.btn-save-and-quit");
+    }
     checkPropertiesValidity() {
+      let ok = true;
       this.properties.forEach((dproperty) => {
         const prop = dproperty.propName;
         const prefix = this.prefix;
@@ -974,6 +1038,7 @@
           Object.assign(dproperty, { container });
         } else {
           console.error('La propri\xE9t\xE9 "%s" devrait \xEAtre dans un conteneur d\u2019identifiant "#%s-container"', prop, prefprop);
+          ok = false;
         }
         let propTag = String(dproperty.fieldType);
         if (["text", "checkbox", "radio"].includes(propTag)) {
@@ -985,12 +1050,16 @@
           Object.assign(dproperty, { field: propField });
         } else {
           console.error("Le champ %s pour la propri\xE9t\xE9 %s devrait exister.", fieldSelector, prop);
+          ok = false;
         }
         if (dproperty.fieldType === "select") {
-          dproperty.values || console.error("Le champ %s, de type select, devrait d\xE9finir ses valeurs (values)", prop);
+          if (!dproperty.values) {
+            console.error("Le champ %s, de type select, devrait d\xE9finir ses valeurs (values)", prop);
+            ok = false;
+          }
         }
       });
-      return true;
+      return ok;
     }
   };
 
@@ -999,6 +1068,10 @@
     formId = "exemple-form";
     prefix = "exemple";
     properties = [];
+    onSave(item) {
+      console.log("Il faut que j'apprendre \xE0 sauver l'exemple : ", item);
+      return true;
+    }
   };
 
   // src/webviews/models/Exemple.ts
