@@ -72,9 +72,12 @@ export class PanelManager {
 				this.activatePanel(panel);
 			});
 		});
-		this.activatePanel(this._panels[0]);
+}
+	static activatePanelEntries() {
 		this._panels[0].panel.reveal(); // on force son activation
+		this.activatePanel(this._panels[0]);
 	}
+
 	static activatePanel(panel: PanelClass) {
 		// panel.webview.postMessage({ command: 'activate' });
 		panel.rpc.notify('activate');

@@ -19,3 +19,13 @@ div.entry div.entry-definition {
   margin-left: 1em;
   margin-top: 5px;
 }
+
+
+/**
+*
+* FORM 
+*
+**/
+form.item-form textarea#entry-definition {
+  height: 300px;
+}

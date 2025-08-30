@@ -196,6 +196,9 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
   getObj(id: string): HTMLDivElement {
     const ak = this.getAccKeyById(id);
     ak.obj || Object.assign(ak, { obj: this.DOMElementOf(id)});
+    if ( ! ak.obj ) {
+      console.error("Impossible d'obtenir l'objet de l'item '%'…", id);
+    }
     return ak.obj as HTMLDivElement;
   }
   /**

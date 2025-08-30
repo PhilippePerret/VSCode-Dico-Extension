@@ -53,7 +53,8 @@ class App {
         await this.loadAndCacheAllData();
         await PanelManager_1.PanelManager.openRpcChanels();
         await PanelManager_1.PanelManager.populatePanels();
-        PanelManager_1.PanelManager.observePanels();
+        await PanelManager_1.PanelManager.observePanels();
+        PanelManager_1.PanelManager.activatePanelEntries();
     }
     /**
      * La mise en place de fonctions simples pour des boucles d'attente

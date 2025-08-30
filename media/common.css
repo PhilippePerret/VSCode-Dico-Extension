@@ -1,6 +1,10 @@
 a {
 	cursor: pointer;
 }
+button.simple {
+	border: none;
+	background-color: inherit;
+}
 
 body {
 	border: 1px solid;
@@ -172,4 +176,50 @@ main#items .item.selected {
 le titre affiché pour le film, l'entrée pour l'exemple (l'index ? aucun ?) */
 main#items>.item .main-prop {
 	font-weight: bold;
+}
+
+
+/*
+FORMULAIRE
+
+*/
+form.item-form {
+	padding: 1em 10px;
+	border: 2px solid cadetblue;
+	background-color: cadetblue;
+}
+form.item-form input.main {
+	font-size: 15pt!important;
+}
+
+form.item-form > div {
+	display: flex;
+	padding-top: 2px;
+	vertical-align: top;
+}
+form.item-form > div > label {
+	width: 70px;
+	flex: 0 0 auto;
+	font-family: 'Arial Narrow', Arial, Helvetica, sans-serif;
+	font-weight: bold;
+	font-size: 10.5pt;
+}
+form.item-form > div > label + * {
+	flex: 1 1 auto;
+}
+
+form.item-form input,
+form.item-form textarea,
+form.item-form select:not(.auto) {
+	width: 100%;
+	font-family: inherit;
+	font-size: inherit;
+}
+form.item-form div.buttons {
+	display:flex; 
+	justify-content:flex-end;
+	margin-top: 1em;
+}
+form.item-form div.buttons button {
+	margin-left: 12px;
 }

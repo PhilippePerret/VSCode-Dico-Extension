@@ -1,8 +1,12 @@
-<form action="" id="entry-form" method="POST" class="hidden">
-  <input type="text" name="entry[id]" class="entry-id" />
-  <div id="entry-entree-container">
+<form action="" id="entry-form" method="POST" class="hidden item-form">
+ <div id="entry-entree-container">
     <label for="entry-entree">Entrée</label>
-    <input type="text" id="entry-entree" name="entry[entree]" />
+    <input type="text" id="entry-entree" class="main" />
+  </div>
+   <div id="entry-id-container">
+    <label for="entry-id">Uniq ID</label>
+    <input type="text" id="entry-id" disabled="disabled" />
+    <button type="button" class="btn-lock-id simple">🔓</button>
   </div>
   <div id="entry-genre-container">
     <label for="entry-genre">Genre</label>
@@ -10,11 +14,11 @@
   </div>
   <div id="entry-categorie_id-container">
     <label for="entry-categorie_id">Catégorie</label>
-    <input type="text" id="entry-categorie_id" name="entry[categorie_id]" />
+    <input type="text" id="entry-categorie_id" />
   </div>
   <div id="entry-definition-container">
     <label for="entry-definition">Définition</label>
-    <texterea id="entry-definition"></texterea>
+    <textarea id="entry-definition"></textarea>
   </div>
   <div class="buttons">
     <button type="cancel" class="btn-cancel">Renoncer</button>

@@ -8,7 +8,9 @@ export interface FormProperty {
   type: typeof String | typeof Number | typeof Boolean;
   required: boolean;
   fieldType: 'text' | 'select' | 'textarea' | 'checkbox' | 'radio';
+  field?: any; // renseigné à la vérificatiaon
   values?: string[][];
+  default?: any;
 }
 
 interface ConcreteElement {
@@ -43,15 +45,17 @@ export abstract class FormManager<C, T extends ConcreteElement> {
    * @param item Objet Entry, Oeuvre ou Exemple à éditer/créer
    */
   editItem(item: T): void {
+    console.log("Édition de l'item", item);
     this.openForm();
     this.dispatchValues(item);
   }
 
   // Met les données dans le formulaire
   dispatchValues(item: T){
+    this.reset();
     this.properties.forEach( dprop => {
       const prop = dprop.propName;
-      this.field(prop).value = String(item[prop]); 
+      if ( item[prop] ) { this.field(prop).value = String(item[prop]);}
     });
   }
 
@@ -90,13 +94,23 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   openForm(){
     this.checked || this.checkFormManagerValidity();
     if (this.checked === false) { return; }
-    this.form.classList.remove('hidden'); 
+    this.obj.classList.remove('hidden'); 
   }
-  closeForm(){ this.form.classList.add('hidden'); }
+  closeForm(){ this.obj.classList.add('hidden'); }
   
   // Tout remettre à rien (vider les champs)
   reset(){
-
+    this.properties.forEach(dprop => {
+      switch(dprop.fieldType) {
+        case 'checkbox':
+          dprop.field.checked = dprop.default || false;
+          break;
+        case 'textarea':
+          dprop.field.value = '';
+        default: 
+          dprop.field.value = dprop.default || '';
+      }
+    });
   }
 
   // Méthode appelée quand on sauve l'élément. Soit c'est une
@@ -114,9 +128,6 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   }
   __onCancel(){
     this.closeForm();
-  }
-  get form(){
-    return document.querySelector('form#edit-form') as HTMLFormElement;
   }
 
   // === MÉTHODES DE VALIDATION DES DONNÉES D'IMPLÉMENTATION ===
@@ -186,8 +197,13 @@ export abstract class FormManager<C, T extends ConcreteElement> {
       let propTag = String(dproperty.fieldType);
       if ( ['text', 'checkbox', 'radio'].includes(propTag)) { propTag = 'input';}
       const fieldSelector = `${propTag}#${prefprop}`;
-      const propField = this.obj.querySelector(fieldSelector);
+      let propField = this.obj.querySelector(fieldSelector);
       if ( propField ) {
+        switch(dproperty.fieldType) {
+          case 'checkbox': propField = propField as HTMLInputElement; break;
+          case 'textarea': propField = propField as HTMLTextAreaElement; break;
+          default: propField = propField as HTMLInputElement;
+        }
         Object.assign(dproperty, { field: propField });
       } else {
         console.error('Le champ %s pour la propriété %s devrait exister.', fieldSelector, prop);

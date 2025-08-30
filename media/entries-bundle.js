@@ -289,6 +289,9 @@
     getObj(id) {
       const ak = this.getAccKeyById(id);
       ak.obj || Object.assign(ak, { obj: this.DOMElementOf(id) });
+      if (!ak.obj) {
+        console.error("Impossible d'obtenir l'objet de l'item '%'\u2026", id);
+      }
       return ak.obj;
     }
     /**
@@ -911,9 +914,12 @@
     }
     // Met les données dans le formulaire
     dispatchValues(item) {
+      this.reset();
       this.properties.forEach((dprop) => {
         const prop = dprop.propName;
-        this.field(prop).value = String(item[prop]);
+        if (item[prop]) {
+          this.field(prop).value = String(item[prop]);
+        }
       });
     }
     // Retourne le champ de la propriété +prop+
@@ -952,13 +958,24 @@
       if (this.checked === false) {
         return;
       }
-      this.form.classList.remove("hidden");
+      this.obj.classList.remove("hidden");
     }
     closeForm() {
-      this.form.classList.add("hidden");
+      this.obj.classList.add("hidden");
     }
     // Tout remettre à rien (vider les champs)
     reset() {
+      this.properties.forEach((dprop) => {
+        switch (dprop.fieldType) {
+          case "checkbox":
+            dprop.field.checked = dprop.default || false;
+            break;
+          case "textarea":
+            dprop.field.value = "";
+          default:
+            dprop.field.value = dprop.default || "";
+        }
+      });
     }
     // Méthode appelée quand on sauve l'élément. Soit c'est une
     // édition, soit c'est une création
@@ -975,9 +992,6 @@
     }
     __onCancel() {
       this.closeForm();
-    }
-    get form() {
-      return document.querySelector("form#edit-form");
     }
     // === MÉTHODES DE VALIDATION DES DONNÉES D'IMPLÉMENTATION ===
     // (les données suivantes s'assurent que le formulaire est
@@ -1045,8 +1059,18 @@
           propTag = "input";
         }
         const fieldSelector = `${propTag}#${prefprop}`;
-        const propField = this.obj.querySelector(fieldSelector);
+        let propField = this.obj.querySelector(fieldSelector);
         if (propField) {
+          switch (dproperty.fieldType) {
+            case "checkbox":
+              propField = propField;
+              break;
+            case "textarea":
+              propField = propField;
+              break;
+            default:
+              propField = propField;
+          }
           Object.assign(dproperty, { field: propField });
         } else {
           console.error("Le champ %s pour la propri\xE9t\xE9 %s devrait exister.", fieldSelector, prop);

@@ -20,7 +20,8 @@ export class App {
     await this.loadAndCacheAllData();
     await PanelManager.openRpcChanels();
     await PanelManager.populatePanels();
-    PanelManager.observePanels();
+    await PanelManager.observePanels();
+    PanelManager.activatePanelEntries();
   }
  
   /**

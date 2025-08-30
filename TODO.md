@@ -11,6 +11,8 @@
 * Mener la réflexion sur les raccourcis (ci-dessous)
 * Pouvoir afficher les exemples seulement avec leur entrée (pour bien voir "titre de film" + entrées traitées)
 * Quand un item est rendu invisible, si c'est l'item sélectionné du panneau, il faut le déselectionner
+* Cadenas pour verrouiller l'identifiant d'un nouveau film ou d'un nouveau mot
+  - ID du nouveau mot : doit absolument commencer comme le mot lui-même, après rationnalisation
 
 * Faire un script (outil de l'extension) qui lance la fabrication du livre (Prawn-for-book en ruby).
 * Pouvoir afficher tous les exemples associés à une entrée (la méthode `getByEntry` est déjà implémentée)
