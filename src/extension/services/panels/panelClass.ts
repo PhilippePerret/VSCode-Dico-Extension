@@ -4,7 +4,6 @@ import { Exemple } from '../../models/Exemple';
 import { Oeuvre } from '../../models/Oeuvre';
 import { PanelManager } from './PanelManager';
 import { App } from '../App';
-import { CanalEntry } from '../Rpc';
 
 /**
  * Classe d'un panneau quelconque
@@ -58,8 +57,10 @@ export abstract class PanelClass {
     const plurName = 'items';
     const mainContent = `<div class="loading">Chargement des ${plurName}…</div>`;
     const toolsContent = `*Outils des ${plurName}*`;
-    const editFormContent = `<p>Formulaire d'édition des ${plurName} à implémenter</p>`;
-    //  // Load display template using uniform convention: {panelId}/display.html
+    // Load form template using uniform convention: {panelId}/display.html
+    const formTemplatePath = path.join(context.extensionPath, 'media', panelId, 'form.html');
+    const editFormContent = fs.readFileSync(formTemplatePath, 'utf8'); 
+    // Load display template using uniform convention: {panelId}/display.html
     const displayTemplatePath = path.join(context.extensionPath, 'media', panelId, 'display.html');
     const displayTemplate = fs.readFileSync(displayTemplatePath, 'utf8');
     const templateHtmlItem = `<template id="item-template">${displayTemplate}</template>`;

@@ -7,10 +7,16 @@ export interface FormProperty {
   fieldType: 'text' | 'select' | 'textarea' | 'checkbox';
   values?: [][];
 }
+
+
+
 export abstract class FormManager<C, T extends AnyElementType> {
 
   abstract formId: string; // Identifiant unique du formulaire
+  abstract prefix: string; // utilisé pour nommer les champs
   abstract properties: FormProperty[];
+
+  private checked: boolean = false;
 
   private _obj!: HTMLFormElement; // le formulaire complet
   get obj(){
@@ -18,7 +24,7 @@ export abstract class FormManager<C, T extends AnyElementType> {
   }
 
   constructor(){
-    this.checkFormManagerValidity();
+    // console.info("Id du formulaire : %s", this.formId);
   }
   /**
    * API
@@ -59,7 +65,11 @@ export abstract class FormManager<C, T extends AnyElementType> {
     return value ;
   }
 
-  openForm(){this.form.classList.remove('hidden'); }
+  openForm(){
+    this.checked || this.checkFormManagerValidity();
+    if (this.checked === false) { return; }
+    this.form.classList.remove('hidden'); 
+  }
   closeForm(){ this.form.classList.add('hidden'); }
   
   // Tout remettre à rien (vider les champs)
@@ -83,41 +93,56 @@ export abstract class FormManager<C, T extends AnyElementType> {
   // (les données suivantes s'assurent que le formulaire est
   //  conforme aux attentes)
   checkFormManagerValidity(){
-    this.obj || console.warn('Le formulaire form#%s est introuvable.', this.formId);
+    if ( ! this.obj ) {
+      console.error('Le formulaire form#%s est introuvable.', this.formId);
+      return false;
+    }
     /**
      * Check de la conformité des propriétés, on en profite aussi
      * pour définir des valeurs (container, erreur, etc.)
      */
-    this.checkPropertiesValidity();
+    if ( false === this.checkPropertiesValidity() ) { return false ; }
+
+
+    console.info("Formulaire %s valide.", this.formId);
+    this.checked = true;
   }
   checkPropertiesValidity(): boolean {
+    let ok = true ;
     this.properties.forEach( dproperty => {
       const prop = dproperty.propName;
+      const prefix = this.prefix;
+      const prefprop = `${prefix}-${prop}`;
       // Chaque propriété doit avoir son conteneur de nom '<propName>-container'
-      const container = this.obj.querySelector(`${prop}-container`);
+      const container = this.obj.querySelector(`#${prefprop}-container`);
       if ( container ) {
         Object.assign(dproperty, {container: container});
       } else {
-        console.warn('La propriété "%s" devrait être dans un conteneur d’identifiant "%s-container"', prop, prop);
+        console.error('La propriété "%s" devrait être dans un conteneur d’identifiant "#%s-container"', prop, prefprop);
+        ok = false;
       }
       // Est-ce que chaque propriété est bien dans son champ ?
       let propTag = String(dproperty.fieldType);
       if ( ['text', 'checkbox', 'radio'].includes(propTag)) { propTag = 'input';}
-      const fieldSelector = `${propTag}#prop-${prop}`;
+      const fieldSelector = `${propTag}#${prefprop}`;
       const propField = this.obj.querySelector(fieldSelector);
       if ( propField ) {
         Object.assign(dproperty, { field: propField });
       } else {
-        console.warn('Le champ %s pour la propriété %s devrait exister.', fieldSelector, prop);
+        console.error('Le champ %s pour la propriété %s devrait exister.', fieldSelector, prop);
+        ok = false;
       }
       // Un champ select doit avoir des valeurs
       if ( dproperty.fieldType === 'select' ) {
-        dproperty.values || console.warn('Le champ %s, de type select, devrait définir ses valeurs (values)', prop);
+        if ( ! dproperty.values ) {
+          console.error('Le champ %s, de type select, devrait définir ses valeurs (values)', prop);
+          ok = false;
+        }
       }
       
 
     });
     
-    return true ;
+    return ok;
   }
 }

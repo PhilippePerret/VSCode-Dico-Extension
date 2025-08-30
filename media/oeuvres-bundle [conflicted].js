@@ -969,11 +969,11 @@
         const prop = dproperty.propName;
         const prefix = this.prefix;
         const prefprop = `${prefix}-${prop}`;
-        const container = this.obj.querySelector(`#${prefprop}-container`);
+        const container = this.obj.querySelector(`${prefprop}-container`);
         if (container) {
           Object.assign(dproperty, { container });
         } else {
-          console.error('La propri\xE9t\xE9 "%s" devrait \xEAtre dans un conteneur d\u2019identifiant "#%s-container"', prop, prefprop);
+          console.error('La propri\xE9t\xE9 "%s" devrait \xEAtre dans un conteneur d\u2019identifiant "%s-container"', prop, prefprop);
         }
         let propTag = String(dproperty.fieldType);
         if (["text", "checkbox", "radio"].includes(propTag)) {

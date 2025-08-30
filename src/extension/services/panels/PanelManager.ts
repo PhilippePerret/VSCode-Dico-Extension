@@ -1,7 +1,4 @@
 import * as vscode from 'vscode';
-import { Entry } from '../../models/Entry';
-import { Exemple } from '../../models/Exemple';
-import { Oeuvre } from '../../models/Oeuvre';
 import { PanelWrapper, WebviewPanelWrapper } from '../InterComs-tests';
 import { PanelClass } from './panelClass';
 import { PanelClassEntry } from './panelClassEntry'; 

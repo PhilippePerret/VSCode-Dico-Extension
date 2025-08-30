@@ -39,12 +39,14 @@
     static get accessTable() {
       return this._accessTable;
     }
+    static panel;
     static _accessTable;
     static _selector;
     static get Selector() {
       return this._selector || (this._selector = new SelectionManager(this.klass));
     }
-    // Raccourcis
+    // Raccourcis vers l'accessTable, pour obtenir des informations
+    // sur les items ou les items eux-même
     static get(itemId) {
       return this.accessTable.getById(itemId);
     }
@@ -62,6 +64,15 @@
     }
     static setInvisible(id) {
       this.accessTable.setVisibility(id, false);
+    }
+    static selectFirstItem() {
+      this.panel.select(this.accessTable.firstItem);
+    }
+    static editItem(itemId) {
+      this.panel.form.editItem(this.get(itemId));
+    }
+    static createNewItem() {
+      this.panel.form.editItem(new this.klass());
     }
     toRow() {
       return {};
@@ -670,10 +681,13 @@
           break;
         case "e":
           if (this.panel.getSelection()) {
-            console.log("Il y a une s\xE9lection, je vais l'\xE9diter");
+            this.klass.editItem(this.panel.getSelection());
           } else {
-            console.log("Pas de s\xE9lection \xE0 \xE9ditre");
+            console.log("Pas de s\xE9lection \xE0 \xE9diter");
           }
+          break;
+        case "n":
+          this.klass.createNewItem();
           break;
         default:
           console.log("Pour le moment, je ne fais rien de '%s'", ev.key);
@@ -702,6 +716,7 @@
   // src/webviews/PanelClient.ts
   var PanelClient = class {
     // ========== A P I ================
+    form;
     get isActif() {
       return this._actif === true;
     }
@@ -864,11 +879,130 @@
       this.minName = data.minName;
       this.titName = data.titName;
       this._klass = data.klass;
+      this.form = data.form;
     }
     setPanelFocus(actif) {
       document.body.classList[actif ? "add" : "remove"]("actif");
       this._actif = actif;
     }
+  };
+
+  // src/webviews/services/FormManager.ts
+  var FormManager = class {
+    checked = false;
+    _obj;
+    // le formulaire complet
+    get obj() {
+      return this._obj || (this._obj = document.querySelector(`form#${this.formId}`));
+    }
+    constructor() {
+    }
+    /**
+     * API
+     * Point d'entrée de l'édition, on envoi l'item à éditer. La manager
+     * affiche ses données et affiche le formulaire.
+     * 
+     * @param item Objet Entry, Oeuvre ou Exemple à éditer/créer
+     */
+    editItem(item) {
+      console.log("Je dois apprendre \xE0 \xE9diter ou cr\xE9er un \xE9l\xE9ment.");
+      this.openForm();
+      this.setData(item);
+    }
+    // Met les données dans le formulaire
+    setData(item) {
+      this.properties.forEach((dprop) => {
+      });
+    }
+    // Récupère les données dans le formulaire et retourne l'item
+    // avec ses nouvelles données.
+    getData(item) {
+      this.properties.forEach((dprop) => {
+        const prop = dprop.propName;
+        const value = this.getValueOf(dprop);
+        Object.assign(item, { [prop]: value });
+      });
+      return item;
+    }
+    getValueOf(property) {
+      let value = null;
+      return value;
+    }
+    openForm() {
+      this.checked || this.checkFormManagerValidity();
+      if (this.checked === false) {
+        return;
+      }
+      this.form.classList.remove("hidden");
+    }
+    closeForm() {
+      this.form.classList.add("hidden");
+    }
+    // Tout remettre à rien (vider les champs)
+    reset() {
+    }
+    // Méthode appelée quand on sauve l'élément. Soit c'est une
+    // édition, soit c'est une création
+    onSaveElement() {
+      console.log("Je dois apprendre \xE0 sauver ou cr\xE9er l'\xE9l\xE9ment.");
+    }
+    onCancel() {
+      this.closeForm();
+    }
+    get form() {
+      return document.querySelector("form#edit-form");
+    }
+    // === MÉTHODES DE VALIDATION DES DONNÉES D'IMPLÉMENTATION ===
+    // (les données suivantes s'assurent que le formulaire est
+    //  conforme aux attentes)
+    checkFormManagerValidity() {
+      if (!this.obj) {
+        console.error("Le formulaire form#%s est introuvable.", this.formId);
+        return false;
+      }
+      this.checkPropertiesValidity();
+      console.info("Formulaire %s valide.", this.formId);
+      this.checked = true;
+    }
+    checkPropertiesValidity() {
+      this.properties.forEach((dproperty) => {
+        const prop = dproperty.propName;
+        const prefix = this.prefix;
+        const prefprop = `${prefix}-${prop}`;
+        const container = this.obj.querySelector(`#${prefprop}-container`);
+        if (container) {
+          Object.assign(dproperty, { container });
+        } else {
+          console.error('La propri\xE9t\xE9 "%s" devrait \xEAtre dans un conteneur d\u2019identifiant "#%s-container"', prop, prefprop);
+        }
+        let propTag = String(dproperty.fieldType);
+        if (["text", "checkbox", "radio"].includes(propTag)) {
+          propTag = "input";
+        }
+        const fieldSelector = `${propTag}#${prefprop}`;
+        const propField = this.obj.querySelector(fieldSelector);
+        if (propField) {
+          Object.assign(dproperty, { field: propField });
+        } else {
+          console.error("Le champ %s pour la propri\xE9t\xE9 %s devrait exister.", fieldSelector, prop);
+        }
+        if (dproperty.fieldType === "select") {
+          dproperty.values || console.error("Le champ %s, de type select, devrait d\xE9finir ses valeurs (values)", prop);
+        }
+      });
+      return true;
+    }
+  };
+
+  // src/webviews/models/EntryForm.ts
+  var EntryForm = class extends FormManager {
+    formId = "entry-form";
+    prefix = "entry";
+    properties = [
+      { propName: "entree", type: String, required: true, fieldType: "text" },
+      { propName: "genre", type: String, required: true, fieldType: "select" },
+      { propName: "categorie_id", type: String, required: false, fieldType: "select" }
+    ];
   };
 
   // src/webviews/models/Entry.ts
@@ -918,8 +1052,10 @@
   var EntryPanel = new EntryPanelClass({
     minName: "entry",
     titName: "Entries",
-    klass: Entry
+    klass: Entry,
+    form: new EntryForm()
   });
+  Entry.panel = EntryPanel;
   var RpcEntry = createRpcClient();
   RpcEntry.on("activate", () => {
     if (EntryPanel.isActif) {
