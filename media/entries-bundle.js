@@ -288,6 +288,9 @@
      */
     getObj(id) {
       const ak = this.getAccKeyById(id);
+      if (!ak) {
+        console.error("Impossible d'obtenir l'AK de l'id %s\u2026", id, this.arrayItems);
+      }
       ak.obj || Object.assign(ak, { obj: this.DOMElementOf(id) });
       if (!ak.obj) {
         console.error("Impossible d'obtenir l'objet de l'item '%'\u2026", id);
@@ -613,7 +616,7 @@
       this.root = root;
       this.panel = panel;
       this.klass = klass;
-      this.mode = "normal";
+      this.mode = "null";
       this.root.addEventListener("keydown", this.universelKeyboardCapture.bind(this), true);
       this.root.addEventListener("keydown", this.onKeyDown.bind(this));
       this._keylistener = this.onKeyDownModeNull.bind(this);
@@ -641,6 +644,7 @@
       this.mode = mode;
     }
     set mode(mode) {
+      console.info("[VimLikeManager mode] Mise du mode \xE0 '%s')", mode);
       this._mode = mode;
       switch (mode) {
         case "edit":
@@ -652,12 +656,13 @@
           this._keylistener = this.onKeyDownModeNormal.bind(this);
           break;
         case "null":
-          console.log("Le panneau est en mode null (sans action");
+          console.log("Le panneau est en mode NULL (sans action");
           this._keylistener = this.onKeyDownModeNull.bind(this);
           break;
         case "form":
           console.log("Panneau en mode FORMulaire");
-          this._keylistener = this.onKeyDownModeEdit.bind(this);
+          this._keylistener = this.onKeyDownModeForm.bind(this);
+          break;
       }
       this.root.dataset.mode = `mode-${mode}`;
       const spanName = this.root.querySelector("span#mode-name");
@@ -673,7 +678,7 @@
     }
     // La méthode qui choppe normalement toutes les touches, quel que soit le mode
     universelKeyboardCapture(ev) {
-      console.log("[universel capture] Key up = ", ev.key, ev);
+      console.log("[universel capture (mode %s)] Key up = ", this.mode, ev.key, ev);
       return true;
     }
     /**
@@ -690,10 +695,12 @@
     discrimineFieldsForModeIn(obj, modes) {
       const selectors = 'input[type="text"], input[type="email"], input[type="password"], textarea, [contenteditable]';
       obj.querySelectorAll(selectors).forEach((field) => {
+        console.log("Discrimination du champ ", field);
         field.addEventListener("focus", this.setMode.bind(this, modes.edit));
         field.addEventListener("blur", this.setMode.bind(this, modes.normal));
       });
     }
+    // Sera remplacé par la bonne méthode suivant le mode.
     onKeyDown(ev) {
       return this._keylistener(ev);
     }
@@ -767,12 +774,31 @@
     }
     // Mode clavier pour le formulaire
     onKeyDownModeForm(ev) {
+      console.log("-> onKeyDownModeForm");
       if (ev.metaKey) {
         return this.onKeyDownWithMeta(ev);
       }
       switch (ev.key) {
+        case "a":
+          this.panel.form.focusField(1);
+          return stopEvent(ev);
+        case "b":
+          this.panel.form.focusField(2);
+          return stopEvent(ev);
+        case "c":
+          this.panel.form.focusField(3);
+          return stopEvent(ev);
+        case "d":
+          this.panel.form.focusField(4);
+          return stopEvent(ev);
+        case "e":
+          this.panel.form.focusField(5);
+          return stopEvent(ev);
+        case "f":
+          this.panel.form.focusField(6);
+          return stopEvent(ev);
         case "l":
-          console.log("Je dois d\xE9locker le bouton du formulaire");
+          this.panel.form.toggleIdLock();
           break;
       }
     }
@@ -990,6 +1016,10 @@
     get obj() {
       return this._obj || (this._obj = document.querySelector(`form#${this.formId}`));
     }
+    // raccourci
+    setMode(mode) {
+      this.panel.keyManager.setMode(mode);
+    }
     /**
      * API
      * Point d'entrée de l'édition, on envoi l'item à éditer. La manager
@@ -1003,6 +1033,7 @@
       if ("function" === typeof this.afterEdit) {
         this.afterEdit.call(this);
       }
+      this.setMode("form");
     }
     // Met les données dans le formulaire
     dispatchValues(data) {
@@ -1064,6 +1095,7 @@
     }
     closeForm() {
       this.obj.classList.add("hidden");
+      this.setMode("normal");
     }
     // Tout remettre à rien (vider les champs)
     reset() {
@@ -1142,8 +1174,33 @@
     }
     // Observation du formulaire
     __observeForm() {
-      this.obj.addEventListener("focusin", this.__onFocusOnForm.bind(this));
       this.panel.keyManager.discrimineFieldsForModeIn(this.obj, { edit: "edit", normal: "form" });
+    }
+    focusField(indice) {
+      const dproperty = this.properties[indice - 1];
+      if (!dproperty) {
+        return;
+      }
+      console.log("[focusField] Focus dans le champ %i (%s)", indice, dproperty.propName, dproperty.field);
+      dproperty.field.focus();
+    }
+    // S'il y a un champ d'identifiant, cette fonction permet de le déloquer
+    toggleIdLock() {
+      const idField = this.field("id");
+      if (!idField) {
+        return;
+      }
+      let isLocked = idField.dataset.state === "locked";
+      this.setIdLock(!isLocked);
+    }
+    setIdLock(isLocked) {
+      const idField = this.field("id");
+      idField.dataset.state = isLocked ? "locked" : "unlocked";
+      idField.disabled = isLocked;
+      const btn = this.obj.querySelector(".btn-lock-id");
+      if (btn) {
+        idField.innerHTML = isLocked ? "\u{1F512}" : "\u{1F513}";
+      }
     }
     // Observation des boutons principaux
     observeButtons() {
@@ -1224,8 +1281,8 @@
     formId = "entry-form";
     prefix = "entry";
     properties = [
-      { propName: "id", type: String, required: true, fieldType: "text" },
       { propName: "entree", type: String, required: true, fieldType: "text" },
+      { propName: "id", type: String, required: true, fieldType: "text" },
       { propName: "genre", type: String, required: true, fieldType: "select", values: genres },
       { propName: "categorie_id", type: String, required: false, fieldType: "text" },
       { propName: "definition", type: String, required: false, fieldType: "textarea" }
@@ -1235,7 +1292,7 @@
       const id = this.field("id").value;
       const isNewItem = id === "";
       if (isNewItem) {
-        this.unlockId();
+        this.setIdLock(false);
       }
     }
     onSave(item) {
@@ -1253,23 +1310,7 @@
       return this.obj.querySelector("button.btn-lock-id");
     }
     onLockId() {
-      const field = this.field("id");
-      const isLocked = field.dataset.state === "locked";
-      if (isLocked) {
-        this.unlockId();
-      } else {
-        this.lockId();
-      }
-    }
-    lockId() {
-      const field = this.field("id");
-      field.dataset.state = "locked";
-      field.disabled = true;
-    }
-    unlockId() {
-      const field = this.field("id");
-      field.dataset.state = "unlocked";
-      field.disabled = false;
+      this.toggleIdLock();
     }
   };
 

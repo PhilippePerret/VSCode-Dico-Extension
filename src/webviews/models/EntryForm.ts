@@ -12,8 +12,8 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
   formId = 'entry-form';
   prefix = 'entry';
   properties: FormProperty[] = [
-    {propName: 'id', type: String, required: true, fieldType: 'text'},
     {propName: 'entree', type: String, required: true, fieldType: 'text'},
+    {propName: 'id', type: String, required: true, fieldType: 'text'},
     {propName: 'genre', type: String, required: true, fieldType: 'select', values: genres},
     {propName: 'categorie_id', type: String, required: false, fieldType: 'text'},
     {propName: 'definition', type: String, required: false, fieldType: 'textarea'}
@@ -23,10 +23,8 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
   afterEdit(): void {
     const id = this.field('id').value ;
     const isNewItem = id === '' ;
-
-    if (isNewItem) {
-      this.unlockId();
-    }
+    // Pour un nouvel item, il faut débloquer l'identifiant
+    if (isNewItem) { this.setIdLock(false); }
   }
 
   onSave(item: Entry){
@@ -43,19 +41,8 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
     this.btnLockId.addEventListener('click', this.onLockId.bind(this));
   }
   get btnLockId() { return this.obj.querySelector('button.btn-lock-id') as HTMLButtonElement; }
+
   onLockId() {
-    const field = this.field('id');
-    const isLocked = field.dataset.state === 'locked';
-    if (isLocked) { this.unlockId(); } else { this.lockId(); }
-  }
-  lockId(){
-    const field = this.field('id');
-    field.dataset.state = 'locked';
-    field.disabled = true;
-  }
-  unlockId(){
-    const field = this.field('id');
-    field.dataset.state = 'unlocked';
-    field.disabled = false;
+    this.toggleIdLock(); // méthode générique de FormManager
   }
 }

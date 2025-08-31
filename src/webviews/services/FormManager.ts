@@ -40,6 +40,10 @@ export abstract class FormManager<C, T extends ConcreteElement> {
     return this._obj || (this._obj = document.querySelector(`form#${this.formId}`) as HTMLFormElement);
   }
 
+  // raccourci
+  private setMode(mode: 'form' | 'edit' | 'normal') {
+    (this.panel as PanelClient<any, any>).keyManager.setMode(mode);
+  }
   /**
    * API
    * Point d'entrée de l'édition, on envoi l'item à éditer. La manager
@@ -52,6 +56,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
     this.openForm();
     this.dispatchValues(item.data);
     if ( 'function' === typeof this.afterEdit ) { this.afterEdit.call(this); }
+    this.setMode('form');
   }
 
   // Met les données dans le formulaire
@@ -113,7 +118,10 @@ export abstract class FormManager<C, T extends ConcreteElement> {
     if (this.checked === false) { return; }
     this.obj.classList.remove('hidden'); 
   }
-  closeForm(){ this.obj.classList.add('hidden'); }
+  closeForm(){ 
+    this.obj.classList.add('hidden'); 
+    this.setMode('normal');
+  }
   
   // Tout remettre à rien (vider les champs)
   reset(){
@@ -206,10 +214,33 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   __observeForm() { 
     // De façon générale, quand on focus dans le formulaire, on
     // active soit le mode FORM soit le mode EDIT
-    this.obj.addEventListener('focusin', this.__onFocusOnForm.bind(this));
+    // @OBSOLETE Ça ramène toujours au mode form, quoi qu'on fasse
+    // this.obj.addEventListener('focusin', this.__onFocusOnForm.bind(this));
     // On règle le changement de mode suivant qu'on focusse dans un
     // champ éditable ou qu'on en blure
     (this.panel as PanelClient<any, any>).keyManager.discrimineFieldsForModeIn(this.obj, {edit: 'edit', normal: 'form'});
+  }
+  
+  focusField(indice: number) {
+    const dproperty = this.properties[indice - 1];
+    if (!dproperty) { return; }
+    console.log("[focusField] Focus dans le champ %i (%s)", indice, dproperty.propName, dproperty.field);
+    dproperty.field.focus();
+  }
+
+  // S'il y a un champ d'identifiant, cette fonction permet de le déloquer
+  toggleIdLock() {
+    const idField = this.field('id');
+    if (!idField) { return; }
+    let isLocked = idField.dataset.state === 'locked';
+    this.setIdLock(!isLocked);
+  }
+  setIdLock(isLocked: boolean) {
+    const idField = this.field('id');
+    idField.dataset.state = isLocked ? 'locked' : 'unlocked';
+    idField.disabled = isLocked;
+    const btn = this.obj.querySelector('.btn-lock-id');
+    if (btn) { idField.innerHTML = isLocked ? '🔒' : '🔓'; }
   }
   // Observation des boutons principaux
   observeButtons(){

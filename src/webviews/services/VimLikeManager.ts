@@ -20,6 +20,7 @@ export class VimLikeManager {
   protected get mode() { return this._mode ; }
   public setMode(mode: MODES) { this.mode = mode; }
   protected set mode(mode: MODES) { // de l'extérieur, utiliser la méthode setMode 
+    console.info("[VimLikeManager mode] Mise du mode à '%s')", mode);
     this._mode = mode ;
     // Le mode détermine le capteur d'évènement
     switch(mode) {
@@ -32,12 +33,13 @@ export class VimLikeManager {
         this._keylistener = this.onKeyDownModeNormal.bind(this);
         break;
       case 'null':
-        console.log('Le panneau est en mode null (sans action');
+        console.log('Le panneau est en mode NULL (sans action');
         this._keylistener = this.onKeyDownModeNull.bind(this);
         break;
       case 'form':
         console.log("Panneau en mode FORMulaire");
-        this._keylistener = this.onKeyDownModeEdit.bind(this);
+        this._keylistener = this.onKeyDownModeForm.bind(this);
+        break;
     }
     // Indiquer dans l'interface le mode
     this.root.dataset.mode = `mode-${mode}` ;
@@ -53,7 +55,7 @@ export class VimLikeManager {
     private panel: PanelClient<any, any>, 
     private klass: typeof Entry | typeof Oeuvre | typeof Exemple,
   ) {
-    this.mode = 'normal';
+    this.mode = 'null';
     // @DEPRECATED Il faut être plus précis. Si on fait ça, dans le formulaire
     // le mode est toujours remis au mode normal et edit
     // this.root.addEventListener('focusin', this.onFocusIn.bind(this));
@@ -82,7 +84,7 @@ export class VimLikeManager {
   }
   // La méthode qui choppe normalement toutes les touches, quel que soit le mode
   universelKeyboardCapture(ev: KeyboardEvent){
-    console.log("[universel capture] Key up = ", ev.key, ev);
+    console.log("[universel capture (mode %s)] Key up = ", this.mode, ev.key, ev);
     return true;
   }
 
@@ -100,11 +102,13 @@ export class VimLikeManager {
   discrimineFieldsForModeIn(obj: HTMLElement, modes: {edit: MODES, normal: MODES}) {
     const selectors = 'input[type="text"], input[type="email"], input[type="password"], textarea, [contenteditable]';
     obj.querySelectorAll(selectors).forEach(field => {
+      console.log("Discrimination du champ ", field);
       field.addEventListener('focus', this.setMode.bind(this, modes.edit));
       field.addEventListener('blur', this.setMode.bind(this, modes.normal));
     });
   }
 
+  // Sera remplacé par la bonne méthode suivant le mode.
   onKeyDown(ev: KeyboardEvent) { 
     return this._keylistener(ev);
   }
@@ -172,10 +176,23 @@ export class VimLikeManager {
 
   // Mode clavier pour le formulaire
   onKeyDownModeForm(ev: KeyboardEvent) {
+    console.log("-> onKeyDownModeForm");
     if (ev.metaKey) { return this.onKeyDownWithMeta(ev); }
     switch (ev.key) {
-      case 'l':
-        console.log("Je dois délocker le bouton du formulaire");
+      case 'a': // focusser dans premier champ
+        this.panel.form.focusField(1); return stopEvent(ev);
+      case 'b': // focusser dans le second champ
+        this.panel.form.focusField(2); return stopEvent(ev);
+      case 'c': // focusser dans le 3e champ
+        this.panel.form.focusField(3); return stopEvent(ev);
+      case 'd': // focusser dans le 4e champ
+        this.panel.form.focusField(4); return stopEvent(ev);
+      case 'e': // focusser dans le 5e champ
+        this.panel.form.focusField(5); return stopEvent(ev);
+       case 'f': // focusser dans le 6e champ
+        this.panel.form.focusField(6); return stopEvent(ev);
+      case 'l': // Bloquer/débloquer le verrouillage de l'id
+        this.panel.form.toggleIdLock();
         break;
     }
   }
