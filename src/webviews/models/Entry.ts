@@ -75,8 +75,9 @@ const EntryPanel = new EntryPanelClass({
   minName: 'entry',
   titName: 'Entries',
   klass: Entry,
-  form: new EntryForm()
+  form: new EntryForm(),
 });
+EntryPanel.form.setPanel(EntryPanel);
 Entry.panel = EntryPanel;
 
 

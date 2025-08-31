@@ -1,10 +1,9 @@
 # Todo list
 
 * [BUG] Quand on "renonce" dans le formulaire, ça ferme complètement le panneau
-* Faire quelque chose quand on focus vraiment dans le panneau pour indiquer qu'on est bon (peut-être un troisième mode 'NULL' quand il n'y en a pas, comme au début)
+* Faire quelque chose quand on focus vraiment dans le panneau pour indiquer qu'on est bon (peut-être un troisième mode 'NULL' quand il n'y en a pas, comme au tout début)
 * Travailler l'édition
-  - le plus simple : un formulaire qui s'affiche en bas de l'écran, qui permet de régler toutes les données. 
-  - enregistrement
+  - enregistrement dans la base de données
 * Quand on clique sur un élément : ça le sélectionne
 * Bien activer le premier panneau au lancement, pour pouvoir utiliser les raccourcis tout de suite
 * Script Donnée DB -> Fichier YAML/XML

@@ -24,6 +24,7 @@ export class PanelClient<T extends Tplus, C> {
   public form!: FormManager<any, any>;
   public get isActif(): boolean { return this._actif === true ; }
   public get isInactif(): boolean { return this._actif === false ; }
+  public get keyManager(){ return this._keyManager; }
   // Pour marquer le panneau actif ou inactif
   public activate() { this.setPanelFocus(true); }
   public desactivate() { this.setPanelFocus(false); }
@@ -102,6 +103,7 @@ export class PanelClient<T extends Tplus, C> {
 
 
   // ========== PRIVATE METHODS ==============
+  // Pour la propriété public keyManager
   initKeyManager() {
     this._keyManager = new VimLikeManager(document.body as HTMLBodyElement, this, this._klass);
   }
@@ -180,11 +182,9 @@ export class PanelClient<T extends Tplus, C> {
   }
 
   private setPanelFocus(actif: boolean) {
-    console.log("[setPanelFocu] Focus mis sur le panneau %s", this.titName);
+    console.log("[setPanelFocus] Focus mis sur le panneau %s", this.titName);
     document.body.classList[actif ?'add':'remove']('actif');
     this._actif = actif ;
-    // Je tente de focusser sur le premier élément pour générer un
-    // focusin sur le body
-    (document.body.querySelector('input#search-input') as HTMLInputElement).focus();
+    this.keyManager.setMode('normal');
   }
 }

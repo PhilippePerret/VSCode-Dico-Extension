@@ -174,13 +174,15 @@
       this.panel = panel;
       this.klass = klass;
       this.mode = "normal";
-      this.root.addEventListener("focusin", this.onFocusIn.bind(this));
-      this.root.addEventListener("focusout", this.onFocusOut.bind(this));
       this.root.addEventListener("keydown", this.universelKeyboardCapture.bind(this), true);
       this.root.addEventListener("keydown", this.onKeyDown.bind(this));
-      this._keylistener = this.onKeyDownModeNormal.bind(this);
+      this._keylistener = this.onKeyDownModeNull.bind(this);
       this.searchInput = this.root.querySelector("input#search-input");
       this.consoleInput = this.root.querySelector("input#panel-console");
+      this.searchInput.addEventListener("focus", this.onFocusEditField.bind(this, this.searchInput));
+      this.searchInput.addEventListener("blur", this.onBlurEditField.bind(this, this.searchInput));
+      this.consoleInput.addEventListener("focus", this.onFocusEditField.bind(this, this.consoleInput));
+      this.consoleInput.addEventListener("blur", this.onBlurEditField.bind(this, this.consoleInput));
     }
     // 
     /**
@@ -195,6 +197,9 @@
     get mode() {
       return this._mode;
     }
+    setMode(mode) {
+      this.mode = mode;
+    }
     set mode(mode) {
       this._mode = mode;
       switch (mode) {
@@ -205,6 +210,14 @@
         case "normal":
           console.log("[VimLikeManager.mode] Passage du mode clavier au mode normal");
           this._keylistener = this.onKeyDownModeNormal.bind(this);
+          break;
+        case "null":
+          console.log("Le panneau est en mode null (sans action");
+          this._keylistener = this.onKeyDownModeNull.bind(this);
+          break;
+        case "form":
+          console.log("Panneau en mode FORMulaire");
+          this._keylistener = this.onKeyDownModeEdit.bind(this);
       }
       this.root.dataset.mode = `mode-${mode}`;
       const spanName = this.root.querySelector("span#mode-name");
@@ -212,27 +225,60 @@
     }
     searchInput;
     consoleInput;
+    onFocusEditField(field, ev) {
+      this.setMode("edit");
+    }
+    onBlurEditField(field, ev) {
+      this.setMode("normal");
+    }
+    // La méthode qui choppe normalement toutes les touches, quel que soit le mode
     universelKeyboardCapture(ev) {
       console.log("[universel capture] Key up = ", ev.key, ev);
       return true;
     }
-    onFocusIn(ev) {
-      console.log("Focus dans ", ev);
-      this.mode = this.targetEventIsEditable(ev) ? "edit" : "normal";
-      console.log("Mode apr\xE8s focus : %s", this.mode);
-    }
-    onFocusOut(ev) {
-      if (this.targetEventIsEditable(ev)) {
-        this.mode = "normal";
-      }
+    /**
+     * API
+     * Méthode de discrimination dans l'objet +obj+. Tous les champs qu'il contient
+     * qui sont des champs d'édition textuels vont faire basculer dans le mode :editMode
+     * quand ils sont focusser et le mode :normalMode (souvent 'normal') quand on va
+     * les blurer 
+     * 
+     * @param obj {HTMLElement} Bloc contenant les champs d'édition
+     * @param modes {Hash} Table définisssant :edit et :normal pour savoir le nom des
+     * modes à utiliser en édition (dans un champ éditable) et hors édition.
+     */
+    discrimineFieldsForModeIn(obj, modes) {
+      const selectors = 'input[type="text"], input[type="email"], input[type="password"], textarea, [contenteditable]';
+      obj.querySelectorAll(selectors).forEach((field) => {
+        field.addEventListener("focus", this.setMode.bind(this, modes.edit));
+        field.addEventListener("blur", this.setMode.bind(this, modes.normal));
+      });
     }
     onKeyDown(ev) {
       return this._keylistener(ev);
     }
+    /**
+     * ============ TOUS LES MODES DE CLAVIER ================
+     */
+    // Quand la touche meta est pressée, on passe toujours par là
+    onKeyDownWithMeta(ev) {
+      switch (ev.key) {
+        case "q":
+        case "Q":
+          stopEvent(ev);
+          console.log("On ne peut pas quitter comme \xE7a\u2026");
+          break;
+        case "s":
+        case "S":
+          stopEvent(ev);
+          console.log("Demande de sauvegarde forc\xE9e.");
+          break;
+      }
+    }
     onKeyDownModeNormal(ev) {
       console.log("-> VimLikeManager.onKeyDownModeNormal", ev.key, ev);
       if (ev.metaKey) {
-        return true;
+        return this.onKeyDownWithMeta(ev);
       }
       stopEvent(ev);
       switch (ev.key) {
@@ -268,6 +314,9 @@
      * champ d'édition) 
      */
     onKeyDownModeEdit(ev) {
+      if (ev.metaKey) {
+        return this.onKeyDownWithMeta(ev);
+      }
       switch (ev.key) {
         case "Tab":
           this.searchInput.blur();
@@ -275,6 +324,21 @@
           return stopEvent(ev);
       }
       return true;
+    }
+    // Mode clavier pour le formulaire
+    onKeyDownModeForm(ev) {
+      if (ev.metaKey) {
+        return this.onKeyDownWithMeta(ev);
+      }
+      switch (ev.key) {
+        case "l":
+          console.log("Je dois d\xE9locker le bouton du formulaire");
+          break;
+      }
+    }
+    onKeyDownModeNull(ev) {
+      console.error("Il faut activer un mode de clavier");
+      return stopEvent(ev);
     }
     // @return true si la cible de l'évènement +ev+ est un champ éditable
     targetEventIsEditable(ev) {
@@ -291,6 +355,9 @@
     }
     get isInactif() {
       return this._actif === false;
+    }
+    get keyManager() {
+      return this._keyManager;
     }
     // Pour marquer le panneau actif ou inactif
     activate() {
@@ -364,6 +431,7 @@
       this.observePanel();
     }
     // ========== PRIVATE METHODS ==============
+    // Pour la propriété public keyManager
     initKeyManager() {
       this._keyManager = new VimLikeManager(document.body, this, this._klass);
     }
@@ -451,10 +519,10 @@
       this.form = data.form;
     }
     setPanelFocus(actif) {
-      console.log("[setPanelFocu] Focus mis sur le panneau %s", this.titName);
+      console.log("[setPanelFocus] Focus mis sur le panneau %s", this.titName);
       document.body.classList[actif ? "add" : "remove"]("actif");
       this._actif = actif;
-      document.body.querySelector("input#search-input").focus();
+      this.keyManager.setMode("normal");
     }
   };
 
@@ -900,7 +968,8 @@
 
   // src/webviews/services/FormManager.ts
   var FormManager = class {
-    // fonction d'observation propre du formulaire
+    panel;
+    // le panneau contenant le formulaire
     // L'item qui sera travaillé ici, pour ne pas toucher l'item original
     fakeItem;
     checked = false;
@@ -917,7 +986,6 @@
      * @param item Objet Entry, Oeuvre ou Exemple à éditer/créer
      */
     editItem(item) {
-      console.log("\xC9dition de l'item", item);
       this.openForm();
       this.dispatchValues(item.data);
       if ("function" === typeof this.afterEdit) {
@@ -940,9 +1008,15 @@
     // Retourne le champ de la propriété +prop+
     // (note : ces champs ont été vérifiés au début)
     field(prop) {
-      console.log("field(%s)", prop, this.obj.querySelector(`.${this.prefix}-${prop}`));
-      return this.obj.querySelector(`.${this.prefix}-${prop}`);
+      if (false === this.domCache.has(prop)) {
+        const sel = `#${this.prefix}-${prop}`;
+        const fld = this.obj.querySelector(sel);
+        fld || console.error("Bizarrement, le champ %s est introuvable (%s)", sel, prop);
+        this.domCache.set(prop, fld);
+      }
+      return this.domCache.get(prop);
     }
+    domCache = /* @__PURE__ */ new Map();
     // Récupère les données dans le formulaire et retourne l'item
     // avec ses nouvelles données.
     collectValues() {
@@ -1009,6 +1083,15 @@
     __onCancel() {
       this.closeForm();
     }
+    __onFocusOnForm(ev) {
+      if ("function" === typeof this.onFocusForm) {
+        this.onFocusForm.call(this, ev);
+      }
+      this.panel.keyManager.setMode("form");
+    }
+    setPanel(panel) {
+      this.panel = panel;
+    }
     // === MÉTHODES DE VALIDATION DES DONNÉES D'IMPLÉMENTATION ===
     // (les données suivantes s'assurent que le formulaire est
     //  conforme aux attentes)
@@ -1026,6 +1109,7 @@
         return false;
       }
       console.info("Formulaire %s valide.", this.formId);
+      this.__observeForm();
       this.observeForm();
       this.checked = true;
     }
@@ -1044,6 +1128,12 @@
       }
       return ok;
     }
+    // Observation du formulaire
+    __observeForm() {
+      this.obj.addEventListener("focusin", this.__onFocusOnForm.bind(this));
+      this.panel.keyManager.discrimineFieldsForModeIn(this.obj, { edit: "edit", normal: "form" });
+    }
+    // Observation des boutons principaux
     observeButtons() {
       this.btnSave.addEventListener("click", this.__onSave.bind(this));
       this.btnCancel.addEventListener("click", this.__onCancel.bind(this));

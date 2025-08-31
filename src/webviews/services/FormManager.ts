@@ -1,3 +1,4 @@
+import { PanelClient } from "../PanelClient";
 
 // Type pour la définition d'une propriété
 export interface FormProperty {
@@ -26,6 +27,8 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   abstract onSave(item: T): boolean; // Fonction pour sauver (appelée quand on sauve la donnée)
   onCancel?(): void; // Fonction appelée en cas d'annulation
   abstract observeForm(): void; // fonction d'observation propre du formulaire
+  onFocusForm?(ev: FocusEvent): any;
+  private panel?: PanelClient<any, any>; // le panneau contenant le formulaire
 
   // L'item qui sera travaillé ici, pour ne pas toucher l'item original
   fakeItem?: any;
@@ -45,7 +48,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
    * @param item Objet Entry, Oeuvre ou Exemple à éditer/créer
    */
   editItem(item: T): void {
-    console.log("Édition de l'item", item);
+    // console.log("Édition de l'item", item);
     this.openForm();
     this.dispatchValues(item.data);
     if ( 'function' === typeof this.afterEdit ) { this.afterEdit.call(this); }
@@ -68,9 +71,16 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   // Retourne le champ de la propriété +prop+
   // (note : ces champs ont été vérifiés au début)
   field(prop: string): FieldType {
-    console.log("field(%s)", prop, this.obj.querySelector(`.${this.prefix}-${prop}`));
-    return this.obj.querySelector(`.${this.prefix}-${prop}`) as FieldType;
+    if ( false === this.domCache.has(prop)) {
+      const sel = `#${this.prefix}-${prop}`;
+      const fld = this.obj.querySelector(sel) as FieldType;
+      fld || console.error("Bizarrement, le champ %s est introuvable (%s)", sel, prop);
+      this.domCache.set(prop, fld);
+    }
+    return this.domCache.get(prop) as FieldType;
   }
+  domCache: Map<string, HTMLElement> = new Map();
+
   // Récupère les données dans le formulaire et retourne l'item
   // avec ses nouvelles données.
   collectValues() {
@@ -136,7 +146,13 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   __onCancel(){
     this.closeForm();
   }
-
+  __onFocusOnForm(ev: FocusEvent) {
+    if ('function' === typeof this.onFocusForm) { this.onFocusForm.call(this, ev); }
+    (this.panel as PanelClient<any, any>).keyManager.setMode('form');
+  }
+  public setPanel(panel: PanelClient<any, any>) {
+    this.panel = panel;
+  }
   // === MÉTHODES DE VALIDATION DES DONNÉES D'IMPLÉMENTATION ===
   // (les données suivantes s'assurent que le formulaire est
   //  conforme aux attentes)
@@ -166,6 +182,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
      * Observation propre de chaque formulaire (la fonction est 
      * impérativement implémenté)
      */
+    this.__observeForm();
     this.observeForm();
 
     this.checked = true;
@@ -185,6 +202,16 @@ export abstract class FormManager<C, T extends ConcreteElement> {
     }
     return ok;
   }
+  // Observation du formulaire
+  __observeForm() { 
+    // De façon générale, quand on focus dans le formulaire, on
+    // active soit le mode FORM soit le mode EDIT
+    this.obj.addEventListener('focusin', this.__onFocusOnForm.bind(this));
+    // On règle le changement de mode suivant qu'on focusse dans un
+    // champ éditable ou qu'on en blure
+    (this.panel as PanelClient<any, any>).keyManager.discrimineFieldsForModeIn(this.obj, {edit: 'edit', normal: 'form'});
+  }
+  // Observation des boutons principaux
   observeButtons(){
     this.btnSave.addEventListener('click', this.__onSave.bind(this));
     this.btnCancel.addEventListener('click', this.__onCancel.bind(this));

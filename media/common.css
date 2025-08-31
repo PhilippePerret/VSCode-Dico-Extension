@@ -32,17 +32,23 @@ body[data-mode="mode-normal"] {
 body[data-mode="mode-edit"] {
 	background-color: white;
 }
+body[data-mode="mode-null"] div#current-mode {
+	background-color: #CCCCCC;
+}
 body[data-mode="mode-normal"] div#current-mode {
 	background-color: lightgreen;
 }
 body[data-mode="mode-edit"] div#current-mode {
 	background-color: lightsalmon;
 }
+body[data-mode="mode-form"] div#current-mode { 
+	background-color: #fff769; 
+}
 footer div#current-mode {
 	display: block;
 	width: calc(100% - 16px);
-	font-size: 6pt;
-	padding: 0 8px;
+	font-size: 8pt;
+	padding: 2px 8px;
 }
 
 header {
