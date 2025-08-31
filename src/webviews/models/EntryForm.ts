@@ -27,8 +27,9 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
     if (isNewItem) { this.setIdLock(false); }
   }
 
-  onSave(item: Entry){
+  async onSave(item: Entry){
     console.log("Je dois apprendre à sauver l'entrée", item);
+    console.log("Je dois apprendre à updater l'item (plutôt en méthode générale ?)");
     return true; // quand ça a été bien enregistré
   }
 

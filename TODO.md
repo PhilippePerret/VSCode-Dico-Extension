@@ -1,8 +1,5 @@
 # Todo list
 
-* [BUG] Quand on "renonce" dans le formulaire, ça ferme complètement le panneau
-  - c'est valable en fait pour tous les boutons (problème avec 'obj' ?)
-* Faire quelque chose quand on focus vraiment dans le panneau pour indiquer qu'on est bon (peut-être un troisième mode 'NULL' quand il n'y en a pas, comme au tout début)
 * Travailler l'édition
   - enregistrement dans la base de données
 * Quand on clique sur un élément : ça le sélectionne

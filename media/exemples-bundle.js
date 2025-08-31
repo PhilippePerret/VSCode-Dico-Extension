@@ -331,6 +331,9 @@
     // Mode clavier pour le formulaire
     onKeyDownModeForm(ev) {
       console.log("-> onKeyDownModeForm");
+      if (this.panel.form.saving === true) {
+        return;
+      }
       if (ev.metaKey) {
         return this.onKeyDownWithMeta(ev);
       }
@@ -355,7 +358,11 @@
           return stopEvent(ev);
         case "l":
           this.panel.form.toggleIdLock();
-          break;
+          return stopEvent(ev);
+        case "s":
+          this.panel.form.saveItem();
+        case "Esc":
+          this.panel.form.cancelEdit();
       }
     }
     onKeyDownModeNull(ev) {
@@ -995,6 +1002,7 @@
   var FormManager = class {
     panel;
     // le panneau contenant le formulaire
+    saving = false;
     // L'item qui sera travaillé ici, pour ne pas toucher l'item original
     fakeItem;
     checked = false;
@@ -1021,6 +1029,14 @@
         this.afterEdit.call(this);
       }
       this.setMode("form");
+    }
+    async saveItem() {
+      const fakeItem = this.collectValues();
+      await this.onSave(fakeItem);
+      this.saving = false;
+    }
+    cancelEdit() {
+      this.__onCancel();
     }
     // Met les données dans le formulaire
     dispatchValues(data) {
@@ -1098,17 +1114,11 @@
         }
       });
     }
-    // Méthode appelée quand on sauve l'élément. Soit c'est une
-    // édition, soit c'est une création
-    onSaveElement() {
-      console.log("Je dois apprendre \xE0 sauver ou cr\xE9er l'\xE9l\xE9ment.");
+    async __onSave() {
+      return this.saveItem();
     }
-    __onSave() {
-      this.collectValues();
-      this.onSave(this.fakeItem);
-    }
-    __onSaveAndQuit() {
-      this.__onSave();
+    async __onSaveAndQuit() {
+      await this.saveItem();
       this.closeForm();
     }
     __onCancel() {

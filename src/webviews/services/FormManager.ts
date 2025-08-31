@@ -24,11 +24,12 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   abstract prefix: string; // utilisé pour nommer les champs
   abstract properties: FormProperty[];
   abstract afterEdit(): void; // à faire après l'édition d'un élément
-  abstract onSave(item: T): boolean; // Fonction pour sauver (appelée quand on sauve la donnée)
+  abstract onSave(item: T): Promise<boolean>; // Fonction pour sauver (appelée quand on sauve la donnée)
   onCancel?(): void; // Fonction appelée en cas d'annulation
   abstract observeForm(): void; // fonction d'observation propre du formulaire
   onFocusForm?(ev: FocusEvent): any;
   private panel?: PanelClient<any, any>; // le panneau contenant le formulaire
+  public saving: boolean = false;
 
   // L'item qui sera travaillé ici, pour ne pas toucher l'item original
   fakeItem?: any;
@@ -51,12 +52,22 @@ export abstract class FormManager<C, T extends ConcreteElement> {
    * 
    * @param item Objet Entry, Oeuvre ou Exemple à éditer/créer
    */
-  editItem(item: T): void {
+  public editItem(item: T): void {
     // console.log("Édition de l'item", item);
     this.openForm();
     this.dispatchValues(item.data);
     if ( 'function' === typeof this.afterEdit ) { this.afterEdit.call(this); }
     this.setMode('form');
+  }
+
+  public async saveItem(): Promise<void> {
+    const fakeItem = this.collectValues();
+    await this.onSave(fakeItem);
+    this.saving = false;
+  }
+
+  public cancelEdit(): void {
+    this.__onCancel();
   }
 
   // Met les données dans le formulaire
@@ -138,17 +149,11 @@ export abstract class FormManager<C, T extends ConcreteElement> {
     });
   }
 
-  // Méthode appelée quand on sauve l'élément. Soit c'est une
-  // édition, soit c'est une création
-  onSaveElement(){
-    console.log("Je dois apprendre à sauver ou créer l'élément.");
+  async __onSave(){
+    return this.saveItem();
   }
-  __onSave(){
-    this.collectValues();
-    this.onSave(this.fakeItem);
-  }
-  __onSaveAndQuit(){
-    this.__onSave();
+  async __onSaveAndQuit(): Promise<void>{
+    await this.saveItem();
     this.closeForm();
   }
   __onCancel(){

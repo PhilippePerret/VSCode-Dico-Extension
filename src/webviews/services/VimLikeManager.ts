@@ -175,6 +175,8 @@ export class VimLikeManager {
   // Mode clavier pour le formulaire
   onKeyDownModeForm(ev: KeyboardEvent) {
     console.log("-> onKeyDownModeForm");
+    // Pour empêcher toute action pendant la sauvegarde
+    if ( this.panel.form.saving === true ) { return; }
     if (ev.metaKey) { return this.onKeyDownWithMeta(ev); }
     switch (ev.key) {
       case 'a': // focusser dans premier champ
@@ -190,8 +192,11 @@ export class VimLikeManager {
        case 'f': // focusser dans le 6e champ
         this.panel.form.focusField(6); return stopEvent(ev);
       case 'l': // Bloquer/débloquer le verrouillage de l'id
-        this.panel.form.toggleIdLock();
-        break;
+        this.panel.form.toggleIdLock(); return stopEvent(ev);
+      case 's': // Sauvegarder
+        this.panel.form.saveItem();
+      case 'Esc': // Annuler
+        this.panel.form.cancelEdit();
     }
   }
   
