@@ -196,7 +196,7 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
   getObj(id: string): HTMLDivElement {
     const ak = this.getAccKeyById(id);
     if ( ! ak ) {
-      console.error("Impossible d'obtenir l'AK de l'id %s…", id, this.arrayItems);
+      console.error("Impossible d'obtenir l'AK de l'id '%s'…", id, this.arrayItems);
     }
     ak.obj || Object.assign(ak, { obj: this.DOMElementOf(id)});
     if ( ! ak.obj ) {

@@ -166,9 +166,7 @@ export class VimLikeManager {
     if ( ev.metaKey ) { return this.onKeyDownWithMeta(ev) ; }
     switch(ev.key) {
       case 'Tab': 
-        // TODO il faut voir si on est dans la champ de filtrage
-        this.searchInput.blur();
-        this.klass.selectFirstItem();
+        (ev.target as HTMLElement).blur();
         return stopEvent(ev);
     }
     return true;

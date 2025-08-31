@@ -289,7 +289,7 @@
     getObj(id) {
       const ak = this.getAccKeyById(id);
       if (!ak) {
-        console.error("Impossible d'obtenir l'AK de l'id %s\u2026", id, this.arrayItems);
+        console.error("Impossible d'obtenir l'AK de l'id '%s'\u2026", id, this.arrayItems);
       }
       ak.obj || Object.assign(ak, { obj: this.DOMElementOf(id) });
       if (!ak.obj) {
@@ -766,8 +766,7 @@
       }
       switch (ev.key) {
         case "Tab":
-          this.searchInput.blur();
-          this.klass.selectFirstItem();
+          ev.target.blur();
           return stopEvent(ev);
       }
       return true;
