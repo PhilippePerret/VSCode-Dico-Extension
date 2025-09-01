@@ -8,6 +8,7 @@
   - avec tous les contrôles possibes pour ne rien perdre
   - Pour le fichier XML, faire une DTD pour vérifier le bon format ?
 * Mener la réflexion sur les raccourcis (ci-dessous)
+* Avec un raccourci, p.e. "b" comme "backtrace" ou "l" comme "log", pouvoir afficher un panneau qui affiche les derniers messages programmes, quand on ne veut pas utiliser la console de développement.
 * Pouvoir afficher les exemples seulement avec leur entrée (pour bien voir "titre de film" + entrées traitées)
 * Quand un item est rendu invisible, si c'est l'item sélectionné du panneau, il faut le déselectionner
 * Cadenas pour verrouiller l'identifiant d'un nouveau film ou d'un nouveau mot

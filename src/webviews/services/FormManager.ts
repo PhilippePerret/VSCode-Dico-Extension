@@ -61,12 +61,23 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   }
 
   public async saveItem(): Promise<void> {
+    const map = new Map();
+    map.set('s', this.onConfirmSave.bind(this));
+    map.set('a', this.cancelEdit.bind(this));
+    (this.panel as PanelClient<any, any>).flashAction(
+      "Confirmes-tu la sauvegarde ? (s = oui, a = non)", map
+    );
+ }
+  public async onConfirmSave(): Promise<void> {
+    console.log("Sauvegarde confirmée");
     const fakeItem = this.collectValues();
     await this.onSave(fakeItem);
     this.saving = false;
   }
 
   public cancelEdit(): void {
+    console.log("Sauvegarde annulée");
+    this.saving = false;
     this.__onCancel();
   }
 

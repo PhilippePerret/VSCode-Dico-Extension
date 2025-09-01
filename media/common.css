@@ -58,9 +58,6 @@ header {
 	background-color: #CCCCCC;
 	border-bottom: 1px solid var(--vscode-sideBar-border);
 	padding: 10px;
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
 }
 
 header h2 {
@@ -76,23 +73,37 @@ header h2 {
 	z-index: -1;
 }
 
+header div#message {
+	display:block;
+	width: 100%;
+	font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+	font-size: 11pt;
+	height: 30px;
+	background-color: #DDDDDD;
+}
+header div#message div.notice {background-color:lightblue; color:blue;}
+header div#message div.action {background-color: darkorange; color: darkred;}
+header div#message div.warn {background-color: #FFEEEE; color: red;}
+header div#message div.error {background-color: red; color: white;}
+
 #search-bar {
-	display: flex;
-	flex-direction: column;
-	flex: 1;
-	margin-left: 20px;
+	margin-top: 4px;
+	display:flex;
+	margin-left: 0px;
+	gap: 4px;
+}
+#search-bar i {
+	flex:0 0 auto;
+	color: #555;
 }
 
 #search-input {
+	flex: 1 1 auto;
 	background: #FEFEFE;
 	color: #333;
 	border: 1px solid var(--vscode-input-border);
 	padding: 4px 8px;
 	font-size: 11px;
-}
-
-#search-input:before {
-	content: '🔍';
 }
 
 #search-by-div {

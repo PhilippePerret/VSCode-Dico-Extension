@@ -3,6 +3,7 @@ import { Entry } from "./models/Entry";
 import { Exemple } from "./models/Exemple";
 import { Oeuvre } from "./models/Oeuvre";
 import { AccedableItem, AccessTable } from "./services/AccessTable";
+import { stopEvent } from "./services/DomUtils";
 import { FormManager } from "./services/FormManager";
 import { VimLikeManager } from "./services/VimLikeManager";
 
@@ -28,6 +29,27 @@ export class PanelClient<T extends Tplus, C> {
   // Pour marquer le panneau actif ou inactif
   public activate() { this.setPanelFocus(true); }
   public desactivate() { this.setPanelFocus(false); }
+  // Système de messagerie
+  public flashAction(msg: string, buttons: Map<string, any>) {
+    this.flash(msg, 'action');
+    this.keyManager.keyboardBypass = buttons;
+  }
+  public flash(msg:string, type: 'notice' | 'warn' | 'error' | 'action') {
+    const o = document.createElement('div');
+    o.className = type;
+    o.innerHTML = msg;
+    (this.messageBox as HTMLDivElement).appendChild(o);
+    if ( type === 'notice' ) {
+      // TODO Temporiser le message
+      setTimeout(()=> {o.remove();}, 10 * 1000);
+    } else if ( type === 'action' ) {
+      // TODO Bloquer le message avec quelques lettres possibles seulement
+    } else {
+      // Sinon, on clique le message pour le fermer
+      o.addEventListener('click', (ev: MouseEvent) => { o.remove(); });
+    }
+  }
+  public cleanFlash(){ (this.messageBox as HTMLDivElement).innerHTML = '';}
   
   // ========== MÉTHODES D'ÉLÉMENT =============
   // La sélection, sous la forme d'identifiant de l'élément
@@ -163,6 +185,7 @@ export class PanelClient<T extends Tplus, C> {
   protected get container(){ return this._container || (this._container = document.querySelector('main#items') as HTMLDivElement);}
   private get itemTemplate(){ return this._itemTemplate || (this._itemTemplate = document.querySelector('template#item-template') as HTMLTemplateElement);}
   private get searchInput(){ return this._searchInput || (this._searchInput = document.querySelector('input#search-input') as HTMLInputElement);}
+  private get messageBox(){ return document.querySelector('div#message');}
 
   private minName:string;
   private titName: string;

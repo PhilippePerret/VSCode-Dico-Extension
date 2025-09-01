@@ -676,9 +676,17 @@
     onBlurEditField(field, ev) {
       this.setMode("normal");
     }
+    keyboardBypass;
     // La méthode qui choppe normalement toutes les touches, quel que soit le mode
     universelKeyboardCapture(ev) {
       console.log("[universel capture (mode %s)] Key up = ", this.mode, ev.key, ev);
+      if (this.keyboardBypass) {
+        if (this.keyboardBypass.has(ev.key)) {
+          console.log("Touche d\xE9tect\xE9e");
+          this.keyboardBypass.get(ev.key)();
+        }
+        return stopEvent(ev);
+      }
       return true;
     }
     /**
@@ -838,6 +846,27 @@
     desactivate() {
       this.setPanelFocus(false);
     }
+    // Système de messagerie
+    flashAction(msg, buttons) {
+      this.flash(msg, "action");
+      this.keyManager.keyboardBypass = buttons;
+    }
+    flash(msg, type) {
+      const o = document.createElement("div");
+      o.className = type;
+      o.innerHTML = msg;
+      this.messageBox.appendChild(o);
+      if (type === "notice") {
+        setTimeout(() => {
+          o.remove();
+        }, 10 * 1e3);
+      } else if (type === "action") {
+      } else {
+        o.addEventListener("click", (ev) => {
+          o.remove();
+        });
+      }
+    }
     // ========== MÉTHODES D'ÉLÉMENT =============
     // La sélection, sous la forme d'identifiant de l'élément
     selection = void 0;
@@ -973,6 +1002,9 @@
     get searchInput() {
       return this._searchInput || (this._searchInput = document.querySelector("input#search-input"));
     }
+    get messageBox() {
+      return document.querySelector("div#message");
+    }
     minName;
     titName;
     _klass;
@@ -1043,11 +1075,23 @@
       this.setMode("form");
     }
     async saveItem() {
+      const map = /* @__PURE__ */ new Map();
+      map.set("s", this.onConfirmSave.bind(this));
+      map.set("a", this.cancelEdit.bind(this));
+      this.panel.flashAction(
+        "Confirmes-tu la sauvegarde ? (s = oui, a = non)",
+        map
+      );
+    }
+    async onConfirmSave() {
+      console.log("Sauvegarde confirm\xE9e");
       const fakeItem = this.collectValues();
       await this.onSave(fakeItem);
       this.saving = false;
     }
     cancelEdit() {
+      console.log("Sauvegarde annul\xE9e");
+      this.saving = false;
       this.__onCancel();
     }
     // Met les données dans le formulaire
@@ -1306,6 +1350,7 @@
     }
     async onSave(item) {
       console.log("Je dois apprendre \xE0 sauver l'entr\xE9e", item);
+      console.log("Je dois apprendre \xE0 updater l'item (plut\xF4t en m\xE9thode g\xE9n\xE9rale ?)");
       return true;
     }
     /**

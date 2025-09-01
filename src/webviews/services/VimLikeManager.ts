@@ -82,9 +82,29 @@ export class VimLikeManager {
   onBlurEditField(field: HTMLInputElement, ev: FocusEvent ) {
     this.setMode('normal');
   }
+  keyboardBypass:Map<string, Function> | undefined;
   // La méthode qui choppe normalement toutes les touches, quel que soit le mode
-  universelKeyboardCapture(ev: KeyboardEvent){
+  /**
+   * Capteur Universel de Touche clavier
+   * 
+   * Quel que soit le mode, cette méthode reçoit les touches clavier
+   * avant tout le monde.
+   * Cela permet d'implémenter un système de "coupe-circuit" qui est
+   * utilisé par exemple pour les messages de type "action demandée".
+   * (voir le manuel pour le détail). 
+   */
+  universelKeyboardCapture(ev: KeyboardEvent) {
     console.log("[universel capture (mode %s)] Key up = ", this.mode, ev.key, ev);
+    if (this.keyboardBypass) {
+      // <= Un bypass existe (bloquant toutes les touches)
+      // => Il faut voir si la touche est connue
+      if (this.keyboardBypass.has(ev.key)) {
+        (this.keyboardBypass as Map<string, any>).get(ev.key)();
+        this.panel.cleanFlash();
+      }
+      // Dans tous les cas on bloque la touche
+      return stopEvent(ev);
+    }
     return true;
   }
 
