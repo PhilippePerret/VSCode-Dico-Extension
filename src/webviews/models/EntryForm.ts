@@ -35,6 +35,7 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
   }
 
   checkItem(item: {[x:string]: any}): string | null {
+    const isNew = item.isNew ; // TODO <==== LE PROGRAMMER (CHECKER QUAND ON DONNE LES DONNÉES, MAIS VOIR POUR L'EXEMPLE, QUI N'A PAS DE PROPRIÉTÉ ID — voir si elle n'est pas ajoutée, en fait)
     const errors: string[] = [];
     // TODO L'entrée doit être définie
     if (item.entree === '') {
@@ -48,7 +49,7 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
     // TODO L'identifiant doit être unique (si nouveau)
     // TODO La définition doit être donnée
     if ( item.definition === ''){
-      errors.push("La définition du mot doit être donné");
+      errors.push("La définition du mot doit être donnée");
     }
     // TODO Le genre doit être donné
     if ( item.genre === '') {

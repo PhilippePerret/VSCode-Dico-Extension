@@ -1546,6 +1546,27 @@
       }
     }
     checkItem(item) {
+      const errors = [];
+      if (item.entree === "") {
+        errors.push("L'entr\xE9e doit \xEAtre d\xE9finie");
+      }
+      if (item.id === "") {
+        errors.push("L'identifiant doit absoluement \xEAtre d\xE9fini");
+      }
+      if (item.definition === "") {
+        errors.push("La d\xE9finition du mot doit \xEAtre donn\xE9");
+      }
+      if (item.genre === "") {
+        errors.push("Le genre de l'entr\xE9e doit \xEAtre donn\xE9");
+      }
+      if (item.categorie_id !== "") {
+        errors.push("La cat\xE9gorie doit \xEAtre v\xE9rifi\xE9e");
+      }
+      if (errors.length === 0) {
+        return null;
+      } else {
+        return errors.join(", ").toLowerCase();
+      }
       return "Les donn\xE9es ne sont pas check\xE9s";
     }
     async onSave(item) {
