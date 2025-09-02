@@ -10,7 +10,7 @@ export class OeuvreForm extends FormManager<typeof Oeuvre, FOeuvre> {
   formId = 'oeuvre-form';
   properties: FormProperty[] = [
   ];
-  onSave(item: Oeuvre): boolean {
+  async onSave(item: Oeuvre): Promise<boolean> {
     console.log("Il faut que j'apprendre à sauver : ", item);
     return true;
   }

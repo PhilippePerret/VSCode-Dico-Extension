@@ -413,7 +413,18 @@
      */
     static get CHELPS() {
       return {
-        "start": `\xC0 tout moment, vous pouvez obtenir de l'aide contextuelle en tapen "?".`
+        "start": `Pour commencer, activer la fen\xEAtre avec \u23181.
+
+      \xC0 tout moment, vous pouvez obtenir de l'aide contextuelle en tapant "?".
+      
+      Les raccourcis de base sont les suivants :
+      
+      **s** : (comme "search") pour rechercher un \xE9l\xE9ment (par filtrage).
+      **f**/**k** : pour s\xE9lectionner d'\xE9l\xE9ment en \xE9l\xE9ment en montant et en descendant.
+      **n** : (comme "nouveau") pour cr\xE9er un nouvel \xE9l\xE9ment avant la s\xE9lection.
+      **e**: (comme "\xE9diter") pour modifier l'\xE9l\xE9ment s\xE9lectionn\xE9.
+      
+      \xC0 tout moment, taper **?** pour afficher l'aide contextuelle.`
       };
     }
     /**
@@ -450,7 +461,7 @@
       return [this.formate(content), kbb];
     }
     formate(str) {
-      return str.replace(/\*\*(.+)\*\*/g, "<b>\\1</b>").replace(/\*(.+)\*/g, "<em>\\1</em>").split("\n").map((s) => `<div>${s}</div>`).join("");
+      return str.replace(/\*\*(.+)\*\*/g, "<b>$1</b>").replace(/\*(.+)\*/g, "<em>$1</em>").split("\n").map((s) => `<div>${s}\xA0</div>`).join("");
     }
     /**
      * Affichage du texte d'aide contextuelle et mise en attente
@@ -1435,7 +1446,7 @@
     prefix = "oeuvre";
     formId = "oeuvre-form";
     properties = [];
-    onSave(item) {
+    async onSave(item) {
       console.log("Il faut que j'apprendre \xE0 sauver : ", item);
       return true;
     }

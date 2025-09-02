@@ -118,7 +118,7 @@ class ExemplePanelClass extends PanelClient<Exemple, typeof Exemple> {
   }
 
   initKeyManager() {
-    this._keyManager = new VimLikeManager(document.body, this, Exemple);
+    this._keyManager = new VimLikeManager(document.body as HTMLBodyElement, this, Exemple);
   }
 
   /**

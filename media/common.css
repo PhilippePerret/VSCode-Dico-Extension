@@ -247,13 +247,13 @@ form.item-form div.buttons button {
 
 div.aide-contextuelle {
 	z-index: 1000;
-	background-color: darkseagreen;
+	background-color: #b1e1b1;
 	border: 2px solid green;
 	box-shadow: 8px 6px 8px -2px #888;
 	padding: 2em 1em;
 	font-size: 10pt;
 	position: fixed;
-	top: 20px;
+	bottom: 40px;
 	left: 10%;
 	right: 10%;
 	min-height: 400px;

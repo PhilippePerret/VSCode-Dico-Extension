@@ -9,16 +9,18 @@ export class Help {
   static get CHELPS(): {[x: string]: any} {
     return {
     'start': 
-      `À tout moment, vous pouvez obtenir de l'aide contextuelle en tapen "?".
+      `Pour commencer, activer la fenêtre avec ⌘1.
+
+      À tout moment, vous pouvez obtenir de l'aide contextuelle en tapant "?".
       
       Les raccourcis de base sont les suivants :
       
-      s : (comme "search") pour rechercher un élément (par filtrage).
-      f/k : pour sélectionner d'élément en élément en montant et en descendant.
-      n : (comme "nouveau") pour créer un nouvel élément avant la sélection.
-      e: (comme "éditer") pour modifier l'élément sélectionné.
+      **s** : (comme "search") pour rechercher un élément (par filtrage).
+      **f**/**k** : pour sélectionner d'élément en élément en montant et en descendant.
+      **n** : (comme "nouveau") pour créer un nouvel élément avant la sélection.
+      **e**: (comme "éditer") pour modifier l'élément sélectionné.
       
-      À chaque moment, taper "?" pour afficher l'aide contextuelle.`
+      À tout moment, taper **?** pour afficher l'aide contextuelle.`
     };    
   }
   constructor(private panel: PanelClient<any, any>) {
@@ -60,9 +62,9 @@ export class Help {
 
   formate(str: string): string {
     return str
-      .replace(/\*\*(.+)\*\*/g, '<b>\\1</b>')
-      .replace(/\*(.+)\*/g, '<em>\\1</em>')
-      .split("\n").map(s => `<div>${s}</div>`).join('');
+      .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .split("\n").map(s => `<div>${s} </div>`).join('');
   }
   /**
    * Affichage du texte d'aide contextuelle et mise en attente

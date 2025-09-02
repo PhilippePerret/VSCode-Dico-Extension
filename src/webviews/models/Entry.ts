@@ -88,6 +88,12 @@ Entry.panel = EntryPanel;
 
 const RpcEntry = createRpcClient();
 
+// Evènement reçu de l'extension à l'ouverture (après l'installation 
+// complète) permettant essentiellement d'afficher la première aide.
+RpcEntry.on('start', () => {
+  setTimeout(EntryPanel.activateContextualHelp.bind(EntryPanel), 1000);
+});
+
 RpcEntry.on('activate', () => {
   if ( EntryPanel.isActif ) { return ; }
   console.log("[CLIENT ENTRY] Je dois marquer le panneau Entry actif");

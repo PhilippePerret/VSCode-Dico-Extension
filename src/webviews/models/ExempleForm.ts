@@ -10,7 +10,7 @@ export class ExempleForm extends FormManager<typeof Exemple, FExemple> {
   prefix = 'exemple';
   properties: FormProperty[] = [
   ];
-  onSave(item: Exemple): boolean {
+  async onSave(item: Exemple): Promise<boolean> {
     console.log("Il faut que j'apprendre à sauver l'exemple : ", item);
     return true;
   }

@@ -71,8 +71,7 @@ class PanelManager {
     static activatePanelEntries() {
         this.activatePanel(this._panels[0]);
         this._panels[0].panel.reveal(); // on force son activation
-        this._panels[0].panel.reveal(); // on force son activation
-        this._panels[0].panel.reveal(); // on force son activation
+        this._panels[0].rpc.notify('start');
     }
     static activatePanel(panel) {
         // panel.webview.postMessage({ command: 'activate' });

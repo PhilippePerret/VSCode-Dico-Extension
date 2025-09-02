@@ -40,7 +40,7 @@ class OeuvrePanelClass extends PanelClient<Oeuvre, typeof Oeuvre> {
   }
 
   initKeyManager() {
-    this._keyManager = new VimLikeManager(document.body, this, Oeuvre);
+    this._keyManager = new VimLikeManager(document.body as HTMLBodyElement, this, Oeuvre);
   }
 }
 
