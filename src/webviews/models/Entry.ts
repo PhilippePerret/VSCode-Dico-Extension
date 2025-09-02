@@ -43,6 +43,18 @@ export class Entry extends ClientItem<UEntry, FullEntry> {
     );
   }
 
+  /*
+      === MÉTHODES DE CHECK ===
+   */
+  // @return true si l'entrée +entree+ existe déjà
+  public static doesEntreeExist(entree: string): boolean {
+    return this.accessTable.find((item) => item.entree === entree).length > 0;
+  }
+  // @return true si l'identifiant +id+ existe déjà
+  public static doesIdExist(id: string): boolean {
+    if (this.accessTable.getById(id)) { return true; }
+    return false;
+  }
 }
 
 class EntryPanelClass extends PanelClient<Entry, typeof Entry> {

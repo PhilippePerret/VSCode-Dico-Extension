@@ -1221,11 +1221,25 @@
       this.panel.cleanFlash();
       let invalidity;
       const fakeItem = this.collectValues();
+      if (!this.originalData.id) {
+        Object.assign(fakeItem, { isNew: true });
+      }
+      const changeset = /* @__PURE__ */ new Map();
+      this.properties.forEach((dproperty) => {
+        const prop = dproperty.propName;
+        if (fakeItem[prop] !== this.originalData[prop]) {
+          changeset.set(prop, fakeItem[prop]);
+        }
+      });
+      Object.assign(fakeItem, {
+        changeset,
+        original: this.originalData
+      });
       console.log("Item \xE0 enregistrer", fakeItem);
       if (this.itemIsEmpty(fakeItem)) {
         this.panel.flash("Aucune donn\xE9e n'a \xE9t\xE9 founie\u2026", "error");
         return true;
-      } else if (this.itemNotChanged(fakeItem)) {
+      } else if (changeset.size === 0) {
         this.panel.flash("Les donn\xE9es n'ont pas chang\xE9\u2026", "warn");
         return true;
       } else if (invalidity = this.checkItem(fakeItem)) {
@@ -1251,20 +1265,6 @@
         }
       });
       return isEmpty;
-    }
-    itemNotChanged(fakeItem) {
-      console.log("-> itempNotChanged");
-      var isSame = true;
-      this.properties.forEach((dprop) => {
-        const k = dprop.propName;
-        console.log("Check de propri\xE9t\xE9 %s dans", k, fakeItem, this.originalData);
-        if (fakeItem[k] !== this.originalData[k]) {
-          isSame = false;
-        } else {
-          console.log("'%s' est \xE9gale \xE0 '%s'", fakeItem[k], this.originalData[k]);
-        }
-      });
-      return isSame;
     }
     cancelEdit() {
       console.log("Sauvegarde annul\xE9e");

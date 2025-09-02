@@ -1233,11 +1233,25 @@
       this.panel.cleanFlash();
       let invalidity;
       const fakeItem = this.collectValues();
+      if (!this.originalData.id) {
+        Object.assign(fakeItem, { isNew: true });
+      }
+      const changeset = /* @__PURE__ */ new Map();
+      this.properties.forEach((dproperty) => {
+        const prop = dproperty.propName;
+        if (fakeItem[prop] !== this.originalData[prop]) {
+          changeset.set(prop, fakeItem[prop]);
+        }
+      });
+      Object.assign(fakeItem, {
+        changeset,
+        original: this.originalData
+      });
       console.log("Item \xE0 enregistrer", fakeItem);
       if (this.itemIsEmpty(fakeItem)) {
         this.panel.flash("Aucune donn\xE9e n'a \xE9t\xE9 founie\u2026", "error");
         return true;
-      } else if (this.itemNotChanged(fakeItem)) {
+      } else if (changeset.size === 0) {
         this.panel.flash("Les donn\xE9es n'ont pas chang\xE9\u2026", "warn");
         return true;
       } else if (invalidity = this.checkItem(fakeItem)) {
@@ -1263,20 +1277,6 @@
         }
       });
       return isEmpty;
-    }
-    itemNotChanged(fakeItem) {
-      console.log("-> itempNotChanged");
-      var isSame = true;
-      this.properties.forEach((dprop) => {
-        const k = dprop.propName;
-        console.log("Check de propri\xE9t\xE9 %s dans", k, fakeItem, this.originalData);
-        if (fakeItem[k] !== this.originalData[k]) {
-          isSame = false;
-        } else {
-          console.log("'%s' est \xE9gale \xE0 '%s'", fakeItem[k], this.originalData[k]);
-        }
-      });
-      return isSame;
     }
     cancelEdit() {
       console.log("Sauvegarde annul\xE9e");
@@ -1546,15 +1546,27 @@
       }
     }
     checkItem(item) {
+      const isNew = item.isNew;
       const errors = [];
       if (item.entree === "") {
         errors.push("L'entr\xE9e doit \xEAtre d\xE9finie");
       }
+      if (item.changeset.has("entree")) {
+        const newEntree = item.changeset.get("entree");
+        console.log("L'entr\xE9e a chang\xE9 (%s/%s)", item.original.entree, newEntree);
+        if (Entry.doesEntreeExist(newEntree)) {
+          errors.push(`L'entr\xE9e "${newEntree}" existe d\xE9j\xE0\u2026`);
+        }
+      }
       if (item.id === "") {
         errors.push("L'identifiant doit absoluement \xEAtre d\xE9fini");
+      } else if (item.changeset.has("id")) {
+        if (Entry.doesIdExist(item.id)) {
+          errors.push(`L'identifiant "${item.id}" existe d\xE9j\xE0. Je ne peux le r\xE9attribuer`);
+        }
       }
       if (item.definition === "") {
-        errors.push("La d\xE9finition du mot doit \xEAtre donn\xE9");
+        errors.push("La d\xE9finition du mot doit \xEAtre donn\xE9e");
       }
       if (item.genre === "") {
         errors.push("Le genre de l'entr\xE9e doit \xEAtre donn\xE9");
@@ -1607,6 +1619,20 @@
         },
         refItem.data.id
       );
+    }
+    /*
+        === MÉTHODES DE CHECK ===
+     */
+    // @return true si l'entrée +entree+ existe déjà
+    static doesEntreeExist(entree) {
+      return this.accessTable.find((item) => item.entree === entree).length > 0;
+    }
+    // @return true si l'identifiant +id+ existe déjà
+    static doesIdExist(id) {
+      if (this.accessTable.getById(id)) {
+        return true;
+      }
+      return false;
     }
   };
   var EntryPanelClass = class extends PanelClient {

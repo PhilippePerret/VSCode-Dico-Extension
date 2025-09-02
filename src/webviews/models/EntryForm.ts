@@ -41,12 +41,23 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
     if (item.entree === '') {
       errors.push("L'entrée doit être définie");
     }
-    // TODO L'entrée doit être unique
-    // TODO L'identifiant doit être défini
+    // L'entrée doit être unique (si elle a changée)
+    if (item.changeset.has('entree')) {
+      const newEntree = item.changeset.get('entree');
+      console.log("L'entrée a changé (%s/%s)", item.original.entree, newEntree);
+      if ( Entry.doesEntreeExist(newEntree)) {
+        errors.push(`L'entrée "${newEntree}" existe déjà…`);
+      }
+    }
+    // L'identifiant doit être défini
     if (item.id === ''){
       errors.push("L'identifiant doit absoluement être défini");
+    } else if (item.changeset.has('id')) {
+      // L'identifiant doit être unique (si nouveau)
+      if (Entry.doesIdExist(item.id)) {
+        errors.push(`L'identifiant "${item.id}" existe déjà. Je ne peux le réattribuer`);
+      }
     }
-    // TODO L'identifiant doit être unique (si nouveau)
     // TODO La définition doit être donnée
     if ( item.definition === ''){
       errors.push("La définition du mot doit être donnée");

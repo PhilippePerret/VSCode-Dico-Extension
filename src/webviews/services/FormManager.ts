@@ -28,7 +28,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   private tablePropertiesByPropName!: Map<string, FormProperty>;
   abstract afterEdit(): void; // à faire après l'édition d'un élément
   abstract onSave(item: T): Promise<boolean>; // Fonction pour sauver (appelée quand on sauve la donnée)
-  abstract checkItem(item: T): string | null ; // Pour checker les données
+  abstract checkItem(item: T): string | null ; // Pour checker les données (en plus des données de l'item, contient :original (les données originales et :changeset, les données modifiées))
   onCancel?(): void; // Fonction appelée en cas d'annulation
   abstract observeForm(): void; // fonction d'observation propre du formulaire
   onFocusForm?(ev: FocusEvent): any;
@@ -81,11 +81,25 @@ export abstract class FormManager<C, T extends ConcreteElement> {
     this.panel.cleanFlash();
     let invalidity: string | null;
     const fakeItem = this.collectValues();
+    if ( !this.originalData.id ) { Object.assign(fakeItem, {isNew: true}); }
+    // Comme dans Phoenix, on fait un changeset dans fakeItem
+    const changeset: Map<string, any> = new Map();
+    this.properties.forEach(dproperty => {
+      const prop = dproperty.propName;
+      if ( fakeItem[prop] !== this.originalData[prop]) {
+       changeset.set(prop, fakeItem[prop]);
+      }
+    });
+    // On ajoute dans fakeItem le changset et les données originales
+    Object.assign(fakeItem, {
+      changeset: changeset,
+      original: this.originalData
+    });
     console.log("Item à enregistrer", fakeItem);
     if ( this.itemIsEmpty(fakeItem)) {
       this.panel.flash("Aucune donnée n'a été founie…", 'error');
       return true;
-    } else if ( this.itemNotChanged(fakeItem) ) {
+    } else if (changeset.size === 0 ) {
       this.panel.flash("Les données n'ont pas changé…", 'warn');
       return true;
     } else if ( invalidity = this.checkItem(fakeItem)) {
@@ -108,17 +122,6 @@ export abstract class FormManager<C, T extends ConcreteElement> {
       if ( fakeItem[dprop.propName] !== '' ) { isEmpty = false; }
     });
     return isEmpty;
-  }
-  private itemNotChanged(fakeItem: T): boolean {
-    console.log("-> itempNotChanged");
-    var isSame = true ;
-    this.properties.forEach(dprop => {
-      const k = dprop.propName;
-      console.log("Check de propriété %s dans", k, fakeItem, this.originalData);
-      if (fakeItem[k] !== this.originalData[k]) { isSame = false ;}
-      else { console.log("'%s' est égale à '%s'", fakeItem[k], this.originalData[k]);}
-    });
-    return isSame;
   }
 
   public cancelEdit(): void {
