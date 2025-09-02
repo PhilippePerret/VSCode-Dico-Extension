@@ -663,7 +663,7 @@
       return [this.formate(content), kbb];
     }
     formate(str) {
-      return str.replace(/\*\*(.+)\*\*/g, "<b>$1</b>").replace(/\*(.+)\*/g, "<em>$1</em>").split("\n").map((s) => `<div>${s}\xA0</div>`).join("");
+      return str.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\*(.+?)\*/g, "<em>$1</em>").split("\n").map((s) => `<div>${s}\xA0</div>`).join("");
     }
     /**
      * Affichage du texte d'aide contextuelle et mise en attente
@@ -1327,6 +1327,7 @@
       if (false === this.checkBoutonsValidity()) {
         return false;
       }
+      this.inscritAideInFooter();
       this.observeButtons();
       if (false === this.checkPropertiesValidity()) {
         return false;
@@ -1336,19 +1337,12 @@
       this.observeForm();
       this.checked = true;
     }
+    inscritAideInFooter() {
+      let aide = "<shortcut>Esc</shortcut> : Renoncer | <shortcut>s</shortcut> : Enregistrer | <shortcut>x</shortcut> : Enregistre et finir";
+      this.obj.querySelector("footer").innerHTML = aide;
+    }
     checkBoutonsValidity() {
       let ok = true;
-      if (this.btnSave) {
-        if ("function" !== typeof this.onSave) {
-          console.error("Il faut d\xE9finir la m\xE9thode onSave(item): boolean");
-        }
-      } else {
-        console.error("Le formulaire devrait contenir un bouton de class btn-save.");
-        ok = false;
-      }
-      if (!this.btnCancel) {
-        console.error('Le formulaire doit contenir un bouton pour annuler (class "btn-cancel")');
-      }
       return ok;
     }
     // Observation du formulaire
@@ -1383,18 +1377,6 @@
     }
     // Observation des boutons principaux
     observeButtons() {
-      this.btnSave.addEventListener("click", this.__onSave.bind(this));
-      this.btnCancel.addEventListener("click", this.__onCancel.bind(this));
-      this.btnSaveNQuit && this.btnSaveNQuit.addEventListener("click", this.__onSaveAndQuit.bind(this));
-    }
-    get btnSave() {
-      return this.obj.querySelector("button.btn-save");
-    }
-    get btnCancel() {
-      return this.obj.querySelector("button.btn-cancel");
-    }
-    get btnSaveNQuit() {
-      return this.obj.querySelector("button.btn-save-and-quit");
     }
     checkPropertiesValidity() {
       let ok = true;
@@ -1548,7 +1530,7 @@
   Entry.panel = EntryPanel;
   var RpcEntry = createRpcClient();
   RpcEntry.on("start", () => {
-    setTimeout(EntryPanel.activateContextualHelp.bind(EntryPanel), 2e3);
+    setTimeout(EntryPanel.activateContextualHelp.bind(EntryPanel), 1e3);
   });
   RpcEntry.on("activate", () => {
     if (EntryPanel.isActif) {

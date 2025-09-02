@@ -20,7 +20,19 @@ export class Help {
       **n** : (comme "nouveau") pour créer un nouvel élément avant la sélection.
       **e**: (comme "éditer") pour modifier l'élément sélectionné.
       
-      À tout moment, taper **?** pour afficher l'aide contextuelle.`
+      À tout moment, taper **?** pour afficher l'aide contextuelle.`,
+      
+
+      'create-element': `
+      ## Création d'un élément
+      
+      Vous pouvez vous déplacer de champ en champ avec les touches <shortcut>a</shortcut>, <shortcut>b</shortcut>, etc. ou la touche tabulation.`,
+      
+
+      'edit-element': `
+      ## Édition d'un élément
+      
+      Vous pouvez aller de champ en champ avec les touches etc.`,
     };    
   }
   constructor(private panel: PanelClient<any, any>) {

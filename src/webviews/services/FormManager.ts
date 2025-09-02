@@ -28,7 +28,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   onCancel?(): void; // Fonction appelée en cas d'annulation
   abstract observeForm(): void; // fonction d'observation propre du formulaire
   onFocusForm?(ev: FocusEvent): any;
-  private panel?: PanelClient<any, any>; // le panneau contenant le formulaire
+  private panel!: PanelClient<any, any>; // le panneau contenant le formulaire
   public saving: boolean = false;
 
   // L'item qui sera travaillé ici, pour ne pas toucher l'item original
@@ -43,7 +43,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
 
   // raccourci
   private setMode(mode: 'form' | 'edit' | 'normal') {
-    (this.panel as PanelClient<any, any>).keyManager.setMode(mode);
+    this.panel.keyManager.setMode(mode);
   }
   /**
    * API
@@ -58,13 +58,14 @@ export abstract class FormManager<C, T extends ConcreteElement> {
     this.dispatchValues(item.data);
     if ( 'function' === typeof this.afterEdit ) { this.afterEdit.call(this); }
     this.setMode('form');
+    this.panel.context = item.data.id === '' ? 'create-element' : 'edit-element';
   }
 
   public async saveItem(): Promise<void> {
     const map = new Map();
     map.set('s', this.onConfirmSave.bind(this));
     map.set('a', this.cancelEdit.bind(this));
-    (this.panel as PanelClient<any, any>).flashAction(
+    this.panel.flashAction(
       "Confirmes-tu la sauvegarde ? (s = oui, a = non)", map
     );
  }
@@ -190,6 +191,10 @@ export abstract class FormManager<C, T extends ConcreteElement> {
      * Check de la conformité des boutons et leurs méthodes
      */
     if (false === this.checkBoutonsValidity()) { return false; }
+    /**
+     * On inscrit les aides raccourcis clavier dans le footer
+     */
+    this.inscritAideInFooter();
      /**
      * Observation des boutons principaux
      */
@@ -211,19 +216,13 @@ export abstract class FormManager<C, T extends ConcreteElement> {
 
     this.checked = true;
   }
+  inscritAideInFooter(){
+    let aide = '<shortcut>q</shortcut> : Renoncer | <shortcut>s</shortcut> : Enregistrer | <shortcut>sq</shortcut> : Enregistre et finir';
+    (this.obj.querySelector('footer') as HTMLElement).innerHTML = aide;
+  }
   checkBoutonsValidity(): boolean {
     let ok = true;
-    if ( this.btnSave ) {
-      if ( 'function' !== typeof this.onSave) {
-        console.error('Il faut définir la méthode onSave(item): boolean');
-      }
-    } else {
-      console.error("Le formulaire devrait contenir un bouton de class btn-save.");
-      ok = false;
-    }
-    if ( ! this.btnCancel) {
-      console.error('Le formulaire doit contenir un bouton pour annuler (class "btn-cancel")');
-    }
+    // Note : les boutons généraux (Save, Renoncer, etc. on été supprimés au profit des raccourcis clavier)
     return ok;
   }
   // Observation du formulaire
@@ -260,13 +259,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   }
   // Observation des boutons principaux
   observeButtons(){
-    this.btnSave.addEventListener('click', this.__onSave.bind(this));
-    this.btnCancel.addEventListener('click', this.__onCancel.bind(this));
-    this.btnSaveNQuit && this.btnSaveNQuit.addEventListener('click', this.__onSaveAndQuit.bind(this));
   }
-  get btnSave(){return this.obj.querySelector('button.btn-save') as HTMLButtonElement;}
-  get btnCancel(){return this.obj.querySelector('button.btn-cancel') as HTMLButtonElement;}
-  get btnSaveNQuit(){return this.obj.querySelector('button.btn-save-and-quit') as HTMLButtonElement;}
 
   checkPropertiesValidity(): boolean {
     let ok = true ;
