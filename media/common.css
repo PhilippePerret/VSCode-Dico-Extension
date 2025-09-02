@@ -8,10 +8,19 @@ button.simple {
 shortcut {
 	font-family: Arial, Helvetica, sans-serif;
 	font-weight: bold;
-	font-size: inherit;
-}
-
-body {
+	font-size: 8pt;    
+	border: 1px solid;
+	padding: 0px 4px 2px;
+	border-radius: 3px;
+	}
+	/* Dans les formulaires (a, b, c, etc. */
+	form label shortcut {
+		float: right;
+    margin-right: 4px;
+    margin-top: 1px;
+	}
+	
+	body {
 	border: 1px solid;
 	font-family: Charter;
 	background-color: whitesmoke;
@@ -221,7 +230,7 @@ form.item-form > div {
 	vertical-align: top;
 }
 form.item-form > div > label {
-	width: 70px;
+	width: 90px;
 	flex: 0 0 auto;
 	font-family: 'Arial Narrow', Arial, Helvetica, sans-serif;
 	font-weight: bold;

@@ -386,9 +386,14 @@
           this.panel.form.toggleIdLock();
           return stopEvent(ev);
         case "s":
-          this.panel.form.saveItem();
-        case "Esc":
+          this.panel.form.saveItem(false);
+          return stopEvent(ev);
+        case "w":
+          this.panel.form.saveItem(true);
+          return stopEvent(ev);
+        case "q":
           this.panel.form.cancelEdit();
+          return stopEvent(ev);
       }
     }
     onKeyDownModeNull(ev) {
@@ -867,7 +872,15 @@
       **n** : (comme "nouveau") pour cr\xE9er un nouvel \xE9l\xE9ment avant la s\xE9lection.
       **e**: (comme "\xE9diter") pour modifier l'\xE9l\xE9ment s\xE9lectionn\xE9.
       
-      \xC0 tout moment, taper **?** pour afficher l'aide contextuelle.`
+      \xC0 tout moment, taper **?** pour afficher l'aide contextuelle.`,
+        "create-element": `
+      ## Cr\xE9ation d'un \xE9l\xE9ment
+      
+      Vous pouvez vous d\xE9placer de champ en champ avec les touches <shortcut>a</shortcut>, <shortcut>b</shortcut>, etc. ou la touche tabulation.`,
+        "edit-element": `
+      ## \xC9dition d'un \xE9l\xE9ment
+      
+      Vous pouvez aller de champ en champ avec les touches etc.`
       };
     }
     /**
@@ -1187,21 +1200,25 @@
         this.afterEdit.call(this);
       }
       this.setMode("form");
+      this.panel.context = item.data.id === "" ? "create-element" : "edit-element";
     }
-    async saveItem() {
+    async saveItem(andQuit) {
       const map = /* @__PURE__ */ new Map();
-      map.set("s", this.onConfirmSave.bind(this));
-      map.set("a", this.cancelEdit.bind(this));
+      map.set("o", this.onConfirmSave.bind(this, andQuit));
+      map.set("n", this.cancelEdit.bind(this));
       this.panel.flashAction(
-        "Confirmes-tu la sauvegarde ? (s = oui, a = non)",
+        "Confirmes-tu la sauvegarde ? (o = oui, n = non)",
         map
       );
     }
-    async onConfirmSave() {
+    async onConfirmSave(andQuit) {
       console.log("Sauvegarde confirm\xE9e");
       const fakeItem = this.collectValues();
       await this.onSave(fakeItem);
       this.saving = false;
+      if (andQuit) {
+        this.closeForm();
+      }
     }
     cancelEdit() {
       console.log("Sauvegarde annul\xE9e");
@@ -1285,11 +1302,10 @@
       });
     }
     async __onSave() {
-      return this.saveItem();
+      return this.saveItem(false);
     }
     async __onSaveAndQuit() {
-      await this.saveItem();
-      this.closeForm();
+      await this.saveItem(true);
     }
     __onCancel() {
       this.closeForm();
@@ -1326,7 +1342,7 @@
       this.checked = true;
     }
     inscritAideInFooter() {
-      let aide = "<shortcut>Esc</shortcut> : Renoncer | <shortcut>s</shortcut> : Enregistrer | <shortcut>x</shortcut> : Enregistre et finir";
+      let aide = "<shortcut>q</shortcut> : Renoncer | <shortcut>s</shortcut> : Enregistrer | <shortcut>w</shortcut> : Enregistrer et finir";
       this.obj.querySelector("footer").innerHTML = aide;
     }
     checkBoutonsValidity() {
@@ -1368,11 +1384,15 @@
     }
     checkPropertiesValidity() {
       let ok = true;
+      const lettres = "abcdefghijkl".split("").reverse();
       this.properties.forEach((dproperty) => {
         const prop = dproperty.propName;
         const prefix = this.prefix;
         const prefprop = `${prefix}-${prop}`;
         const container = this.obj.querySelector(`#${prefprop}-container`);
+        const label = container.querySelector("label");
+        const shortcut = "<shortcut>" + lettres.pop() + "</shortcut>\xA0";
+        label.innerHTML = shortcut + label.innerHTML;
         if (container) {
           Object.assign(dproperty, { container });
         } else {

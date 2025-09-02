@@ -61,19 +61,21 @@ export abstract class FormManager<C, T extends ConcreteElement> {
     this.panel.context = item.data.id === '' ? 'create-element' : 'edit-element';
   }
 
-  public async saveItem(): Promise<void> {
+  public async saveItem(andQuit: boolean): Promise<void> {
     const map = new Map();
-    map.set('s', this.onConfirmSave.bind(this));
-    map.set('a', this.cancelEdit.bind(this));
+    map.set('o', this.onConfirmSave.bind(this, andQuit));
+    map.set('n', this.cancelEdit.bind(this));
     this.panel.flashAction(
-      "Confirmes-tu la sauvegarde ? (s = oui, a = non)", map
+      "Confirmes-tu la sauvegarde ? (o = oui, n = non)", map
     );
- }
-  public async onConfirmSave(): Promise<void> {
+  }
+
+  public async onConfirmSave(andQuit: boolean): Promise<void> {
     console.log("Sauvegarde confirmée");
     const fakeItem = this.collectValues();
     await this.onSave(fakeItem);
     this.saving = false;
+    if (andQuit) { this.closeForm(); }
   }
 
   public cancelEdit(): void {
@@ -162,11 +164,10 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   }
 
   async __onSave(){
-    return this.saveItem();
+    return this.saveItem(false);
   }
   async __onSaveAndQuit(): Promise<void>{
-    await this.saveItem();
-    this.closeForm();
+    await this.saveItem(true);
   }
   __onCancel(){
     this.closeForm();
@@ -217,7 +218,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
     this.checked = true;
   }
   inscritAideInFooter(){
-    let aide = '<shortcut>q</shortcut> : Renoncer | <shortcut>s</shortcut> : Enregistrer | <shortcut>sq</shortcut> : Enregistre et finir';
+    let aide = '<shortcut>q</shortcut> : Renoncer | <shortcut>s</shortcut> : Enregistrer | <shortcut>w</shortcut> : Enregistrer et finir';
     (this.obj.querySelector('footer') as HTMLElement).innerHTML = aide;
   }
   checkBoutonsValidity(): boolean {
@@ -263,12 +264,16 @@ export abstract class FormManager<C, T extends ConcreteElement> {
 
   checkPropertiesValidity(): boolean {
     let ok = true ;
-    this.properties.forEach( dproperty => {
+    const lettres = 'abcdefghijkl'.split('').reverse();
+    this.properties.forEach( (dproperty) => {
       const prop = dproperty.propName;
       const prefix = this.prefix;
       const prefprop = `${prefix}-${prop}`;
       // Chaque propriété doit avoir son conteneur de nom '<propName>-container'
       const container = this.obj.querySelector(`#${prefprop}-container`);
+      const label = ((container as HTMLElement).querySelector('label') as HTMLElement);
+      const shortcut = '<shortcut>' + lettres.pop() + '</shortcut> ';
+      label.innerHTML = shortcut + label.innerHTML;
       if ( container ) {
         Object.assign(dproperty, {container: container});
       } else {

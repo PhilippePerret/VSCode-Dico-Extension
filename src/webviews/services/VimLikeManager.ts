@@ -232,7 +232,9 @@ export class VimLikeManager {
       case 'l': // Bloquer/débloquer le verrouillage de l'id
         this.panel.form.toggleIdLock(); return stopEvent(ev);
       case 's': // Sauvegarder
-        this.panel.form.saveItem(); return stopEvent(ev);
+        this.panel.form.saveItem(false); return stopEvent(ev);
+      case 'w': // 
+        this.panel.form.saveItem(true); return stopEvent(ev);
       case 'q': // Annuler
         this.panel.form.cancelEdit(); return stopEvent(ev);
     }
