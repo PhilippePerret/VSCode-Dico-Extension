@@ -1171,8 +1171,10 @@
 
   // src/webviews/services/FormManager.ts
   var FormManager = class {
+    tablePropertiesByPropName;
     panel;
     // le panneau contenant le formulaire
+    originalData;
     saving = false;
     // L'item qui sera travaillé ici, pour ne pas toucher l'item original
     fakeItem;
@@ -1194,6 +1196,7 @@
      * @param item Objet Entry, Oeuvre ou Exemple à éditer/créer
      */
     editItem(item) {
+      this.originalData = item.data;
       this.openForm();
       this.dispatchValues(item.data);
       if ("function" === typeof this.afterEdit) {
@@ -1204,12 +1207,32 @@
     }
     async saveItem(andQuit) {
       const map = /* @__PURE__ */ new Map();
+      if (this.itemIsNotSavable()) {
+        return;
+      }
       map.set("o", this.onConfirmSave.bind(this, andQuit));
       map.set("n", this.cancelEdit.bind(this));
       this.panel.flashAction(
         "Confirmes-tu la sauvegarde ? (o = oui, n = non)",
         map
       );
+    }
+    itemIsNotSavable() {
+      this.panel.cleanFlash();
+      let invalidity;
+      const fakeItem = this.collectValues();
+      console.log("Item \xE0 enregistrer", fakeItem);
+      if (this.itemIsEmpty(fakeItem)) {
+        this.panel.flash("Aucune donn\xE9e n'a \xE9t\xE9 founie\u2026", "error");
+        return true;
+      } else if (this.itemNotChanged(fakeItem)) {
+        this.panel.flash("Les donn\xE9es n'ont pas chang\xE9\u2026", "warn");
+        return true;
+      } else if (invalidity = this.checkItem(fakeItem)) {
+        this.panel.flash("Les donn\xE9es sont invalides : " + invalidity, "error");
+        return true;
+      }
+      return false;
     }
     async onConfirmSave(andQuit) {
       console.log("Sauvegarde confirm\xE9e");
@@ -1219,6 +1242,29 @@
       if (andQuit) {
         this.closeForm();
       }
+    }
+    itemIsEmpty(fakeItem) {
+      var isEmpty = true;
+      this.properties.forEach((dprop) => {
+        if (fakeItem[dprop.propName] !== "") {
+          isEmpty = false;
+        }
+      });
+      return isEmpty;
+    }
+    itemNotChanged(fakeItem) {
+      console.log("-> itempNotChanged");
+      var isSame = true;
+      this.properties.forEach((dprop) => {
+        const k = dprop.propName;
+        console.log("Check de propri\xE9t\xE9 %s dans", k, fakeItem, this.originalData);
+        if (fakeItem[k] !== this.originalData[k]) {
+          isSame = false;
+        } else {
+          console.log("'%s' est \xE9gale \xE0 '%s'", fakeItem[k], this.originalData[k]);
+        }
+      });
+      return isSame;
     }
     cancelEdit() {
       console.log("Sauvegarde annul\xE9e");
@@ -1261,7 +1307,18 @@
       });
       return this.fakeItem;
     }
-    getValueOf(property) {
+    getValueOf(foo) {
+      if ("string" === typeof foo) {
+        return this.getValueOfByPropName(foo);
+      } else {
+        return this.getValueOfByPropData(foo);
+      }
+    }
+    getValueOfByPropName(propName) {
+      const propData = this.tablePropertiesByPropName.get(propName);
+      return this.getValueOfByPropData(propData);
+    }
+    getValueOfByPropData(property) {
       const prop = property.propName;
       const field = this.field(prop);
       let value = ((ft) => {
@@ -1385,8 +1442,10 @@
     checkPropertiesValidity() {
       let ok = true;
       const lettres = "abcdefghijkl".split("").reverse();
+      this.tablePropertiesByPropName = /* @__PURE__ */ new Map();
       this.properties.forEach((dproperty) => {
         const prop = dproperty.propName;
+        this.tablePropertiesByPropName.set(prop, dproperty);
         const prefix = this.prefix;
         const prefprop = `${prefix}-${prop}`;
         const container = this.obj.querySelector(`#${prefprop}-container`);
@@ -1417,6 +1476,9 @@
               propField = propField;
           }
           Object.assign(dproperty, { field: propField });
+          if (dproperty.onChange) {
+            propField.addEventListener("change", dproperty.onChange);
+          }
         } else {
           console.error("Le champ %s pour la propri\xE9t\xE9 %s devrait exister.", fieldSelector, prop);
           ok = false;
@@ -1451,6 +1513,9 @@
     async onSave(item) {
       console.log("Il faut que j'apprendre \xE0 sauver : ", item);
       return true;
+    }
+    checkItem(item) {
+      return "Les donn\xE9es ne sont pas check\xE9s";
     }
     observeForm() {
     }

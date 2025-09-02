@@ -15,6 +15,10 @@ export class OeuvreForm extends FormManager<typeof Oeuvre, FOeuvre> {
     return true;
   }
 
+  checkItem(item: Oeuvre): string | null {
+    return 'Les données ne sont pas checkés';
+  }
+
   observeForm(): void {
     // TODO
   }

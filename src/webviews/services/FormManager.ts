@@ -1,3 +1,4 @@
+import { findPackageJSON } from "module";
 import { PanelClient } from "../PanelClient";
 
 // Type pour la définition d'une propriété
@@ -9,6 +10,7 @@ export interface FormProperty {
   field?: any; // renseigné à la vérificatiaon
   values?: string[][];
   default?: any;
+  onChange?(): void; // la fonction optionnelle à appeler en cas de changement de cette propriété
 }
 
 interface ConcreteElement {
@@ -23,12 +25,15 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   abstract formId: string; // Identifiant unique du formulaire
   abstract prefix: string; // utilisé pour nommer les champs
   abstract properties: FormProperty[];
+  private tablePropertiesByPropName!: Map<string, FormProperty>;
   abstract afterEdit(): void; // à faire après l'édition d'un élément
   abstract onSave(item: T): Promise<boolean>; // Fonction pour sauver (appelée quand on sauve la donnée)
+  abstract checkItem(item: T): string | null ; // Pour checker les données
   onCancel?(): void; // Fonction appelée en cas d'annulation
   abstract observeForm(): void; // fonction d'observation propre du formulaire
   onFocusForm?(ev: FocusEvent): any;
   private panel!: PanelClient<any, any>; // le panneau contenant le formulaire
+  private originalData!: {[x: string]: any};
   public saving: boolean = false;
 
   // L'item qui sera travaillé ici, pour ne pas toucher l'item original
@@ -54,6 +59,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
    */
   public editItem(item: T): void {
     // console.log("Édition de l'item", item);
+    this.originalData = item.data;
     this.openForm();
     this.dispatchValues(item.data);
     if ( 'function' === typeof this.afterEdit ) { this.afterEdit.call(this); }
@@ -63,6 +69,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
 
   public async saveItem(andQuit: boolean): Promise<void> {
     const map = new Map();
+    if ( this.itemIsNotSavable() ) { return ;}
     map.set('o', this.onConfirmSave.bind(this, andQuit));
     map.set('n', this.cancelEdit.bind(this));
     this.panel.flashAction(
@@ -70,12 +77,48 @@ export abstract class FormManager<C, T extends ConcreteElement> {
     );
   }
 
+  private itemIsNotSavable(): boolean {
+    this.panel.cleanFlash();
+    let invalidity: string | null;
+    const fakeItem = this.collectValues();
+    console.log("Item à enregistrer", fakeItem);
+    if ( this.itemIsEmpty(fakeItem)) {
+      this.panel.flash("Aucune donnée n'a été founie…", 'error');
+      return true;
+    } else if ( this.itemNotChanged(fakeItem) ) {
+      this.panel.flash("Les données n'ont pas changé…", 'warn');
+      return true;
+    } else if ( invalidity = this.checkItem(fakeItem)) {
+      this.panel.flash("Les données sont invalides : " + invalidity, 'error');
+      return true;
+    }
+    return false; // enregistrable
+  }
+
   public async onConfirmSave(andQuit: boolean): Promise<void> {
     console.log("Sauvegarde confirmée");
     const fakeItem = this.collectValues();
-    await this.onSave(fakeItem);
+   await this.onSave(fakeItem);
     this.saving = false;
     if (andQuit) { this.closeForm(); }
+  }
+  private itemIsEmpty(fakeItem: T): boolean {
+    var isEmpty = true;
+    this.properties.forEach(dprop => {
+      if ( fakeItem[dprop.propName] !== '' ) { isEmpty = false; }
+    });
+    return isEmpty;
+  }
+  private itemNotChanged(fakeItem: T): boolean {
+    console.log("-> itempNotChanged");
+    var isSame = true ;
+    this.properties.forEach(dprop => {
+      const k = dprop.propName;
+      console.log("Check de propriété %s dans", k, fakeItem, this.originalData);
+      if (fakeItem[k] !== this.originalData[k]) { isSame = false ;}
+      else { console.log("'%s' est égale à '%s'", fakeItem[k], this.originalData[k]);}
+    });
+    return isSame;
   }
 
   public cancelEdit(): void {
@@ -123,7 +166,19 @@ export abstract class FormManager<C, T extends ConcreteElement> {
     return this.fakeItem;
   }
 
-  getValueOf(property: FormProperty): string | number | boolean | null {
+  getValueOf(foo: string | FormProperty): string | number | boolean | null {
+    if ( 'string' === typeof foo ) {
+      return this.getValueOfByPropName(foo);
+    } else {
+      return this.getValueOfByPropData(foo);
+    }
+  }
+
+  getValueOfByPropName(propName: string) {
+    const propData = this.tablePropertiesByPropName.get(propName) as FormProperty;
+    return this.getValueOfByPropData(propData);
+  }
+  getValueOfByPropData(property: FormProperty): string | number | boolean | null {
     const prop = property.propName;
     const field = this.field(prop);
     // Récupérer la valeur dans le formulaire (en fonction du champ)
@@ -265,8 +320,13 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   checkPropertiesValidity(): boolean {
     let ok = true ;
     const lettres = 'abcdefghijkl'.split('').reverse();
+    // On va en profiter pour mettre les données des propriétés dans
+    // une table pour les récupérer facilement
+    this.tablePropertiesByPropName = new Map();
+
     this.properties.forEach( (dproperty) => {
       const prop = dproperty.propName;
+      this.tablePropertiesByPropName.set(prop, dproperty);
       const prefix = this.prefix;
       const prefprop = `${prefix}-${prop}`;
       // Chaque propriété doit avoir son conteneur de nom '<propName>-container'
@@ -292,6 +352,15 @@ export abstract class FormManager<C, T extends ConcreteElement> {
           default: propField = propField as HTMLInputElement;
         }
         Object.assign(dproperty, { field: propField });
+
+        /**
+         * S'il faut observer le champ (si par exemple onChange est défini), alors
+         * l'observer
+         */
+        if ( dproperty.onChange ) {
+          propField.addEventListener('change', dproperty.onChange);
+        }
+
       } else {
         console.error('Le champ %s pour la propriété %s devrait exister.', fieldSelector, prop);
         ok = false;

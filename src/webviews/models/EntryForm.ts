@@ -12,19 +12,37 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
   formId = 'entry-form';
   prefix = 'entry';
   properties: FormProperty[] = [
-    {propName: 'entree', type: String, required: true, fieldType: 'text'},
+    {propName: 'entree', type: String, required: true, fieldType: 'text', onChange: this.onChangeEntree.bind(this)},
     {propName: 'id', type: String, required: true, fieldType: 'text'},
     {propName: 'genre', type: String, required: true, fieldType: 'select', values: genres},
     {propName: 'categorie_id', type: String, required: false, fieldType: 'text'},
     {propName: 'definition', type: String, required: false, fieldType: 'textarea'}
   ];
 
+  onChangeEntree() {
+    console.log("Le champ Entrée a changé");
+    const itemIsNew = this.getValueOf('id') === '';
+    if ( itemIsNew ) {
+      console.log("C'est un nouvel item, il faut calculer son ID d'après son entrée.");
+    }
+  }
   // À faire après l'édition d'une Entrée
   afterEdit(): void {
     const id = this.field('id').value ;
     const isNewItem = id === '' ;
     // Pour un nouvel item, il faut débloquer l'identifiant
     if (isNewItem) { this.setIdLock(false); }
+  }
+
+  checkItem(item: Entry): string | null {
+    // TODO L'entrée doit être définie
+    // TODO L'entrée doit être unique
+    // TODO L'identifiant doit être défini
+    // TODO L'identifiant doit être unique (si nouveau)
+    // TODO La définition doit être donnée
+    // TODO Le genre doit être donné
+    // TODO Si la catégorie existe, elle doit exister
+    return 'Les données ne sont pas checkés';
   }
 
   async onSave(item: Entry){
