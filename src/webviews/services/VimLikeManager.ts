@@ -89,20 +89,38 @@ export class VimLikeManager {
    * 
    * Quel que soit le mode, cette méthode reçoit les touches clavier
    * avant tout le monde.
-   * Cela permet d'implémenter un système de "coupe-circuit" qui est
-   * utilisé par exemple pour les messages de type "action demandée".
-   * (voir le manuel pour le détail). 
+
+   * Cela permet : 
+   *    - d'implémenter un système de "coupe-circuit" qui est
+   *      utilisé par exemple pour les messages de type "action 
+   *      demandée". (voir le manuel pour le détail). 
+   *    - d'implémenter la gestion de touche "?" qui permet, quelle
+   *      que soit la situation, d'obtenir de l'aide.
    */
   universelKeyboardCapture(ev: KeyboardEvent) {
     console.log("[universel capture (mode %s)] Key up = ", this.mode, ev.key, ev);
-    if (this.keyboardBypass) {
+
+    if ( ev.key === '?' ) {
+      // <= L'user a tapé la touche '?'
+      // => On doit afficher l'aide circonstantielle (voir le manuel)
+      //    (même quand on est dans l'ide circonstantielle)
+      this.panel.activateContextualHelp();
+      return stopEvent(ev); 
+    } else if (this.keyboardBypass) {
       // <= Un bypass existe (bloquant toutes les touches)
       // => Il faut voir si la touche est connue
       if (this.keyboardBypass.has(ev.key)) {
-        (this.keyboardBypass as Map<string, any>).get(ev.key)();
+        /* Ici, c'est un peu compliqué, car il faut détruit le bypass
+         * avant de jouer la méthode car cette méthode pourrait
+         * redéfinir un autre coupe-circuit à prendre ne compte
+         */
+        const methodBypass = (this.keyboardBypass as Map<string, any>).get(ev.key);
+        delete this.keyboardBypass;
+        methodBypass(); 
         this.panel.cleanFlash();
       }
-      // Dans tous les cas on bloque la touche
+      // Dans tous les cas on bloque la touche et on supprime la
+      // coupe-circuit clavier
       return stopEvent(ev);
     }
     return true;

@@ -5,6 +5,7 @@ import { Oeuvre } from "./models/Oeuvre";
 import { AccedableItem, AccessTable } from "./services/AccessTable";
 import { stopEvent } from "./services/DomUtils";
 import { FormManager } from "./services/FormManager";
+import { Help } from "./services/HelpManager";
 import { VimLikeManager } from "./services/VimLikeManager";
 
 interface PanelConstructorData {
@@ -22,6 +23,7 @@ export class PanelClient<T extends Tplus, C> {
   
   // ========== A P I ================
 
+  public context: string = 'start';
   public form!: FormManager<any, any>;
   public get isActif(): boolean { return this._actif === true ; }
   public get isInactif(): boolean { return this._actif === false ; }
@@ -50,6 +52,9 @@ export class PanelClient<T extends Tplus, C> {
     }
   }
   public cleanFlash(){ (this.messageBox as HTMLDivElement).innerHTML = '';}
+  public activateContextualHelp() {
+    this.help.activateContextualHelp();
+  }
   
   // ========== MÉTHODES D'ÉLÉMENT =============
   // La sélection, sous la forme d'identifiant de l'élément
@@ -186,6 +191,7 @@ export class PanelClient<T extends Tplus, C> {
   private get itemTemplate(){ return this._itemTemplate || (this._itemTemplate = document.querySelector('template#item-template') as HTMLTemplateElement);}
   private get searchInput(){ return this._searchInput || (this._searchInput = document.querySelector('input#search-input') as HTMLInputElement);}
   private get messageBox(){ return document.querySelector('div#message');}
+  private get help(){return this._help || (this._help = new Help(this));}
 
   private minName:string;
   private titName: string;
@@ -196,6 +202,7 @@ export class PanelClient<T extends Tplus, C> {
   private _itemTemplate!: HTMLTemplateElement;
   private _searchInput!: HTMLInputElement;
   protected _keyManager!: VimLikeManager;
+  private _help!: Help;
   
   constructor(data: PanelConstructorData) {
     this.minName = data.minName;

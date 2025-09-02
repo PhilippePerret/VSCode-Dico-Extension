@@ -240,3 +240,31 @@ form.item-form div.buttons {
 form.item-form div.buttons button {
 	margin-left: 12px;
 }
+
+/* 
+	=== AIDE CONTEXTUELLE ===
+*/
+
+div.aide-contextuelle {
+	z-index: 1000;
+	background-color: darkseagreen;
+	border: 2px solid green;
+	box-shadow: 8px 6px 8px -2px #888;
+	padding: 2em 1em;
+	font-size: 10pt;
+	position: fixed;
+	top: 20px;
+	left: 10%;
+	right: 10%;
+	min-height: 400px;
+	max-height: 600px;
+	overflow-y:auto;
+}
+div.aide-contextuelle div.buttons {
+	position: absolute;
+	bottom: 0px;
+	width: calc(100% - 32px);
+	padding: 8px 16px;
+	background-color: inherit;
+	font-family: Arial, Helvetica, sans-serif;
+}

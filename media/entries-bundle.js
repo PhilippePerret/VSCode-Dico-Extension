@@ -603,6 +603,92 @@
     }
   };
 
+  // src/webviews/services/HelpManager.ts
+  var Help = class _Help {
+    constructor(panel) {
+      this.panel = panel;
+    }
+    /**
+     * Définitions des aides contextuelles.
+     * Soit un simple string (si pas de raccourcis clavier)
+     * Soit un array [aide, {lettre: methode-string}] 
+     */
+    static get CHELPS() {
+      return {
+        "start": `\xC0 tout moment, vous pouvez obtenir de l'aide contextuelle en tapen "?".`
+      };
+    }
+    /**
+     * API
+     * Méthode activant l'aide circonstantielle.
+     * (voir le manuel)
+     */
+    activateContextualHelp() {
+      const context = this.panel.context;
+      const extraParams = this.affineContexte(context);
+      const [content, KbBypass] = this.defineCHelp(context, extraParams);
+      this.showCHelp(content);
+      this.panel.keyManager.keyboardBypass = KbBypass;
+    }
+    affineContexte(context) {
+      switch (context) {
+        case "create-new-element":
+          return {};
+        default:
+          return;
+      }
+    }
+    defineCHelp(context, params) {
+      const kbb = /* @__PURE__ */ new Map();
+      kbb.set("q", this.closeCHelp.bind(this));
+      let bypass;
+      let content = _Help.CHELPS[context];
+      if (Array.isArray(content)) {
+        [content, bypass] = content;
+        for (var k in bypass) {
+          kbb.set(k, bypass[k]);
+        }
+      }
+      return [this.formate(content), kbb];
+    }
+    formate(str) {
+      return str.replace(/\*\*(.+)\*\*/g, "<b>\\1</b>").replace(/\*(.+)\*/g, "<em>\\1</em>").split("\n").map((s) => `<div>${s}</div>`).join("");
+    }
+    /**
+     * Affichage du texte d'aide contextuelle et mise en attente
+     * 
+     * (note : le "C" de "Chelp" pour "contextual")
+     * 
+     * @param content Le contenu textuel à afficher
+     */
+    showCHelp(content) {
+      this.CHbuilt || this.CHbuild();
+      this.CHObj.classList.remove("hidden");
+      const divCont = this.CHObj.querySelector(".content");
+      divCont.innerHTML = content;
+    }
+    CHObj;
+    CHbuilt = false;
+    closeCHelp() {
+      this.CHObj.classList.add("hidden");
+    }
+    // Construction du div de l'aide contextuelle
+    CHbuild() {
+      let o = document.createElement("div");
+      o.className = "aide-contextuelle hidden";
+      let cont = document.createElement("div");
+      cont.className = "content";
+      o.appendChild(cont);
+      let btns = document.createElement("div");
+      btns.className = "buttons";
+      btns.innerHTML = "q: quitter l\u2019aide";
+      o.appendChild(btns);
+      document.body.appendChild(o);
+      this.CHObj = o;
+      this.CHbuilt = true;
+    }
+  };
+
   // src/webviews/services/DomUtils.ts
   var stopEvent = function(ev) {
     ev.preventDefault();
@@ -678,12 +764,30 @@
     }
     keyboardBypass;
     // La méthode qui choppe normalement toutes les touches, quel que soit le mode
+    /**
+       * Capteur Universel de Touche clavier
+       * 
+       * Quel que soit le mode, cette méthode reçoit les touches clavier
+       * avant tout le monde.
+    
+       * Cela permet : 
+       *    - d'implémenter un système de "coupe-circuit" qui est
+       *      utilisé par exemple pour les messages de type "action 
+       *      demandée". (voir le manuel pour le détail). 
+       *    - d'implémenter la gestion de touche "?" qui permet, quelle
+       *      que soit la situation, d'obtenir de l'aide.
+       */
     universelKeyboardCapture(ev) {
       console.log("[universel capture (mode %s)] Key up = ", this.mode, ev.key, ev);
-      if (this.keyboardBypass) {
+      if (ev.key === "?") {
+        this.panel.activateContextualHelp();
+        return stopEvent(ev);
+      } else if (this.keyboardBypass) {
         if (this.keyboardBypass.has(ev.key)) {
-          console.log("Touche d\xE9tect\xE9e");
-          this.keyboardBypass.get(ev.key)();
+          const methodBypass = this.keyboardBypass.get(ev.key);
+          delete this.keyboardBypass;
+          methodBypass();
+          this.panel.cleanFlash();
         }
         return stopEvent(ev);
       }
@@ -829,6 +933,7 @@
   // src/webviews/PanelClient.ts
   var PanelClient = class {
     // ========== A P I ================
+    context = "start";
     form;
     get isActif() {
       return this._actif === true;
@@ -866,6 +971,12 @@
           o.remove();
         });
       }
+    }
+    cleanFlash() {
+      this.messageBox.innerHTML = "";
+    }
+    activateContextualHelp() {
+      this.help.activateContextualHelp();
     }
     // ========== MÉTHODES D'ÉLÉMENT =============
     // La sélection, sous la forme d'identifiant de l'élément
@@ -1005,6 +1116,9 @@
     get messageBox() {
       return document.querySelector("div#message");
     }
+    get help() {
+      return this._help || (this._help = new Help(this));
+    }
     minName;
     titName;
     _klass;
@@ -1016,6 +1130,7 @@
     _itemTemplate;
     _searchInput;
     _keyManager;
+    _help;
     constructor(data) {
       this.minName = data.minName;
       this.titName = data.titName;

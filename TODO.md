@@ -1,11 +1,15 @@
 # Todo list
 
+* À tout moment la touche "?" permet d'obtenir de l'aide.
+  - cette aide fonctionne avec un bypass clavier.
 * Travailler l'édition
   - enregistrement dans la base de données
 * Quand on clique sur un élément : ça le sélectionne
 * Bien activer le premier panneau au lancement, pour pouvoir utiliser les raccourcis tout de suite
 * Script Donnée DB -> Fichier YAML/XML
   - avec tous les contrôles possibes pour ne rien perdre
+    - nombre minimum de chaque element (définition > 700 etc.)
+    - longueur minimale pour les définitions (si court, doit contenir "voir", "synonyme" ou "cf")
   - Pour le fichier XML, faire une DTD pour vérifier le bon format ?
 * Mener la réflexion sur les raccourcis (ci-dessous)
 * Avec un raccourci, p.e. "b" comme "backtrace" ou "l" comme "log", pouvoir afficher un panneau qui affiche les derniers messages programmes, quand on ne veut pas utiliser la console de développement.

@@ -1,5 +1,17 @@
 # Manuel développement
 
+## Aide contextuelle
+
+Une aide contextuelle permet d'afficher des messages d'aide au milieu du panneau. Ils sont activités en appelant la méthode `Help.activateContextualHelp()` qui se sert de la propriété `context` du panneau pour savoir quelle aide afficher.
+
+Toutes les aides sont définies dans le module `HelpManager`.
+
+Chaque fois que le panneau passe dans un état, il définit sont `context`, permettant à l'aide de savoir ce qu'il faut afficher en cas de demande d'aide. Cette aide est affichée à l'ouverture du premier panneau, pour afficher l'aide du contexte `start`.
+
+Développement : Plus tard, on pourra imaginer pouvoir définir des valeurs contextuelles spéciales qui permettront d'afficher la pertinence de l'aide. 
+
+Certains contextes peuvent également faire leur propre test pour afficher l'aide. Par exemple, quand on est en mode création d'entrée, le context peut vérifier si l'utilisateur est au début de l'opération (les champs principaux sont vides) ou à la fin (les champs principaux sont remplis) et fournir l'aide en conséquence. 
+
 ## Messagerie
 
 Pour afficher un message, utiliser `<PanelClient>.flash(<message>, type)`.
