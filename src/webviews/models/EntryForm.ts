@@ -58,26 +58,43 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
         errors.push(`L'identifiant "${item.id}" existe déjà. Je ne peux le réattribuer`);
       }
     }
-    // TODO La définition doit être donnée
+    // La définition doit être donnée
     if ( item.definition === ''){
       errors.push("La définition du mot doit être donnée");
+    } else if (item.changeset.has('definition')) {
+      const unknownEntries = this.searchUnknownEntriesIn(item.definition);
+      if ( unknownEntries.length > 0) {
+        errors.push(`entrées inconnues dans la défintion (${unknownEntries.join(', ')})`);
+      }
     }
-    // TODO Le genre doit être donné
-    if ( item.genre === '') {
-      errors.push("Le genre de l'entrée doit être donné");
-    }
+    // Le genre doit être donné
+    item.genre === '' || errors.push("Le genre de l'entrée doit être donné");
+    
     // TODO Si la catégorie existe, elle doit exister
-    if (item.categorie_id !=='') {
-      errors.push("La catégorie doit être vérifiée");
+    if (item.categorie_id !== '' && item.changeset.has('categorie_id')) {
+      const unknownCategorie = this.checkUnknownCategoriesIn(item.categorie_id);
+      if ( unknownCategorie.length ) {
+        errors.push(`des catégories sont inconnues : ${unknownCategorie.join(', ')}`);
+      }
     }
     if ( errors.length === 0 ) {
       return null;
     } else {
+      console.error("Données invalides", errors);
       return errors.join(', ').toLowerCase();
     }
-    return 'Les données ne sont pas checkés';
   }
 
+  // Pour chercher les entrées mentionnées dans la définition
+  searchUnknownEntriesIn(str: string): string[] {
+    return ['entrée à chercher'];
+  }
+  // @return la liste des catégories inconnues
+  checkUnknownCategoriesIn(str: string): string[] {
+    const cats = str.split(',').map(s => s.trim());
+    // return cats.filter(Entry.doesIdExist.bind(Entry));
+    return cats.filter(cat => false === Entry.doesIdExist(cat));
+  }
   async onSave(item: Entry){
     console.log("Je dois apprendre à sauver l'entrée", item);
     console.log("Je dois apprendre à updater l'item (plutôt en méthode générale ?)");

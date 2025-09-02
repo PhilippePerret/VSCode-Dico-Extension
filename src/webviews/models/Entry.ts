@@ -48,11 +48,11 @@ export class Entry extends ClientItem<UEntry, FullEntry> {
    */
   // @return true si l'entrée +entree+ existe déjà
   public static doesEntreeExist(entree: string): boolean {
-    return this.accessTable.find((item) => item.entree === entree).length > 0;
+    return this.accessTable.find((item) => item.data.entree === entree) !== undefined ;
   }
   // @return true si l'identifiant +id+ existe déjà
   public static doesIdExist(id: string): boolean {
-    if (this.accessTable.getById(id)) { return true; }
+    if (this.accessTable.existsById(id)) { return true; }
     return false;
   }
 }

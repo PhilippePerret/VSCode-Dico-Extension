@@ -1,8 +1,8 @@
 # Todo list
 
-* À tout moment la touche "?" permet d'obtenir de l'aide.
-  - cette aide fonctionne avec un bypass clavier.
+* Il faut afficher les erreurs dans un plus grand cadre
 * Travailler l'édition
+  - check des données
   - enregistrement dans la base de données
 * Quand on clique sur un élément : ça le sélectionne
 * Bien activer le premier panneau au lancement, pour pouvoir utiliser les raccourcis tout de suite

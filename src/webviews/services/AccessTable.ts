@@ -185,6 +185,9 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
       (foo: Entry | Oeuvre | Exemple) => { return foo ; }
     );
   }
+  // @return true si l'élément d'identifiant +id+ existe.
+  existsById(id: string): boolean { return this.keysMap.has(id); }
+
   getById(id: string): T { return this.arrayItems[(this.keysMap.get(id) as AccedableItem).index]; }
   getByIndex(index: number): T { return this.arrayItems[index]; }
   getByAccKey(ak: AccedableItem): T { return this.getById(ak.id); }

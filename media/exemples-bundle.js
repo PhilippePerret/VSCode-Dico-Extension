@@ -519,6 +519,10 @@
         }
       );
     }
+    // @return true si l'élément d'identifiant +id+ existe.
+    existsById(id) {
+      return this.keysMap.has(id);
+    }
     getById(id) {
       return this.arrayItems[this.keysMap.get(id).index];
     }

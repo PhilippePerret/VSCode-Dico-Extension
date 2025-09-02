@@ -273,6 +273,10 @@
         }
       );
     }
+    // @return true si l'élément d'identifiant +id+ existe.
+    existsById(id) {
+      return this.keysMap.has(id);
+    }
     getById(id) {
       return this.arrayItems[this.keysMap.get(id).index];
     }
@@ -1567,19 +1571,33 @@
       }
       if (item.definition === "") {
         errors.push("La d\xE9finition du mot doit \xEAtre donn\xE9e");
+      } else if (item.changeset.has("definition")) {
+        const unknownEntries = this.searchUnknownEntriesIn(item.definition);
+        if (unknownEntries.length > 0) {
+          errors.push(`entr\xE9es inconnues dans la d\xE9fintion (${unknownEntries.join(", ")})`);
+        }
       }
-      if (item.genre === "") {
-        errors.push("Le genre de l'entr\xE9e doit \xEAtre donn\xE9");
-      }
-      if (item.categorie_id !== "") {
-        errors.push("La cat\xE9gorie doit \xEAtre v\xE9rifi\xE9e");
+      item.genre === "" || errors.push("Le genre de l'entr\xE9e doit \xEAtre donn\xE9");
+      if (item.categorie_id !== "" && item.changeset.has("categorie_id")) {
+        const unknownCategorie = this.checkUnknownCategoriesIn(item.categorie_id);
+        if (unknownCategorie.length) {
+          errors.push(`des cat\xE9gories sont inconnues : ${unknownCategorie.join(", ")}`);
+        }
       }
       if (errors.length === 0) {
         return null;
       } else {
+        console.error("Donn\xE9es invalides", errors);
         return errors.join(", ").toLowerCase();
       }
-      return "Les donn\xE9es ne sont pas check\xE9s";
+    }
+    // Pour chercher les entrées mentionnées dans la définition
+    searchUnknownEntriesIn(str) {
+      return ["entr\xE9e \xE0 chercher"];
+    }
+    checkUnknownCategoriesIn(str) {
+      const cats = str.split(",").map((s) => s.trim());
+      return cats.filter((cat) => Entry.doesIdExist(cat));
     }
     async onSave(item) {
       console.log("Je dois apprendre \xE0 sauver l'entr\xE9e", item);
@@ -1625,11 +1643,11 @@
      */
     // @return true si l'entrée +entree+ existe déjà
     static doesEntreeExist(entree) {
-      return this.accessTable.find((item) => item.entree === entree).length > 0;
+      return this.accessTable.find((item) => item.data.entree === entree) !== void 0;
     }
     // @return true si l'identifiant +id+ existe déjà
     static doesIdExist(id) {
-      if (this.accessTable.getById(id)) {
+      if (this.accessTable.existsById(id)) {
         return true;
       }
       return false;
