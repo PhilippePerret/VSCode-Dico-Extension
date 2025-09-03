@@ -634,6 +634,7 @@
     backHistory() {
       if (this.ihistory === 0) {
         console.log("Fin de l'historique");
+        this.console.value = "";
         return;
       }
       this.ihistory--;
@@ -1613,8 +1614,9 @@
       { propName: "categorie_id", type: String, required: false, fieldType: "text" },
       { propName: "definition", type: String, required: false, fieldType: "textarea" }
     ];
+    static REG_SHORT_DEF = /\b(cf\.|voir|synonyme|contraire)\b/;
+    static REGEX_APPELS_ENTRIES = new RegExp(`(?:${Object.keys(Constants.MARK_ENTRIES).join("|")})\\(([^)]+)\\)`, "g");
     onChangeEntree() {
-      console.log("Le champ Entr\xE9e a chang\xE9");
       const itemIsNew = this.getValueOf("id") === "";
       if (itemIsNew) {
         console.log("C'est un nouvel item, il faut calculer son ID d'apr\xE8s son entr\xE9e.");
@@ -1655,14 +1657,25 @@
       if (item.definition === "") {
         errors.push("La d\xE9finition du mot doit \xEAtre donn\xE9e");
       } else if (item.changeset.has("definition")) {
+        if (item.definition.length < 50 && null === item.definition.match(_EntryForm.REG_SHORT_DEF)) {
+          errors.push("La d\xE9finition est courte, sans justification\u2026");
+        }
         const unknownEntries = this.searchUnknownEntriesIn(item.definition);
         if (unknownEntries.length > 0) {
           errors.push(`entr\xE9es inconnues dans la d\xE9fintion (${unknownEntries.join(", ")})`);
         }
+        const unknownOeuvres = this.searchUnkownOeuvreIn(item.definition);
+        if (unknownOeuvres.length) {
+          errors.push(`\u0153uvres introuvables, dans la d\xE9finition (${unknownOeuvres.join(", ")})`);
+        }
       } else {
         console.log("La d\xE9finition n'a pas \xE9t\xE9 modifi\xE9e.");
       }
-      item.genre === "" || errors.push("Le genre de l'entr\xE9e doit \xEAtre donn\xE9");
+      if (item.genre === "") {
+        errors.push("Le genre de l'entr\xE9e doit \xEAtre donn\xE9");
+      } else if (item.changeset.has("genre") && Object.keys(Constants.ENTRIES_GENRES).includes(item.genre)) {
+        errors.push(`bizarrement, le genre "${item.genre} est inconnu\u2026`);
+      }
       if (item.categorie_id !== "" && item.changeset.has("categorie_id")) {
         const unknownCategorie = this.checkUnknownCategoriesIn(item.categorie_id);
         if (unknownCategorie.length) {
@@ -1674,7 +1687,6 @@
         return errors.join(", ").toLowerCase();
       }
     }
-    static REGEX_APPELS_ENTRIES = new RegExp(`(?:${Object.keys(Constants.MARK_ENTRIES).join("|")})\\(([^)]+)\\)`, "g");
     // Pour chercher les entrées mentionnées dans la définition
     searchUnknownEntriesIn(str) {
       const founds = [];
@@ -1685,6 +1697,15 @@
         entryId = (entryId || entry).trim();
         if (Entry.doesIdExist(entryId)) {
           console.log("Id d'entr\xE9e existante", entryId);
+        } else if (Entry.doesEntreeExist(entryId)) {
+          console.log("Entr\xE9e existante (par son nom)", entryId);
+        } else if (entryId.endsWith("s")) {
+          const entryIdSing = entryId.substring(0, entryId.length - 1);
+          if (Entry.doesEntreeExist(entryIdSing)) {
+            console.log("Entr\xE9e existante (pas son nom singulier)", entryId);
+          } else if (Entry.doesIdExist(entryIdSing)) {
+            console.log("Id entr\xE9e existante (dans sa forme singuli\xE8re)", entryId);
+          }
         } else {
           founds.push(entryId);
         }
@@ -1746,7 +1767,8 @@
      */
     // @return true si l'entrée +entree+ existe déjà
     static doesEntreeExist(entree) {
-      return this.accessTable.find((item) => item.data.entree === entree) !== void 0;
+      entree = entree.toLowerCase();
+      return this.accessTable.find((item) => item.data.entree.toLowerCase() === entree) !== void 0;
     }
     // @return true si l'identifiant +id+ existe déjà
     static doesIdExist(id) {

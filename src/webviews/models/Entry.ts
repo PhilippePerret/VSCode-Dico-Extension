@@ -45,7 +45,8 @@ export class Entry extends ClientItem<UEntry, FullEntry> {
    */
   // @return true si l'entrée +entree+ existe déjà
   public static doesEntreeExist(entree: string): boolean {
-    return this.accessTable.find((item) => item.data.entree === entree) !== undefined ;
+    entree = entree.toLowerCase();
+    return this.accessTable.find((item) => item.data.entree.toLowerCase() === entree) !== undefined ;
   }
   // @return true si l'identifiant +id+ existe déjà
   public static doesIdExist(id: string): boolean {

@@ -18,9 +18,11 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
     {propName: 'categorie_id', type: String, required: false, fieldType: 'text'},
     {propName: 'definition', type: String, required: false, fieldType: 'textarea'}
   ];
+  static readonly REG_SHORT_DEF = /\b(cf\.|voir|synonyme|contraire)\b/;
+  static readonly REGEX_APPELS_ENTRIES = new RegExp(`(?:${Object.keys(Constants.MARK_ENTRIES).join('|')})\\(([^)]+)\\)`, "g");
 
   onChangeEntree() {
-    console.log("Le champ Entrée a changé");
+    // console.log("Le champ Entrée a changé");
     const itemIsNew = this.getValueOf('id') === '';
     if ( itemIsNew ) {
       console.log("C'est un nouvel item, il faut calculer son ID d'après son entrée.");
@@ -62,20 +64,32 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
         errors.push(`L'identifiant "${item.id}" existe déjà. Je ne peux le réattribuer`);
       }
     }
-    // La définition doit être donnée
+    // La définition doit être donnée et valide
     if ( item.definition === ''){
       errors.push("La définition du mot doit être donnée");
     } else if (item.changeset.has('definition')) {
+      // Définition trop courte, sans justifications
+      if ( item.definition.length < 50 && null === item.definition.match(EntryForm.REG_SHORT_DEF)) {
+        errors.push("La définition est courte, sans justification…");
+      }
       const unknownEntries = this.searchUnknownEntriesIn(item.definition);
       if ( unknownEntries.length > 0) {
         errors.push(`entrées inconnues dans la défintion (${unknownEntries.join(', ')})`);
+      }
+      const unknownOeuvres = this.searchUnkownOeuvreIn(item.definition);
+      if ( unknownOeuvres.length ) {
+        errors.push(`œuvres introuvables, dans la définition (${unknownOeuvres.join(', ')})`);
       }
     } else {
       console.log("La définition n'a pas été modifiée.");
     }
 
     // Le genre doit être donné
-    item.genre === '' || errors.push("Le genre de l'entrée doit être donné");
+    if ( item.genre === '') {
+      errors.push("Le genre de l'entrée doit être donné");
+    } else if (item.changeset.has('genre') && Object.keys(Constants.ENTRIES_GENRES).includes(item.genre)) {
+      errors.push(`bizarrement, le genre "${item.genre} est inconnu…`);
+    }
     
     // Si les catégories sont définies, il faut qu'elles existent
     // Rappel : Une "catégorie", c'est simplement l'ID d'une entrée
@@ -93,7 +107,6 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
     }
   }
 
-  static readonly REGEX_APPELS_ENTRIES = new RegExp(`(?:${Object.keys(Constants.MARK_ENTRIES).join('|')})\\(([^)]+)\\)`, "g");
 
   // Pour chercher les entrées mentionnées dans la définition
   searchUnknownEntriesIn(str: string): string[] {
@@ -103,9 +116,25 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
       const foo = match[1];
       let [entry, entryId] = foo.split('|');
       entryId = (entryId || entry).trim();
+      /**
+       * L'entrée peut être désignée par de multiples formes :
+       * - son identifiant
+       * - son identifiant pluriel (rare)
+       * - son entrée (minuscules)
+       * - son entrée plurielle (minuscules)
+       */
       if ( Entry.doesIdExist(entryId) ) {
         console.log("Id d'entrée existante", entryId);
-      } else {
+      } else if ( Entry.doesEntreeExist(entryId)) {
+        console.log("Entrée existante (par son nom)", entryId);
+      } else if (entryId.endsWith('s')) {
+        const entryIdSing = entryId.substring(0, entryId.length-1);
+        if ( Entry.doesEntreeExist(entryIdSing)) {
+          console.log("Entrée existante (pas son nom singulier)", entryId);
+        } else if (Entry.doesIdExist(entryIdSing)) {
+          console.log("Id entrée existante (dans sa forme singulière)", entryId);
+        }
+      } else { 
         founds.push(entryId);
       }
     }

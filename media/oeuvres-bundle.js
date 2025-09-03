@@ -433,6 +433,7 @@
     backHistory() {
       if (this.ihistory === 0) {
         console.log("Fin de l'historique");
+        this.console.value = "";
         return;
       }
       this.ihistory--;
