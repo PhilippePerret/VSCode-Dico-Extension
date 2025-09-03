@@ -26,6 +26,11 @@ div.entry div.entry-definition {
 * FORM 
 *
 **/
+form.item-form div#entry-definition-container {
+  display:block; /* pas flex comme les autres*/
+}
 form.item-form textarea#entry-definition {
   height: 300px;
+  font-size:13pt;
+  width:100%;
 }

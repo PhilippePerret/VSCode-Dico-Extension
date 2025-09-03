@@ -43,15 +43,19 @@ export class PanelClient<T extends Tplus, C> {
     (this.messageBox as HTMLDivElement).appendChild(o);
     if ( type === 'notice' ) {
       // TODO Temporiser le message
-      setTimeout(()=> {o.remove();}, 10 * 1000);
+      setTimeout(() => { this.cleanFlash.call(this); }, 10 * 1000);
     } else if ( type === 'action' ) {
       // TODO Bloquer le message avec quelques lettres possibles seulement
     } else {
       // Sinon, on clique le message pour le fermer
-      o.addEventListener('click', (ev: MouseEvent) => { o.remove(); });
+      o.addEventListener('click', (ev: MouseEvent) => { this.cleanFlash.call(this); });
     }
   }
-  public cleanFlash(){ (this.messageBox as HTMLDivElement).innerHTML = '';}
+  public cleanFlash(){ 
+    const msgbox = (this.messageBox as HTMLDivElement);
+    msgbox.innerHTML = '';
+    msgbox.style.zIndex = '-1';
+  }
   public activateContextualHelp() {
     this.help.activateContextualHelp();
   }

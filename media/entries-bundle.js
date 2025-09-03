@@ -991,17 +991,19 @@
       this.messageBox.appendChild(o);
       if (type === "notice") {
         setTimeout(() => {
-          o.remove();
+          this.cleanFlash.call(this);
         }, 10 * 1e3);
       } else if (type === "action") {
       } else {
         o.addEventListener("click", (ev) => {
-          o.remove();
+          this.cleanFlash.call(this);
         });
       }
     }
     cleanFlash() {
-      this.messageBox.innerHTML = "";
+      const msgbox = this.messageBox;
+      msgbox.innerHTML = "";
+      msgbox.style.zIndex = "-1";
     }
     activateContextualHelp() {
       this.help.activateContextualHelp();
@@ -1595,9 +1597,10 @@
     searchUnknownEntriesIn(str) {
       return ["entr\xE9e \xE0 chercher"];
     }
+    // @return la liste des catégories inconnues
     checkUnknownCategoriesIn(str) {
       const cats = str.split(",").map((s) => s.trim());
-      return cats.filter((cat) => Entry.doesIdExist(cat));
+      return cats.filter((cat) => false === Entry.doesIdExist(cat));
     }
     async onSave(item) {
       console.log("Je dois apprendre \xE0 sauver l'entr\xE9e", item);

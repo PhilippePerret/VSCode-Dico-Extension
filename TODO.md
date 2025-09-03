@@ -1,9 +1,12 @@
 # Todo list
 
-* Il faut afficher les erreurs dans un plus grand cadre
+* Mettre des tabulations sur les champs d'édition pour passer de l'un à l'autre avec tab
+* Bien situer le champ de filtrage en bas de l'entête
 * Travailler l'édition
-  - check des données
+  - check de toutes les données
   - enregistrement dans la base de données
+* Outils pour faciliter la création des oeuvres
+* Outils pour faciliter la création des exemples
 * Quand on clique sur un élément : ça le sélectionne
 * Bien activer le premier panneau au lancement, pour pouvoir utiliser les raccourcis tout de suite
 * Script Donnée DB -> Fichier YAML/XML

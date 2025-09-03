@@ -15,10 +15,6 @@
 	<header>
 		<h2>{{PANEL_TITLE}}</h2>
 		<div id="message"></div>
-		<div id="search-bar">
-			<i class="fa-solid fa-filter"></i>
-			<input type="text" id="search-input" tabindex="-1" />
-		</div>
 		<!-- Pour modifier la modalité de recherche (exemples pour le moment) -->
 		<div id="search-by-div" class="hidden">
 			<span>Recherche par</span>
@@ -28,7 +24,11 @@
 				<option value="by-content">Contenu de l’exemple</option>
 			</select>
 		</div>
-	</header>
+		<div id="search-bar">
+			<i class="fa-solid fa-filter"></i>
+			<input type="text" id="search-input" tabindex="-1" />
+		</div>
+</header>
 	<main id="items">
 		{{MAIN_CONTENT}}
 	</main>

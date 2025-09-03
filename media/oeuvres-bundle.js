@@ -544,17 +544,19 @@
       this.messageBox.appendChild(o);
       if (type === "notice") {
         setTimeout(() => {
-          o.remove();
+          this.cleanFlash.call(this);
         }, 10 * 1e3);
       } else if (type === "action") {
       } else {
         o.addEventListener("click", (ev) => {
-          o.remove();
+          this.cleanFlash.call(this);
         });
       }
     }
     cleanFlash() {
-      this.messageBox.innerHTML = "";
+      const msgbox = this.messageBox;
+      msgbox.innerHTML = "";
+      msgbox.style.zIndex = "-1";
     }
     activateContextualHelp() {
       this.help.activateContextualHelp();

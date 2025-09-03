@@ -71,7 +71,7 @@ header {
 	height: 60px;
 	background-color: #CCCCCC;
 	border-bottom: 1px solid var(--vscode-sideBar-border);
-	padding: 10px;
+	padding: 6px;
 }
 
 header h2 {
@@ -88,12 +88,16 @@ header h2 {
 }
 
 header div#message {
+	position: absolute;
 	display:block;
-	width: 100%;
+	width: 96%;
 	font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
 	font-size: 11pt;
-	height: 30px;
+	min-height: 30px;
+	max-height: 64px;
+	overflow-y: auto;
 	background-color: #DDDDDD;
+	z-index: 10;
 }
 header div#message div.notice {background-color:lightblue; color:blue;}
 header div#message div.action {background-color: darkorange; color: darkred;}
@@ -101,9 +105,11 @@ header div#message div.warn {background-color: #FFEEEE; color: red;}
 header div#message div.error {background-color: red; color: white;}
 
 #search-bar {
-	margin-top: 4px;
-	display:flex;
+	display: block;
 	margin-left: 0px;
+	position: absolute;
+	bottom: 2px;
+	width: 97.4%;
 	gap: 4px;
 }
 #search-bar i {
@@ -232,6 +238,7 @@ form.item-form > div {
 form.item-form > div > label {
 	width: 90px;
 	flex: 0 0 auto;
+	display:inline-block; /* pour que le short-cut reste pas trop loin (cf. definition d'entrée */
 	font-family: 'Arial Narrow', Arial, Helvetica, sans-serif;
 	font-weight: bold;
 	font-size: 10.5pt;
