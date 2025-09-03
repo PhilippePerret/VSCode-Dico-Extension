@@ -207,7 +207,7 @@ const ExemplePanel = new ExemplePanelClass({
 });
 Exemple.panel = ExemplePanel;
 
-const RpcEx: RpcChannel = createRpcClient();
+export const RpcEx: RpcChannel = createRpcClient();
 
 RpcEx.on('activate', () => {
   if ( ExemplePanel.isActif ) { return ; }

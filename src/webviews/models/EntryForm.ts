@@ -1,6 +1,6 @@
 import { Constants } from '../../bothside/UConstants';
 import { FormManager, FormProperty } from "../services/FormManager";
-import { Entry } from "./Entry";
+import { Entry, RpcEntry } from "./Entry";
 
 class FEntry extends Entry {
   [x:string]: any;
@@ -20,7 +20,8 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
   ];
   static readonly REG_SHORT_DEF = /\b(cf\.|voir|synonyme|contraire)\b/;
   static readonly REGEX_APPELS_ENTRIES = new RegExp(`(?:${Object.keys(Constants.MARK_ENTRIES).join('|')})\\(([^)]+)\\)`, "g");
-
+  static readonly REG_OEUVRES = /\boeuvre\([^)]+\)/g;
+  
   onChangeEntree() {
     // console.log("Le champ Entrée a changé");
     const itemIsNew = this.getValueOf('id') === '';
@@ -40,7 +41,7 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
    * Grand méthode de check de la validité de l'item. On ne l'envoie
    * en enregistrement que s'il est parfaitement conforme. 
    */
-  checkItem(item: {[x:string]: any}): string | undefined {
+  async checkItem(item: {[x:string]: any}): Promise<string | undefined> {
     const isNew = item.isNew ;
     const errors: string[] = [];
     // L'entrée doit être définie
@@ -76,7 +77,7 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
       if ( unknownEntries.length > 0) {
         errors.push(`entrées inconnues dans la défintion (${unknownEntries.join(', ')})`);
       }
-      const unknownOeuvres = this.searchUnkownOeuvreIn(item.definition);
+      const unknownOeuvres = await this.searchUnkownOeuvreIn(item.definition, 1);
       if ( unknownOeuvres.length ) {
         errors.push(`œuvres introuvables, dans la définition (${unknownOeuvres.join(', ')})`);
       }
@@ -140,8 +141,35 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
     }
     return founds;
   }
-  searchUnkownOeuvreIn(str: string): string[]{
-    return ["oeuvres à checker"];
+  /**
+   * Vérifie que les œuvres désignées dans les balises oeuvre(...) existent
+   * bel et bien.
+   * Pour ce faire, on a besoin de passer par l'extension car on n'a pas 
+   * accès aux oeuvres depuis ici.
+   * 
+   * @param str Dans la phase 1, La définition, dans la phase 2, le json revenant du check
+   * @param phase Pour savoir si on remonte de la vérifiation (phase 2)
+   * @returns La liste des œuvres qui n'ont pas été trouvées
+   */
+  async searchUnkownOeuvreIn(str: string, phase: number): Promise<string[]>{
+    if ( phase === 1 ){
+      // 1. On relève les oeuvres
+      const matches = str.matchAll(EntryForm.REG_OEUVRES);
+      const oeuvres: string[] = [];
+      for( let match of matches) { oeuvres.push(match[0]); }
+      console.log("Oeuvres à checker", oeuvres);
+      // 2. On les envoie à la vérification
+      // RpcEntry.notify('check-oeuvres', {oeuvres});
+      RpcEntry.ask('check-oeuvres', {oeuvres});
+      return [];
+    } else if ( phase === 2) {
+      // 3: On récupère le résultat et on le renvoie
+      const res = JSON.parse(str);
+      return res.unknown;
+    } else {
+      console.error("Phase inconnue", phase);
+      return [`Phase inconnue (${phase}) Vérification des oeuvres impossible`];
+    }
   }
   searchUnknownExempleIn(str: string): string[]{
     return ["Les exemples sont à checker"];

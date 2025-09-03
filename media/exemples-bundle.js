@@ -1242,6 +1242,10 @@
   // src/webviews/services/FormManager.ts
   var FormManager = class {
     tablePropertiesByPropName;
+    // Fonction pour sauver (appelée quand on sauve la donnée)
+    async checkItem(item) {
+      return void 0;
+    }
     panel;
     // le panneau contenant le formulaire
     originalData;
@@ -1277,7 +1281,8 @@
     }
     async saveItem(andQuit) {
       const map = /* @__PURE__ */ new Map();
-      if (this.itemIsNotSavable()) {
+      const res = await this.itemIsNotSavable();
+      if (res) {
         return;
       }
       map.set("o", this.onConfirmSave.bind(this, andQuit));
@@ -1287,7 +1292,7 @@
         map
       );
     }
-    itemIsNotSavable() {
+    async itemIsNotSavable() {
       this.panel.cleanFlash();
       let invalidity;
       const fakeItem = this.collectValues();
@@ -1312,7 +1317,7 @@
       } else if (changeset.size === 0) {
         this.panel.flash("Les donn\xE9es n'ont pas chang\xE9\u2026", "warn");
         return true;
-      } else if (invalidity = this.checkItem(fakeItem)) {
+      } else if (invalidity = await this.checkItem(fakeItem)) {
         this.panel.flash("Les donn\xE9es sont invalides : " + invalidity, "error");
         return true;
       }
@@ -1580,7 +1585,7 @@
     formId = "exemple-form";
     prefix = "exemple";
     properties = [];
-    checkItem(item) {
+    async checkItem(item) {
       return "Les donn\xE9es ne sont pas check\xE9s";
     }
     async onSave(item) {

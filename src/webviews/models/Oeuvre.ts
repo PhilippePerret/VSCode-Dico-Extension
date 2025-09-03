@@ -52,7 +52,7 @@ const OeuvrePanel = new OeuvrePanelClass({
 });
 Oeuvre.panel = OeuvrePanel;
 
-const RpcOeuvre:RpcChannel = createRpcClient();
+export const RpcOeuvre:RpcChannel = createRpcClient();
 
 RpcOeuvre.on('activate', () => {
   if ( OeuvrePanel.isActif ) { return ; }
@@ -75,6 +75,10 @@ RpcOeuvre.on('populate', (params) => {
 RpcOeuvre.on('display-oeuvre', (params) => {
   console.log("[CLIENT Oeuvre] Afficher oeuvre %s", params.oeuvreId);
   OeuvrePanel.scrollToAndSelect(params.oeuvreId);
+});
+
+RpcOeuvre.on('check-oeuvres', (params) => {
+  console.log("[CLIENT-OEUVRES] Vérification demandée des œuvres :", params);
 });
 
 (window as any).Oeuvre = Oeuvre ;

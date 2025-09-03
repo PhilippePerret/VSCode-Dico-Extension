@@ -1,5 +1,47 @@
 # Manuel développement
 
+
+## Communication RPC inter-panneau
+
+Les trois panneaux sont isolés. Pour communiquer de l'un à l'autre, on doit utiliser leur canal RPC en passant par l'extension.
+
+Pour envoyer un message depuis le panneau P, on utilise le Rpc de ce panneau P (`RpcEntry`, `RpcOeuvre` ou `RpcExemple`). Si on attend pas de réponse, on utilise la méthode `notify` en communiquant de la commande et les données (personnellement, je préfère toujours utiliser `notify` car je ne comprends pas trop le fonction de `ask`). Par exemple :
+
+~~~typescript
+RpcEntry.notify('check-oeuvres', {oeuvres});
+~~~
+
+Le message est reçu côté extension dans le canal du panneau P qui a envoyé le message. Ici, par exemple, le canal `RpcEntry` défini dans le module `extension/service/Rpc.ts`. On met le message de réception dans la fonction `initialize` de `RpcEntry`.
+
+On veut maintenant envoyer ce check au panneau des œuvres qui est celui qui peut répondre à la vérification. On utilise alors, côté extension (dans le même module `Rpc.ts`) le canal de communication avec le panneau Oeuvre, donc `RpcOeuvre`. Comme on ne peut pas atteindre directement le `rpc` de l'instance `CanalOeuvre` de ce canal, on passe par une méthode. 
+
+~~~typescript
+// Dans RpcEntry
+this.rpc.on('check-oeuvre', async (params: {oeuvres: string[]}) => {
+  CanalOeuvre.checkOeuvres(params);
+});
+~~~
+
+~~~typescript
+// Dans RpcOeuvre
+checkOeuvres(params){
+  RpcOeuvre.rpc.notify('check-oeuvres', params);
+}
+~~~
+
+Ensuite, dans le panneau de réception (Oeuvre ici), on met le récepteur de ce message :
+
+~~~typescript
+// Dans webview/models/oeuvre.ts
+RpcOeuvre.on('check-oeuvres', (params) => {
+  console.log("[CLIENT-OEUVRE] réception d'une demande de vérification des oeuvres : ", params);
+});
+~~~
+
+Depuis cette fonction, on appelle la fonction qui va vérifier l'existence des œuvres transmises.
+
+[poursuivre]
+
 ## Aide contextuelle
 
 Une aide contextuelle permet d'afficher des messages d'aide au milieu du panneau. Ils sont activités en appelant la méthode `Help.activateContextualHelp()` qui se sert de la propriété `context` du panneau pour savoir quelle aide afficher.

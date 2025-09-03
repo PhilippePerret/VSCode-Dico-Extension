@@ -1268,6 +1268,10 @@
   // src/webviews/services/FormManager.ts
   var FormManager = class {
     tablePropertiesByPropName;
+    // Fonction pour sauver (appelée quand on sauve la donnée)
+    async checkItem(item) {
+      return void 0;
+    }
     panel;
     // le panneau contenant le formulaire
     originalData;
@@ -1303,7 +1307,8 @@
     }
     async saveItem(andQuit) {
       const map = /* @__PURE__ */ new Map();
-      if (this.itemIsNotSavable()) {
+      const res = await this.itemIsNotSavable();
+      if (res) {
         return;
       }
       map.set("o", this.onConfirmSave.bind(this, andQuit));
@@ -1313,7 +1318,7 @@
         map
       );
     }
-    itemIsNotSavable() {
+    async itemIsNotSavable() {
       this.panel.cleanFlash();
       let invalidity;
       const fakeItem = this.collectValues();
@@ -1338,7 +1343,7 @@
       } else if (changeset.size === 0) {
         this.panel.flash("Les donn\xE9es n'ont pas chang\xE9\u2026", "warn");
         return true;
-      } else if (invalidity = this.checkItem(fakeItem)) {
+      } else if (invalidity = await this.checkItem(fakeItem)) {
         this.panel.flash("Les donn\xE9es sont invalides : " + invalidity, "error");
         return true;
       }
@@ -1616,6 +1621,7 @@
     ];
     static REG_SHORT_DEF = /\b(cf\.|voir|synonyme|contraire)\b/;
     static REGEX_APPELS_ENTRIES = new RegExp(`(?:${Object.keys(Constants.MARK_ENTRIES).join("|")})\\(([^)]+)\\)`, "g");
+    static REG_OEUVRES = /\boeuvre\([^)]+\)/g;
     onChangeEntree() {
       const itemIsNew = this.getValueOf("id") === "";
       if (itemIsNew) {
@@ -1634,7 +1640,7 @@
      * Grand méthode de check de la validité de l'item. On ne l'envoie
      * en enregistrement que s'il est parfaitement conforme. 
      */
-    checkItem(item) {
+    async checkItem(item) {
       const isNew = item.isNew;
       const errors = [];
       if (item.entree === "") {
@@ -1664,7 +1670,7 @@
         if (unknownEntries.length > 0) {
           errors.push(`entr\xE9es inconnues dans la d\xE9fintion (${unknownEntries.join(", ")})`);
         }
-        const unknownOeuvres = this.searchUnkownOeuvreIn(item.definition);
+        const unknownOeuvres = await this.searchUnkownOeuvreIn(item.definition, 1);
         if (unknownOeuvres.length) {
           errors.push(`\u0153uvres introuvables, dans la d\xE9finition (${unknownOeuvres.join(", ")})`);
         }
@@ -1712,8 +1718,33 @@
       }
       return founds;
     }
-    searchUnkownOeuvreIn(str) {
-      return ["oeuvres \xE0 checker"];
+    /**
+     * Vérifie que les œuvres désignées dans les balises oeuvre(...) existent
+     * bel et bien.
+     * Pour ce faire, on a besoin de passer par l'extension car on n'a pas 
+     * accès aux oeuvres depuis ici.
+     * 
+     * @param str Dans la phase 1, La définition, dans la phase 2, le json revenant du check
+     * @param phase Pour savoir si on remonte de la vérifiation (phase 2)
+     * @returns La liste des œuvres qui n'ont pas été trouvées
+     */
+    async searchUnkownOeuvreIn(str, phase) {
+      if (phase === 1) {
+        const matches = str.matchAll(_EntryForm.REG_OEUVRES);
+        const oeuvres = [];
+        for (let match of matches) {
+          oeuvres.push(match[0]);
+        }
+        console.log("Oeuvres \xE0 checker", oeuvres);
+        RpcEntry.ask("check-oeuvres", { oeuvres });
+        return [];
+      } else if (phase === 2) {
+        const res = JSON.parse(str);
+        return res.unknown;
+      } else {
+        console.error("Phase inconnue", phase);
+        return [`Phase inconnue (${phase}) V\xE9rification des oeuvres impossible`];
+      }
     }
     searchUnknownExempleIn(str) {
       return ["Les exemples sont \xE0 checker"];

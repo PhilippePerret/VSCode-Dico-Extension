@@ -41,17 +41,32 @@ class RpcEntry extends Rpc {
   protected panelName = 'panneau des entrées';
 
   // Pour afficher une entrée (en la sélectionnant);
-  displayEntry(param: {entry_id: string}){
+  displayEntry(param: { entry_id: string }) {
     this.rpc.notify('display-entry', param);
+  }
+  initialize(panel: vscode.WebviewPanel): void {
+    super.initialize(panel);
+
+    this.rpc.on('check-oeuvres', async (params: { oeuvres: string[] }) => {
+      console.log("[EXTENSION Demande de vérification des oeuvres : ", params);
+      CanalOeuvre.checkOeuvres(params);
+    });
   }
 }
 
 class RpcOeuvre extends Rpc {
   protected panelName = 'panneau des œuvres';
+  checkOeuvres(params: {oeuvres: string[]}) {
+    this.rpc.notify('check-oeuvres', params);
+  }
   // Définir ici les méthodes messages avec le panneau des Oeuvres
   displayOeuvre(param: {oeuvreId: string}){
     this.rpc.notify('display-oeuvre', param);
   }
+  initialize(panel: vscode.WebviewPanel): void {
+    super.initialize(panel);
+
+ }
   
 }
 class RpcExemple extends Rpc {

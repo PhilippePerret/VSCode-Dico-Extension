@@ -28,7 +28,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   private tablePropertiesByPropName!: Map<string, FormProperty>;
   abstract afterEdit(): void; // à faire après l'édition d'un élément
   abstract onSave(item: T): Promise<boolean>; // Fonction pour sauver (appelée quand on sauve la donnée)
-  abstract checkItem(item: T): string | undefined ; // Pour checker les données (en plus des données de l'item, contient :original (les données originales et :changeset, les données modifiées))
+  async checkItem(item: T): Promise<string | undefined> { return undefined ; }; // Pour checker les données (en plus des données de l'item, contient :original (les données originales et :changeset, les données modifiées))
   onCancel?(): void; // Fonction appelée en cas d'annulation
   abstract observeForm(): void; // fonction d'observation propre du formulaire
   onFocusForm?(ev: FocusEvent): any;
@@ -69,7 +69,8 @@ export abstract class FormManager<C, T extends ConcreteElement> {
 
   public async saveItem(andQuit: boolean): Promise<void> {
     const map = new Map();
-    if ( this.itemIsNotSavable() ) { return ;}
+    const res = await this.itemIsNotSavable();
+    if (res) { return ;}
     map.set('o', this.onConfirmSave.bind(this, andQuit));
     map.set('n', this.cancelEdit.bind(this));
     this.panel.flashAction(
@@ -77,7 +78,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
     );
   }
 
-  private itemIsNotSavable(): boolean {
+  private async itemIsNotSavable(): Promise<boolean> {
     this.panel.cleanFlash();
     let invalidity: string | undefined ;
     const fakeItem = this.collectValues();
@@ -102,7 +103,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
     } else if (changeset.size === 0 ) {
       this.panel.flash("Les données n'ont pas changé…", 'warn');
       return true;
-    } else if ( invalidity = this.checkItem(fakeItem)) {
+    } else if ( invalidity = await this.checkItem(fakeItem)) {
       this.panel.flash("Les données sont invalides : " + invalidity, 'error');
       return true;
     }

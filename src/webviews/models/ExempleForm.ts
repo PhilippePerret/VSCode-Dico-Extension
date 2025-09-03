@@ -10,7 +10,8 @@ export class ExempleForm extends FormManager<typeof Exemple, FExemple> {
   prefix = 'exemple';
   properties: FormProperty[] = [
   ];
-  checkItem(item: Exemple): string | undefined {
+
+  async checkItem(item: Exemple): Promise<string | undefined> {
     return 'Les données ne sont pas checkés';
   }
 

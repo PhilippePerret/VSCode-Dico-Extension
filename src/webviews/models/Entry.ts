@@ -96,7 +96,7 @@ Entry.panel = EntryPanel;
  * ================= R P C ====================
  */
 
-const RpcEntry = createRpcClient();
+export const RpcEntry = createRpcClient();
 
 // Evènement reçu de l'extension à l'ouverture (après l'installation 
 // complète) permettant essentiellement d'afficher la première aide.

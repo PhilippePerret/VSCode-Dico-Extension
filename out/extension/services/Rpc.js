@@ -37,12 +37,25 @@ class RpcEntry extends Rpc {
     displayEntry(param) {
         this.rpc.notify('display-entry', param);
     }
+    initialize(panel) {
+        super.initialize(panel);
+        this.rpc.on('check-oeuvres', async (params) => {
+            console.log("[EXTENSION Demande de vérification des oeuvres : ", params);
+            exports.CanalOeuvre.checkOeuvres(params);
+        });
+    }
 }
 class RpcOeuvre extends Rpc {
     panelName = 'panneau des œuvres';
+    checkOeuvres(params) {
+        this.rpc.notify('check-oeuvres', params);
+    }
     // Définir ici les méthodes messages avec le panneau des Oeuvres
     displayOeuvre(param) {
         this.rpc.notify('display-oeuvre', param);
+    }
+    initialize(panel) {
+        super.initialize(panel);
     }
 }
 class RpcExemple extends Rpc {
