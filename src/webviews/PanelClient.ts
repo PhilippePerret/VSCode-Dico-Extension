@@ -40,7 +40,8 @@ export class PanelClient<T extends Tplus, C> {
     const o = document.createElement('div');
     o.className = type;
     o.innerHTML = msg;
-    (this.messageBox as HTMLDivElement).appendChild(o);
+    this.messageBox.appendChild(o);
+    this.messageBox.style.zIndex = '10';
     if ( type === 'notice' ) {
       // TODO Temporiser le message
       setTimeout(() => { this.cleanFlash.call(this); }, 10 * 1000);
@@ -52,7 +53,7 @@ export class PanelClient<T extends Tplus, C> {
     }
   }
   public cleanFlash(){ 
-    const msgbox = (this.messageBox as HTMLDivElement);
+    const msgbox = this.messageBox;
     msgbox.innerHTML = '';
     msgbox.style.zIndex = '-1';
   }
@@ -194,7 +195,7 @@ export class PanelClient<T extends Tplus, C> {
   protected get container(){ return this._container || (this._container = document.querySelector('main#items') as HTMLDivElement);}
   private get itemTemplate(){ return this._itemTemplate || (this._itemTemplate = document.querySelector('template#item-template') as HTMLTemplateElement);}
   private get searchInput(){ return this._searchInput || (this._searchInput = document.querySelector('input#search-input') as HTMLInputElement);}
-  private get messageBox(){ return document.querySelector('div#message');}
+  private get messageBox(){ return document.querySelector('div#message') as HTMLDivElement;}
   private get help(){return this._help || (this._help = new Help(this));}
 
   private minName:string;
