@@ -542,6 +542,7 @@
       o.className = type;
       o.innerHTML = msg;
       this.messageBox.appendChild(o);
+      this.messageBox.style.zIndex = "10";
       if (type === "notice") {
         setTimeout(() => {
           this.cleanFlash.call(this);

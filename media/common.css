@@ -105,7 +105,7 @@ header div#message div.warn {background-color: #FFEEEE; color: red;}
 header div#message div.error {background-color: red; color: white;}
 
 #search-bar {
-	display: block;
+	display: flex;
 	margin-left: 0px;
 	position: absolute;
 	bottom: 2px;
