@@ -34,10 +34,14 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
     if (isNewItem) { this.setIdLock(false); }
   }
 
-  checkItem(item: {[x:string]: any}): string | null {
-    const isNew = item.isNew ; // TODO <==== LE PROGRAMMER (CHECKER QUAND ON DONNE LES DONNÉES, MAIS VOIR POUR L'EXEMPLE, QUI N'A PAS DE PROPRIÉTÉ ID — voir si elle n'est pas ajoutée, en fait)
+  /**
+   * Grand méthode de check de la validité de l'item. On ne l'envoie
+   * en enregistrement que s'il est parfaitement conforme. 
+   */
+  checkItem(item: {[x:string]: any}): string | undefined {
+    const isNew = item.isNew ;
     const errors: string[] = [];
-    // TODO L'entrée doit être définie
+    // L'entrée doit être définie
     if (item.entree === '') {
       errors.push("L'entrée doit être définie");
     }
@@ -66,28 +70,52 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
       if ( unknownEntries.length > 0) {
         errors.push(`entrées inconnues dans la défintion (${unknownEntries.join(', ')})`);
       }
+    } else {
+      console.log("La définition n'a pas été modifiée.");
     }
+
     // Le genre doit être donné
     item.genre === '' || errors.push("Le genre de l'entrée doit être donné");
     
-    // TODO Si la catégorie existe, elle doit exister
+    // Si les catégories sont définies, il faut qu'elles existent
+    // Rappel : Une "catégorie", c'est simplement l'ID d'une entrée
+    // (c'est la particularité du dictionnaire, mais ça tombe sous le
+    // sens) 
     if (item.categorie_id !== '' && item.changeset.has('categorie_id')) {
       const unknownCategorie = this.checkUnknownCategoriesIn(item.categorie_id);
       if ( unknownCategorie.length ) {
         errors.push(`des catégories sont inconnues : ${unknownCategorie.join(', ')}`);
       }
     }
-    if ( errors.length === 0 ) {
-      return null;
-    } else {
+    if ( errors.length ) {
       console.error("Données invalides", errors);
       return errors.join(', ').toLowerCase();
     }
   }
 
+  static readonly REGEX_APPELS_ENTRIES = new RegExp(`(?:${Object.keys(Constants.MARK_ENTRIES).join('|')})\\(([^)]+)\\)`, "g");
+
   // Pour chercher les entrées mentionnées dans la définition
   searchUnknownEntriesIn(str: string): string[] {
-    return ['entrée à chercher'];
+    const founds: string[] = [];
+    const matches = str.matchAll(EntryForm.REGEX_APPELS_ENTRIES);
+    for (const match of matches) {
+      const foo = match[1];
+      let [entry, entryId] = foo.split('|');
+      entryId = (entryId || entry).trim();
+      if ( Entry.doesIdExist(entryId) ) {
+        console.log("Id d'entrée existante", entryId);
+      } else {
+        founds.push(entryId);
+      }
+    }
+    return founds;
+  }
+  searchUnkownOeuvreIn(str: string): string[]{
+    return ["oeuvres à checker"];
+  }
+  searchUnknownExempleIn(str: string): string[]{
+    return ["Les exemples sont à checker"];
   }
   // @return la liste des catégories inconnues
   checkUnknownCategoriesIn(str: string): string[] {

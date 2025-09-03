@@ -15,13 +15,10 @@ import { FullEntry } from '../../extension/models/Entry';
 import { StringNormalizer } from '../../bothside/StringUtils';
 import { ClientItem } from '../ClientItem';
 import { createRpcClient } from '../RpcClient';
-import { VimLikeManager } from '../services/VimLikeManager';
 import { AnyElementType } from './AnyClientElement';
 import { AccessTable } from '../services/AccessTable';
 import { PanelClient } from '../PanelClient';
 import { EntryForm } from './EntryForm';
-
-type Tinstance = InstanceType<typeof UEntry>
 
 export class Entry extends ClientItem<UEntry, FullEntry> {
   declare public data: FullEntry;

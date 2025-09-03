@@ -28,7 +28,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   private tablePropertiesByPropName!: Map<string, FormProperty>;
   abstract afterEdit(): void; // à faire après l'édition d'un élément
   abstract onSave(item: T): Promise<boolean>; // Fonction pour sauver (appelée quand on sauve la donnée)
-  abstract checkItem(item: T): string | null ; // Pour checker les données (en plus des données de l'item, contient :original (les données originales et :changeset, les données modifiées))
+  abstract checkItem(item: T): string | undefined ; // Pour checker les données (en plus des données de l'item, contient :original (les données originales et :changeset, les données modifiées))
   onCancel?(): void; // Fonction appelée en cas d'annulation
   abstract observeForm(): void; // fonction d'observation propre du formulaire
   onFocusForm?(ev: FocusEvent): any;
@@ -79,7 +79,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
 
   private itemIsNotSavable(): boolean {
     this.panel.cleanFlash();
-    let invalidity: string | null;
+    let invalidity: string | undefined ;
     const fakeItem = this.collectValues();
     if ( !this.originalData.id ) { Object.assign(fakeItem, {isNew: true}); }
     // Comme dans Phoenix, on fait un changeset dans fakeItem

@@ -607,6 +607,48 @@
     }
   };
 
+  // src/webviews/ConsoleManager.ts
+  var ConsoleManager = class {
+    constructor(panel) {
+      this.panel = panel;
+      this.console = panel.consoleInput;
+    }
+    console;
+    history = [];
+    ihistory = 0;
+    runCode() {
+      const code = this.console.value;
+      try {
+        console.log("\xC9valuation du code %s", code, (0, eval)(code));
+        this.history.push(code);
+        this.ihistory = this.history.length;
+        this.console.value = "";
+      } catch (error) {
+        console.error("Une erreur s'est produite en \xE9valuant le cde : ", code, error);
+      }
+    }
+    setCode() {
+      console.log("Console.setCode. History. iHistory", this.history, this.ihistory);
+      this.console.value = this.history[this.ihistory];
+    }
+    backHistory() {
+      if (this.ihistory === 0) {
+        console.log("Fin de l'historique");
+        return;
+      }
+      this.ihistory--;
+      this.setCode();
+    }
+    forwardHistory() {
+      if (this.ihistory === this.history.length - 1) {
+        console.log("Bout de l'historique");
+        return;
+      }
+      this.ihistory++;
+      this.setCode();
+    }
+  };
+
   // src/webviews/services/HelpManager.ts
   var Help = class _Help {
     constructor(panel) {
@@ -997,7 +1039,7 @@
       } else if (type === "action") {
       } else {
         o.addEventListener("click", (ev) => {
-          this.cleanFlash.call(this);
+          this.cleanFlash();
         });
       }
     }
@@ -1105,6 +1147,8 @@
       const field = this.searchInput;
       field.addEventListener("input", this.filterItems.bind(this));
       field.addEventListener("keyup", this.filterItems.bind(this));
+      const cons = this.consoleInput;
+      cons.addEventListener("keyup", this.watchAndRunConsole.bind(this));
     }
     // Méthode générique de filtrage des items du panneau
     filterItems(ev) {
@@ -1144,6 +1188,9 @@
     get searchInput() {
       return this._searchInput || (this._searchInput = document.querySelector("input#search-input"));
     }
+    get consoleInput() {
+      return this._consInput || (this._consInput = document.querySelector("input#panel-console"));
+    }
     get messageBox() {
       return document.querySelector("div#message");
     }
@@ -1160,7 +1207,9 @@
     _container;
     _itemTemplate;
     _searchInput;
+    _consInput;
     _keyManager;
+    consoleManager;
     _help;
     constructor(data) {
       this.minName = data.minName;
@@ -1174,6 +1223,19 @@
       this._actif = actif;
       this.keyManager.setMode("normal");
     }
+    /** 
+     * Méthode appelée quand on joue une touche dans la console
+     */
+    watchAndRunConsole(ev) {
+      this.consoleManager || (this.consoleManager = new ConsoleManager(this));
+      if (ev.key === "Enter") {
+        this.consoleManager.runCode();
+      } else if (ev.key === "ArrowDown") {
+        this.consoleManager.forwardHistory();
+      } else if (ev.key === "ArrowUp") {
+        this.consoleManager.backHistory();
+      }
+    }
   };
 
   // src/bothside/UConstants.ts
@@ -1185,6 +1247,20 @@
       "vb": "verbe",
       "adj": "adj.",
       "adv": "adv."
+    };
+    /**
+     * Les préfixes/marques qui introduisent des index dans les définitions
+     * principalement. Permet, par exemple dans le check des valeurs des
+     * définitions, de vérifier l'existence des mots référencés.
+     * 
+     * Leur forme canonique est :
+     * 
+     *  <mark>(<id entrée>) ou <mark>(<texte écrit>|<id entrée>)
+     */
+    static MARK_ENTRIES = {
+      "->": { name: "Envoi simple" },
+      "index": { name: "Simple indexation" },
+      "tt": { name: "simple terme technique (sans page)" }
     };
   };
 
@@ -1527,7 +1603,7 @@
   // src/webviews/models/EntryForm.ts
   var allg = Constants.ENTRIES_GENRES;
   var genres = Object.keys(allg).map((key) => [key, allg[key]]);
-  var EntryForm = class extends FormManager {
+  var EntryForm = class _EntryForm extends FormManager {
     formId = "entry-form";
     prefix = "entry";
     properties = [
@@ -1552,6 +1628,10 @@
         this.setIdLock(false);
       }
     }
+    /**
+     * Grand méthode de check de la validité de l'item. On ne l'envoie
+     * en enregistrement que s'il est parfaitement conforme. 
+     */
     checkItem(item) {
       const isNew = item.isNew;
       const errors = [];
@@ -1579,6 +1659,8 @@
         if (unknownEntries.length > 0) {
           errors.push(`entr\xE9es inconnues dans la d\xE9fintion (${unknownEntries.join(", ")})`);
         }
+      } else {
+        console.log("La d\xE9finition n'a pas \xE9t\xE9 modifi\xE9e.");
       }
       item.genre === "" || errors.push("Le genre de l'entr\xE9e doit \xEAtre donn\xE9");
       if (item.categorie_id !== "" && item.changeset.has("categorie_id")) {
@@ -1587,16 +1669,33 @@
           errors.push(`des cat\xE9gories sont inconnues : ${unknownCategorie.join(", ")}`);
         }
       }
-      if (errors.length === 0) {
-        return null;
-      } else {
+      if (errors.length) {
         console.error("Donn\xE9es invalides", errors);
         return errors.join(", ").toLowerCase();
       }
     }
+    static REGEX_APPELS_ENTRIES = new RegExp(`(?:${Object.keys(Constants.MARK_ENTRIES).join("|")})\\(([^)]+)\\)`, "g");
     // Pour chercher les entrées mentionnées dans la définition
     searchUnknownEntriesIn(str) {
-      return ["entr\xE9e \xE0 chercher"];
+      const founds = [];
+      const matches = str.matchAll(_EntryForm.REGEX_APPELS_ENTRIES);
+      for (const match of matches) {
+        const foo = match[1];
+        let [entry, entryId] = foo.split("|");
+        entryId = (entryId || entry).trim();
+        if (Entry.doesIdExist(entryId)) {
+          console.log("Id d'entr\xE9e existante", entryId);
+        } else {
+          founds.push(entryId);
+        }
+      }
+      return founds;
+    }
+    searchUnkownOeuvreIn(str) {
+      return ["oeuvres \xE0 checker"];
+    }
+    searchUnknownExempleIn(str) {
+      return ["Les exemples sont \xE0 checker"];
     }
     // @return la liste des catégories inconnues
     checkUnknownCategoriesIn(str) {

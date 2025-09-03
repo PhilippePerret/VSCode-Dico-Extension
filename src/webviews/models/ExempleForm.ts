@@ -10,7 +10,7 @@ export class ExempleForm extends FormManager<typeof Exemple, FExemple> {
   prefix = 'exemple';
   properties: FormProperty[] = [
   ];
-  checkItem(item: Exemple): string | null {
+  checkItem(item: Exemple): string | undefined {
     return 'Les données ne sont pas checkés';
   }
 

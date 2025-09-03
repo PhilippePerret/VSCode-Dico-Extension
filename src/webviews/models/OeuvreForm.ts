@@ -15,7 +15,7 @@ export class OeuvreForm extends FormManager<typeof Oeuvre, FOeuvre> {
     return true;
   }
 
-  checkItem(item: Oeuvre): string | null {
+  checkItem(item: Oeuvre): string | undefined {
     return 'Les données ne sont pas checkés';
   }
 

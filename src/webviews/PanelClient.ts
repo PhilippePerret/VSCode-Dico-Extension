@@ -1,3 +1,4 @@
+import { ConsoleManager } from "./ConsoleManager";
 import { AnyElementType } from "./models/AnyClientElement";
 import { Entry } from "./models/Entry";
 import { Exemple } from "./models/Exemple";
@@ -43,13 +44,13 @@ export class PanelClient<T extends Tplus, C> {
     this.messageBox.appendChild(o);
     this.messageBox.style.zIndex = '10';
     if ( type === 'notice' ) {
-      // TODO Temporiser le message
+      // Temporiser le message
       setTimeout(() => { this.cleanFlash.call(this); }, 10 * 1000);
     } else if ( type === 'action' ) {
-      // TODO Bloquer le message avec quelques lettres possibles seulement
+      // Bloquer le message avec quelques lettres possibles seulement
     } else {
       // Sinon, on clique le message pour le fermer
-      o.addEventListener('click', (ev: MouseEvent) => { this.cleanFlash.call(this); });
+      o.addEventListener('click', (ev: MouseEvent) => { this.cleanFlash(); });
     }
   }
   public cleanFlash(){ 
@@ -160,6 +161,9 @@ export class PanelClient<T extends Tplus, C> {
     const field = this.searchInput;
     field.addEventListener('input', this.filterItems.bind(this));
     field.addEventListener('keyup', this.filterItems.bind(this));
+    // Écouter le champ de console
+    const cons = this.consoleInput;
+    cons.addEventListener('keyup', this.watchAndRunConsole.bind(this));
   };
   // Méthode générique de filtrage des items du panneau
   private filterItems(ev: Event ) {
@@ -195,6 +199,7 @@ export class PanelClient<T extends Tplus, C> {
   protected get container(){ return this._container || (this._container = document.querySelector('main#items') as HTMLDivElement);}
   private get itemTemplate(){ return this._itemTemplate || (this._itemTemplate = document.querySelector('template#item-template') as HTMLTemplateElement);}
   private get searchInput(){ return this._searchInput || (this._searchInput = document.querySelector('input#search-input') as HTMLInputElement);}
+  public get consoleInput(){return this._consInput || (this._consInput = document.querySelector('input#panel-console') as HTMLInputElement);}
   private get messageBox(){ return document.querySelector('div#message') as HTMLDivElement;}
   private get help(){return this._help || (this._help = new Help(this));}
 
@@ -206,7 +211,9 @@ export class PanelClient<T extends Tplus, C> {
   private _container!: HTMLDivElement;
   private _itemTemplate!: HTMLTemplateElement;
   private _searchInput!: HTMLInputElement;
+  private _consInput!: HTMLInputElement;
   protected _keyManager!: VimLikeManager;
+  private consoleManager!: ConsoleManager;
   private _help!: Help;
   
   constructor(data: PanelConstructorData) {
@@ -221,5 +228,21 @@ export class PanelClient<T extends Tplus, C> {
     document.body.classList[actif ?'add':'remove']('actif');
     this._actif = actif ;
     this.keyManager.setMode('normal');
+  }
+
+  /** 
+   * Méthode appelée quand on joue une touche dans la console
+   */
+  watchAndRunConsole(ev: KeyboardEvent) { 
+    this.consoleManager || (this.consoleManager = new ConsoleManager(this));
+    if ( ev.key === 'Enter') {
+      // On ne la charge qu'au besoin
+      this.consoleManager.runCode();
+    } else if ( ev.key === 'ArrowDown') {
+      this.consoleManager.forwardHistory();
+    } else if ( ev.key === 'ArrowUp') {
+      this.consoleManager.backHistory();
+    }
+
   }
 }

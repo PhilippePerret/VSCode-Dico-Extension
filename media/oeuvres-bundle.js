@@ -406,6 +406,48 @@
     }
   };
 
+  // src/webviews/ConsoleManager.ts
+  var ConsoleManager = class {
+    constructor(panel) {
+      this.panel = panel;
+      this.console = panel.consoleInput;
+    }
+    console;
+    history = [];
+    ihistory = 0;
+    runCode() {
+      const code = this.console.value;
+      try {
+        console.log("\xC9valuation du code %s", code, (0, eval)(code));
+        this.history.push(code);
+        this.ihistory = this.history.length;
+        this.console.value = "";
+      } catch (error) {
+        console.error("Une erreur s'est produite en \xE9valuant le cde : ", code, error);
+      }
+    }
+    setCode() {
+      console.log("Console.setCode. History. iHistory", this.history, this.ihistory);
+      this.console.value = this.history[this.ihistory];
+    }
+    backHistory() {
+      if (this.ihistory === 0) {
+        console.log("Fin de l'historique");
+        return;
+      }
+      this.ihistory--;
+      this.setCode();
+    }
+    forwardHistory() {
+      if (this.ihistory === this.history.length - 1) {
+        console.log("Bout de l'historique");
+        return;
+      }
+      this.ihistory++;
+      this.setCode();
+    }
+  };
+
   // src/webviews/services/HelpManager.ts
   var Help = class _Help {
     constructor(panel) {
@@ -550,7 +592,7 @@
       } else if (type === "action") {
       } else {
         o.addEventListener("click", (ev) => {
-          this.cleanFlash.call(this);
+          this.cleanFlash();
         });
       }
     }
@@ -658,6 +700,8 @@
       const field = this.searchInput;
       field.addEventListener("input", this.filterItems.bind(this));
       field.addEventListener("keyup", this.filterItems.bind(this));
+      const cons = this.consoleInput;
+      cons.addEventListener("keyup", this.watchAndRunConsole.bind(this));
     }
     // Méthode générique de filtrage des items du panneau
     filterItems(ev) {
@@ -697,6 +741,9 @@
     get searchInput() {
       return this._searchInput || (this._searchInput = document.querySelector("input#search-input"));
     }
+    get consoleInput() {
+      return this._consInput || (this._consInput = document.querySelector("input#panel-console"));
+    }
     get messageBox() {
       return document.querySelector("div#message");
     }
@@ -713,7 +760,9 @@
     _container;
     _itemTemplate;
     _searchInput;
+    _consInput;
     _keyManager;
+    consoleManager;
     _help;
     constructor(data) {
       this.minName = data.minName;
@@ -726,6 +775,19 @@
       document.body.classList[actif ? "add" : "remove"]("actif");
       this._actif = actif;
       this.keyManager.setMode("normal");
+    }
+    /** 
+     * Méthode appelée quand on joue une touche dans la console
+     */
+    watchAndRunConsole(ev) {
+      this.consoleManager || (this.consoleManager = new ConsoleManager(this));
+      if (ev.key === "Enter") {
+        this.consoleManager.runCode();
+      } else if (ev.key === "ArrowDown") {
+        this.consoleManager.forwardHistory();
+      } else if (ev.key === "ArrowUp") {
+        this.consoleManager.backHistory();
+      }
     }
   };
 

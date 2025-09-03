@@ -1,7 +1,14 @@
 # Todo list
 
-* Mettre des tabulations sur les champs d'édition pour passer de l'un à l'autre avec tab
-* Bien situer le champ de filtrage en bas de l'entête
+* BUGS À CORRIGER
+  - quand je filtre et que je fais "f", ça ne sélectionne pas un des éléments affichés (avec la console, obtenir la valeur de l'item sélectionné)
+  - quand je clique sur l'erreur, elle ne se ferme pas
+
+* Traiter l'affichage de la définition
+  - dim(…)
+  - toutes les marques d'appel/index de définition (cf MARK_ENTRIES)
+  - les marques oeuvres
+  - les marques d'exemple
 * Travailler l'édition
   - check de toutes les données
   - enregistrement dans la base de données
