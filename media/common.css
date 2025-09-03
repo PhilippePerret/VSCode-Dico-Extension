@@ -20,6 +20,17 @@ shortcut {
     margin-top: 1px;
 	}
 	
+	/*
+		Pour mettre en exergue les champs d'édition
+	*/
+	input[type="text"]:not(:focus), textarea:not(:focus), select:not(:focus) {
+		background-color: darkseagreen;
+	}
+	input[type="text"]:focus, textarea:focus, select:focus {
+		background-color: white;
+		outline: none!important;
+	}
+	
 	body {
 	border: 1px solid;
 	font-family: Charter;
