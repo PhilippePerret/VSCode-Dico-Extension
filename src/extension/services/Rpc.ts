@@ -59,6 +59,11 @@ class RpcEntry extends Rpc {
       console.log("[EXTENSION Demande de vérification des oeuvres : ", params);
       CanalOeuvre.checkOeuvres(params);
     });
+
+    this.rpc.on('check-exemples', async (params: {CRId: string, exemples: string[][]}) => {
+      console.log("[EXTENTION] Demande de vérification des exemples :", params);
+      CanalExemple.checkExemples(params);
+    });
   }
 }
 
@@ -85,6 +90,10 @@ class RpcOeuvre extends Rpc {
 class RpcExemple extends Rpc {
   protected panelName = 'panneau des exemples';
   // Définir ici les méthodes messages avec le panneau des exemples
+
+  checkExemples(params: {CRId: string, exemples: string[][]}) {
+    this.rpc.notify('check-exemples', params);
+  }
 
   initialize(panel: vscode.WebviewPanel) {
     super.initialize(panel);

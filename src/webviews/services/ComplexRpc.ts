@@ -68,6 +68,7 @@ export class ComplexRpc {
     return new Promise( (ok, ko) => {
       this.ok = ok;
       this.ko = ko;
+      setTimeout(this.ko.bind(this, 'timeout-20'), 10 * 10000);
       this.call(this.id);
     });
   }

@@ -55,6 +55,12 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
       errors.push(`des œuvres sont introuvables : ${unknownOeuvres.map(t => `"${t}"`).join(', ')}`);
     }
 
+    // Vérification (complexe) de l'existence des exemples
+    // définis dans la définition de l'entrée
+    const unknownEx: string[] = await this.checkExistenceExemples(item);
+    if ( unknownEx.length ) {
+      errors.push(`des exemples sont introuvables: ${unknownEx.join(', ')}`);
+    }
 
 
     // résultat final retourné
@@ -176,7 +182,9 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
   /**
    * Vérifie que les œuvres désignées dans les balises oeuvre(...) existent
    * bel et bien.
-   * C'est une requête Rpc complexe (ComplexRpc)
+   *
+   * Cette fonction s'intègre dans une requête Rpc complexe (ComplexRpc)
+   * 
    * Pour ce faire, on a besoin de passer par l'extension car on n'a pas 
    * accès aux oeuvres depuis ici.
    * 
@@ -194,9 +202,49 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
     RpcEntry.notify('check-oeuvres', { CRId, oeuvres });
   }
 
-  searchUnknownExempleIn(str: string): string[]{
-    return ["Les exemples sont à checker"];
+  /**
+   * Fonction principale pour checker les exemples dans la définition
+   * C'est elle qui initie la requête Rpc complexe. 
+   */
+  async checkExistenceExemples(item: { [x: string]: any }): Promise<string[]> {
+    const comp = new ComplexRpc({
+      call: this.searchUnknownExemplesIn.bind(this, item.definition)
+    });
+    const resultat = await comp.run();
+    const res = resultat as {known: string[], unknown: string[]};
+    return res.unknown;
   }
+  /**
+   * Fonction vérifiant l'existence des exemples
+   * 
+   * Elle s'intègre dans la requête Rpc complexe inaugurée par la
+   * fonction checkExistenceExemples.
+   * 
+   * Rappel : les exemples, dans les définitions, sont définis par
+   * EXEMPLES[<ID oeuvre>:<indice exemple>, <ID oeuvre>:<indice>, etc.]
+   * Il peut y en avoir plusieurs par définition, comme pour la définition des genres.
+   *  
+   * @param str Le texte de la définition
+   * @param CRId L'identifiant de la ComplexRpc qui gère toute la communication
+   * 
+   * @return Rien, c'est la méthode message en bout de chaine qui résolvera 
+   * la requête Rpc complexe pour poursuivre.
+   */
+  searchUnknownExemplesIn(str: string, CRId: string): void {
+    let matches = str.matchAll(/EXEMPLES\[([^\]]+)\]/g);
+    const exemples: string[][] = [];
+    for (var match of matches) {
+      match[1]
+        .split(',')
+        .map(s => s.trim())
+        .forEach(paire => {
+          const [oeuvreId, exIndice] = paire.split(':');
+          exemples.push([oeuvreId, exIndice]);
+        });
+    }
+    RpcEntry.notify('check-exemples', {CRId, exemples});
+  }
+  
   // @return la liste des catégories inconnues
   checkUnknownCategoriesIn(str: string): string[] {
     const cats = str.split(',').map(s => s.trim());

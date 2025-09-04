@@ -68,6 +68,17 @@ resultatCheckingOeuvres(params: {resultat: any}){
 }
 ~~~
 
+Côté panneau initial, on peut récupérer le message et le résultat, de façon normal.
+
+~~~typescript
+RpcEntry.on('check-oeuvre-resultat', (params) => {
+  //.... traitement ....
+});
+~~~
+
+**NOTA BENE** : La classe `ComplexRpc` permet de gérer l'asynchronicité de ces requêtes Rcp complexes, interpanneaux et client<->serveur. Voir par exemple l'exemple concret de la vérification de l'existence des œuvres dans le checkItem du formulaire de la liste des entrées (`webviews/models/EntryForm.ts`).
+
+
 
 ---
 

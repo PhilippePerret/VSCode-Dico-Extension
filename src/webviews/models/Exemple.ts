@@ -20,7 +20,28 @@ export class Exemple extends ClientItem<UExemple, FullExemple> {
   static setAccessTable(items: Exemple[]) {
     this._accessTable = new AccessTable<Exemple>(Exemple, items);
   }
+
+  static doExemplesExist(exemples: string[][]): {known: string[], unknown: string[]} {
+    const resultat: {known: string[], unknown: string[]} = {known: [], unknown: []};
+    exemples.forEach(paire => {
+      const [oeuvreId, exIndice] = paire;
+      const paireStr = paire.join(':');
+      if ( this.exempleExists(oeuvreId, Number(exIndice))) {
+        resultat.known.push(paireStr);
+      } else {
+        resultat.unknown.push(paireStr);
+      }
+    });
+    return resultat;
+  }
+  static exempleExists(oeuvreId: string, exIndice: number) {
+    return !!this.accessTable.existsById(`${oeuvreId}-${exIndice}`);
+  }
+
+
+
 }
+
 
 interface OTitre {
   id: string;
@@ -228,6 +249,12 @@ RpcEx.on('populate', (params) => {
   ExemplePanel.populate(Exemple.accessTable);
   ExemplePanel.initialize();
   ExemplePanel.initKeyManager();
+});
+
+RpcEx.on('check-exemples', (params) => {
+  console.log("[PANNEAU EXEMPLE] Demande de vérification des exemples :", params.exemples);
+  const resultat = Exemple.doExemplesExist(params.exemples);
+  console.log("Résultat du check", resultat);
 });
 
 (window as any).Exemple = Exemple;

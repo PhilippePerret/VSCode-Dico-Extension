@@ -48,6 +48,10 @@ class RpcEntry extends Rpc {
             console.log("[EXTENSION Demande de vérification des oeuvres : ", params);
             exports.CanalOeuvre.checkOeuvres(params);
         });
+        this.rpc.on('check-exemples', async (params) => {
+            console.log("[EXTENTION] Demande de vérification des exemples :", params);
+            exports.CanalExemple.checkExemples(params);
+        });
     }
 }
 class RpcOeuvre extends Rpc {
@@ -70,6 +74,9 @@ class RpcOeuvre extends Rpc {
 class RpcExemple extends Rpc {
     panelName = 'panneau des exemples';
     // Définir ici les méthodes messages avec le panneau des exemples
+    checkExemples(params) {
+        this.rpc.notify('check-exemples', params);
+    }
     initialize(panel) {
         super.initialize(panel);
         // console.log("-> initialisation du rpc et des méthodes", this.rpc);

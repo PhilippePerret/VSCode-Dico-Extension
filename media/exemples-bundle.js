@@ -1610,6 +1610,22 @@
     static setAccessTable(items) {
       this._accessTable = new AccessTable(_Exemple, items);
     }
+    static doExemplesExist(exemples) {
+      const resultat = { known: [], unknown: [] };
+      exemples.forEach((paire) => {
+        const [oeuvreId, exIndice] = paire;
+        const paireStr = paire.join(":");
+        if (this.exempleExists(oeuvreId, Number(exIndice))) {
+          resultat.known.push(paireStr);
+        } else {
+          resultat.unknown.push(paireStr);
+        }
+      });
+      return resultat;
+    }
+    static exempleExists(oeuvreId, exIndice) {
+      return !!this.accessTable.existsById(`${oeuvreId}-${exIndice}`);
+    }
   };
   var ExemplePanelClass = class extends PanelClient {
     get accessTable() {
@@ -1780,6 +1796,11 @@
     ExemplePanel.populate(Exemple.accessTable);
     ExemplePanel.initialize();
     ExemplePanel.initKeyManager();
+  });
+  RpcEx.on("check-exemples", (params) => {
+    console.log("[PANNEAU EXEMPLE] Demande de v\xE9rification des exemples :", params.exemples);
+    const resultat = Exemple.doExemplesExist(params.exemples);
+    console.log("R\xE9sultat du check", resultat);
   });
   window.Exemple = Exemple;
 })();
