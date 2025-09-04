@@ -80,7 +80,6 @@ export abstract class FormManager<C, T extends ConcreteElement> {
 
   private async itemIsNotSavable(): Promise<boolean> {
     this.panel.cleanFlash();
-    let invalidity: string | undefined ;
     const fakeItem = this.collectValues();
     if ( !this.originalData.id ) { Object.assign(fakeItem, {isNew: true}); }
     // Comme dans Phoenix, on fait un changeset dans fakeItem
@@ -100,10 +99,14 @@ export abstract class FormManager<C, T extends ConcreteElement> {
     if ( this.itemIsEmpty(fakeItem)) {
       this.panel.flash("Aucune donnée n'a été founie…", 'error');
       return true;
-    } else if (changeset.size === 0 ) {
+    } 
+    if (changeset.size === 0 ) {
       this.panel.flash("Les données n'ont pas changé…", 'warn');
       return true;
-    } else if ( invalidity = await this.checkItem(fakeItem)) {
+    }
+    let invalidity: string | undefined = await this.checkItem(fakeItem);
+    console.log("J'AI FINI LE CHECK DE L'ITEM");
+    if (invalidity) {
       this.panel.flash("Les données sont invalides : " + invalidity, 'error');
       return true;
     }

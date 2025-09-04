@@ -44,10 +44,18 @@ class RpcEntry extends Rpc {
   displayEntry(param: { entry_id: string }) {
     this.rpc.notify('display-entry', param);
   }
+
+  // Pour retourner le résultat du check des oeuvres au panneau des oeuvres
+  resultatCheckingOeuvres(params: {CRId: string, resultat: {known: string[], unknown: string[]}}){
+    console.log("[EXTENSION] Envoi des résultats du check des oeuvres au panneau Entrées");
+    this.rpc.notify('check-oeuvres-resultat', params);
+  }
+
+
   initialize(panel: vscode.WebviewPanel): void {
     super.initialize(panel);
 
-    this.rpc.on('check-oeuvres', async (params: { oeuvres: string[] }) => {
+    this.rpc.on('check-oeuvres', async (params: { CRId: string, oeuvres: string[] }) => {
       console.log("[EXTENSION Demande de vérification des oeuvres : ", params);
       CanalOeuvre.checkOeuvres(params);
     });
@@ -56,7 +64,7 @@ class RpcEntry extends Rpc {
 
 class RpcOeuvre extends Rpc {
   protected panelName = 'panneau des œuvres';
-  checkOeuvres(params: {oeuvres: string[]}) {
+  checkOeuvres(params: {CRId: string, oeuvres: string[]}) {
     this.rpc.notify('check-oeuvres', params);
   }
   // Définir ici les méthodes messages avec le panneau des Oeuvres
@@ -65,6 +73,11 @@ class RpcOeuvre extends Rpc {
   }
   initialize(panel: vscode.WebviewPanel): void {
     super.initialize(panel);
+    
+    this.rpc.on('check-oeuvres-resultat', (params: {CRId: string, resultat: {known: string[], unknown: string[]}}) => {
+      console.log("[EXTENSION] Réception du résultat du check des oeuvres", params);
+      CanalEntry.resultatCheckingOeuvres(params);
+    });
 
  }
   

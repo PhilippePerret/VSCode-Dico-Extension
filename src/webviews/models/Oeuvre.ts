@@ -21,6 +21,32 @@ export class Oeuvre extends ClientItem<UOeuvre, FullOeuvre> {
     this._accessTable = new AccessTable<Oeuvre>(Oeuvre, items);
   }
 
+  /**
+        ==== MÉTHODES DE CHECK ===
+   */
+
+  /**
+   * Méthode qui checke l'existence des oeuvres
+   * 
+   * @param oeuvres Liste des oeuvres, désignées par leur identifiant ou un de leurs titres
+   * @return Une table avec les clés :known (oeuvres connues) et :unknown (oeuvres inconnues)
+   */
+  public static doOeuvresExist(oeuvres: string[]): {known: string[], unknown: string[]} {
+    const retour: {known: string[], unknown: string[]} = {known: [], unknown: []};
+    oeuvres.forEach(oeuvre => {
+      if (this.accessTable.existsById(oeuvre) || this.oeuvreExistsByTitle(oeuvre) ) {
+        retour.known.push(oeuvre);
+      } else {
+        retour.unknown.push(oeuvre);
+      }
+    });
+    return retour;
+  }
+  private static oeuvreExistsByTitle(title: string): boolean {
+    title = StringNormalizer.rationalize(title);
+    return !!this.accessTable.find(item => item.data.titresLookUp.includes(title));
+  }
+
   constructor(data: FullOeuvre) {
     super(data);
   }
@@ -52,6 +78,10 @@ const OeuvrePanel = new OeuvrePanelClass({
 });
 Oeuvre.panel = OeuvrePanel;
 
+
+/**
+ * Canal RPC du panneau Oeuvre
+ */
 export const RpcOeuvre:RpcChannel = createRpcClient();
 
 RpcOeuvre.on('activate', () => {
@@ -79,6 +109,9 @@ RpcOeuvre.on('display-oeuvre', (params) => {
 
 RpcOeuvre.on('check-oeuvres', (params) => {
   console.log("[CLIENT-OEUVRES] Vérification demandée des œuvres :", params);
+  const resultat = Oeuvre.doOeuvresExist(params.oeuvres);
+  console.log("résultat du check", resultat);
+  RpcOeuvre.notify('check-oeuvres-resultat', { CRId: params.CRId, resultat: resultat });
 });
 
 (window as any).Oeuvre = Oeuvre ;

@@ -1,4 +1,5 @@
 import { Constants } from '../../bothside/UConstants';
+import { ComplexRpc } from '../services/ComplexRpc';
 import { FormManager, FormProperty } from "../services/FormManager";
 import { Entry, RpcEntry } from "./Entry";
 
@@ -20,7 +21,7 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
   ];
   static readonly REG_SHORT_DEF = /\b(cf\.|voir|synonyme|contraire)\b/;
   static readonly REGEX_APPELS_ENTRIES = new RegExp(`(?:${Object.keys(Constants.MARK_ENTRIES).join('|')})\\(([^)]+)\\)`, "g");
-  static readonly REG_OEUVRES = /\boeuvre\([^)]+\)/g;
+  static readonly REG_OEUVRES = /\boeuvre\(([^)]+)\)/g;
   
   onChangeEntree() {
     // console.log("Le champ Entrée a changé");
@@ -41,72 +42,101 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
    * Grand méthode de check de la validité de l'item. On ne l'envoie
    * en enregistrement que s'il est parfaitement conforme. 
    */
-  async checkItem(item: {[x:string]: any}): Promise<string | undefined> {
-    const isNew = item.isNew ;
+  async checkItem(item: {
+    [x:string]: any
+  }): Promise<string | undefined> {
+    const isNew = item.isNew;
     const errors: string[] = [];
-    // L'entrée doit être définie
-    if (item.entree === '') {
-      errors.push("L'entrée doit être définie");
-    }
-    // L'entrée doit être unique (si elle a changée)
-    if (item.changeset.has('entree')) {
-      const newEntree = item.changeset.get('entree');
-      console.log("L'entrée a changé (%s/%s)", item.original.entree, newEntree);
-      if ( Entry.doesEntreeExist(newEntree)) {
-        errors.push(`L'entrée "${newEntree}" existe déjà…`);
-      }
-    }
-    // L'identifiant doit être défini
-    if (item.id === ''){
-      errors.push("L'identifiant doit absoluement être défini");
-    } else if (item.changeset.has('id')) {
-      // L'identifiant doit être unique (si nouveau)
-      if (Entry.doesIdExist(item.id)) {
-        errors.push(`L'identifiant "${item.id}" existe déjà. Je ne peux le réattribuer`);
-      }
-    }
-    // La définition doit être donnée et valide
-    if ( item.definition === ''){
-      errors.push("La définition du mot doit être donnée");
-    } else if (item.changeset.has('definition')) {
-      // Définition trop courte, sans justifications
-      if ( item.definition.length < 50 && null === item.definition.match(EntryForm.REG_SHORT_DEF)) {
-        errors.push("La définition est courte, sans justification…");
-      }
-      const unknownEntries = this.searchUnknownEntriesIn(item.definition);
-      if ( unknownEntries.length > 0) {
-        errors.push(`entrées inconnues dans la défintion (${unknownEntries.join(', ')})`);
-      }
-      const unknownOeuvres = await this.searchUnkownOeuvreIn(item.definition, 1);
-      if ( unknownOeuvres.length ) {
-        errors.push(`œuvres introuvables, dans la définition (${unknownOeuvres.join(', ')})`);
-      }
-    } else {
-      console.log("La définition n'a pas été modifiée.");
+
+    // Vérification de l'existence des oeuvres dans la
+    // définition
+    const unknownOeuvres: string[] = await this.checkExistenceOeuvres(item);
+    if (unknownOeuvres.length) {
+      errors.push(`des œuvres sont introuvables : ${unknownOeuvres.map(t => `"${t}"`).join(', ')}`);
     }
 
-    // Le genre doit être donné
-    if ( item.genre === '') {
-      errors.push("Le genre de l'entrée doit être donné");
-    } else if (item.changeset.has('genre') && Object.keys(Constants.ENTRIES_GENRES).includes(item.genre)) {
-      errors.push(`bizarrement, le genre "${item.genre} est inconnu…`);
-    }
-    
-    // Si les catégories sont définies, il faut qu'elles existent
-    // Rappel : Une "catégorie", c'est simplement l'ID d'une entrée
-    // (c'est la particularité du dictionnaire, mais ça tombe sous le
-    // sens) 
-    if (item.categorie_id !== '' && item.changeset.has('categorie_id')) {
-      const unknownCategorie = this.checkUnknownCategoriesIn(item.categorie_id);
-      if ( unknownCategorie.length ) {
-        errors.push(`des catégories sont inconnues : ${unknownCategorie.join(', ')}`);
-      }
-    }
-    if ( errors.length ) {
+
+
+    // résultat final retourné
+    if (errors.length) {
       console.error("Données invalides", errors);
       return errors.join(', ').toLowerCase();
     }
   }
+
+  async checkExistenceOeuvres(item: {[x: string]: any}): Promise<string[]> {
+    const checkerOeuvres = new ComplexRpc({
+      call: this.searchUnknownOeuvresIn.bind(this, item.definition)
+    });
+    let resultat: unknown = await checkerOeuvres.run();
+    const res = (resultat as {known: string[], unknown: string[]});
+    console.log("Retour après checkerOeuvres", resultat);
+    return res.unknown;
+  }
+
+  // OLD_checkItem_A_REMETTRE(){
+  //   // L'entrée doit être définie
+  //   if (item.entree === '') {
+  //     errors.push("L'entrée doit être définie");
+  //   }
+  //   // L'entrée doit être unique (si elle a changée)
+  //   if (item.changeset.has('entree')) {
+  //     const newEntree = item.changeset.get('entree');
+  //     console.log("L'entrée a changé (%s/%s)", item.original.entree, newEntree);
+  //     if ( Entry.doesEntreeExist(newEntree)) {
+  //       errors.push(`L'entrée "${newEntree}" existe déjà…`);
+  //     }
+  //   }
+  //   // L'identifiant doit être défini
+  //   if (item.id === ''){
+  //     errors.push("L'identifiant doit absoluement être défini");
+  //   } else if (item.changeset.has('id')) {
+  //     // L'identifiant doit être unique (si nouveau)
+  //     if (Entry.doesIdExist(item.id)) {
+  //       errors.push(`L'identifiant "${item.id}" existe déjà. Je ne peux le réattribuer`);
+  //     }
+  //   }
+  //   // La définition doit être donnée et valide
+  //   if ( item.definition === ''){
+  //     errors.push("La définition du mot doit être donnée");
+  //   } else if (item.changeset.has('definition')) {
+  //     // Définition trop courte, sans justifications
+  //     if ( item.definition.length < 50 && null === item.definition.match(EntryForm.REG_SHORT_DEF)) {
+  //       errors.push("La définition est courte, sans justification…");
+  //     }
+  //     const unknownEntries = this.searchUnknownEntriesIn(item.definition);
+  //     if ( unknownEntries.length > 0) {
+  //       errors.push(`entrées inconnues dans la défintion (${unknownEntries.join(', ')})`);
+  //     }
+  //     const resultat = await this.searchUnknownOeuvresIn({
+  //       in: item.definition, phase: 1, resultat: {known: [], unknown: []}
+  //     });
+  //     console.log("Résultat du check des oeuvres", resultat);
+  //     if ( resultat.unknown.length ) {
+  //       errors.push(`œuvres introuvables, dans la définition (${resultat.unknown.join(', ')})`);
+  //     }
+  //   } else {
+  //     console.log("La définition n'a pas été modifiée.");
+  //   }
+
+  //   // Le genre doit être donné
+  //   if ( item.genre === '') {
+  //     errors.push("Le genre de l'entrée doit être donné");
+  //   } else if (item.changeset.has('genre') && Object.keys(Constants.ENTRIES_GENRES).includes(item.genre)) {
+  //     errors.push(`bizarrement, le genre "${item.genre} est inconnu…`);
+  //   }
+    
+  //   // Si les catégories sont définies, il faut qu'elles existent
+  //   // Rappel : Une "catégorie", c'est simplement l'ID d'une entrée
+  //   // (c'est la particularité du dictionnaire, mais ça tombe sous le
+  //   // sens) 
+  //   if (item.categorie_id !== '' && item.changeset.has('categorie_id')) {
+  //     const unknownCategorie = this.checkUnknownCategoriesIn(item.categorie_id);
+  //     if ( unknownCategorie.length ) {
+  //       errors.push(`des catégories sont inconnues : ${unknownCategorie.join(', ')}`);
+  //     }
+  //   }
+//  }
 
 
   // Pour chercher les entrées mentionnées dans la définition
@@ -141,9 +171,12 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
     }
     return founds;
   }
+  
+
   /**
    * Vérifie que les œuvres désignées dans les balises oeuvre(...) existent
    * bel et bien.
+   * C'est une requête Rpc complexe (ComplexRpc)
    * Pour ce faire, on a besoin de passer par l'extension car on n'a pas 
    * accès aux oeuvres depuis ici.
    * 
@@ -151,26 +184,16 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
    * @param phase Pour savoir si on remonte de la vérifiation (phase 2)
    * @returns La liste des œuvres qui n'ont pas été trouvées
    */
-  async searchUnkownOeuvreIn(str: string, phase: number): Promise<string[]>{
-    if ( phase === 1 ){
-      // 1. On relève les oeuvres
-      const matches = str.matchAll(EntryForm.REG_OEUVRES);
-      const oeuvres: string[] = [];
-      for( let match of matches) { oeuvres.push(match[0]); }
-      console.log("Oeuvres à checker", oeuvres);
-      // 2. On les envoie à la vérification
-      // RpcEntry.notify('check-oeuvres', {oeuvres});
-      RpcEntry.ask('check-oeuvres', {oeuvres});
-      return [];
-    } else if ( phase === 2) {
-      // 3: On récupère le résultat et on le renvoie
-      const res = JSON.parse(str);
-      return res.unknown;
-    } else {
-      console.error("Phase inconnue", phase);
-      return [`Phase inconnue (${phase}) Vérification des oeuvres impossible`];
-    }
+  searchUnknownOeuvresIn(str: string, CRId: string): void {
+    // 1. On relève les oeuvres
+    const matches = str.matchAll(EntryForm.REG_OEUVRES);
+    const oeuvres: string[] = [];
+    for (let match of matches) { oeuvres.push(match[1]); }
+    console.log("Oeuvres à checker", oeuvres);
+    // 2. On les envoie à la vérification
+    RpcEntry.notify('check-oeuvres', { CRId, oeuvres });
   }
+
   searchUnknownExempleIn(str: string): string[]{
     return ["Les exemples sont à checker"];
   }

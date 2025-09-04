@@ -1294,7 +1294,6 @@
     }
     async itemIsNotSavable() {
       this.panel.cleanFlash();
-      let invalidity;
       const fakeItem = this.collectValues();
       if (!this.originalData.id) {
         Object.assign(fakeItem, { isNew: true });
@@ -1314,10 +1313,14 @@
       if (this.itemIsEmpty(fakeItem)) {
         this.panel.flash("Aucune donn\xE9e n'a \xE9t\xE9 founie\u2026", "error");
         return true;
-      } else if (changeset.size === 0) {
+      }
+      if (changeset.size === 0) {
         this.panel.flash("Les donn\xE9es n'ont pas chang\xE9\u2026", "warn");
         return true;
-      } else if (invalidity = await this.checkItem(fakeItem)) {
+      }
+      let invalidity = await this.checkItem(fakeItem);
+      console.log("J'AI FINI LE CHECK DE L'ITEM");
+      if (invalidity) {
         this.panel.flash("Les donn\xE9es sont invalides : " + invalidity, "error");
         return true;
       }
@@ -1607,6 +1610,30 @@
     static setAccessTable(items) {
       this._accessTable = new AccessTable(_Oeuvre, items);
     }
+    /**
+          ==== MÉTHODES DE CHECK ===
+     */
+    /**
+     * Méthode qui checke l'existence des oeuvres
+     * 
+     * @param oeuvres Liste des oeuvres, désignées par leur identifiant ou un de leurs titres
+     * @return Une table avec les clés :known (oeuvres connues) et :unknown (oeuvres inconnues)
+     */
+    static doOeuvresExist(oeuvres) {
+      const retour = { known: [], unknown: [] };
+      oeuvres.forEach((oeuvre) => {
+        if (this.accessTable.existsById(oeuvre) || this.oeuvreExistsByTitle(oeuvre)) {
+          retour.known.push(oeuvre);
+        } else {
+          retour.unknown.push(oeuvre);
+        }
+      });
+      return retour;
+    }
+    static oeuvreExistsByTitle(title) {
+      title = StringNormalizer.rationalize(title);
+      return !!this.accessTable.find((item) => item.data.titresLookUp.includes(title));
+    }
     constructor(data) {
       super(data);
     }
@@ -1661,6 +1688,9 @@
   });
   RpcOeuvre.on("check-oeuvres", (params) => {
     console.log("[CLIENT-OEUVRES] V\xE9rification demand\xE9e des \u0153uvres :", params);
+    const resultat = Oeuvre.doOeuvresExist(params.oeuvres);
+    console.log("r\xE9sultat du check", resultat);
+    RpcOeuvre.notify("check-oeuvres-resultat", { CRId: params.CRId, resultat });
   });
   window.Oeuvre = Oeuvre;
 })();

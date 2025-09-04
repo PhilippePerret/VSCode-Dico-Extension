@@ -1265,6 +1265,40 @@
     };
   };
 
+  // src/webviews/services/ComplexRpc.ts
+  var ComplexRpc = class _ComplexRpc {
+    static requestTable = /* @__PURE__ */ new Map();
+    static addRequest(req) {
+      this.requestTable.set(req.id, req);
+    }
+    // À appeler à la fin, pour résoudre
+    static resolveRequest(requestId, params) {
+      this.requestTable.get(requestId).resolve(params);
+    }
+    id;
+    call;
+    // Fonction qui va lancer l'appel (reçoit en DERNIER argument l'identifiant de cette instance — pour le transmettre)
+    ok;
+    // le 'resolve' de new Promise((resolve, reject) => {})
+    ko;
+    // le reject de new Promise((resolve,reject) => {})
+    constructor(param) {
+      this.id = crypto.randomUUID();
+      this.call = param.call;
+      _ComplexRpc.addRequest(this);
+    }
+    run() {
+      return new Promise((ok, ko) => {
+        this.ok = ok;
+        this.ko = ko;
+        this.call(this.id);
+      });
+    }
+    resolve(params) {
+      this.ok(params);
+    }
+  };
+
   // src/webviews/services/FormManager.ts
   var FormManager = class {
     tablePropertiesByPropName;
@@ -1320,7 +1354,6 @@
     }
     async itemIsNotSavable() {
       this.panel.cleanFlash();
-      let invalidity;
       const fakeItem = this.collectValues();
       if (!this.originalData.id) {
         Object.assign(fakeItem, { isNew: true });
@@ -1340,10 +1373,14 @@
       if (this.itemIsEmpty(fakeItem)) {
         this.panel.flash("Aucune donn\xE9e n'a \xE9t\xE9 founie\u2026", "error");
         return true;
-      } else if (changeset.size === 0) {
+      }
+      if (changeset.size === 0) {
         this.panel.flash("Les donn\xE9es n'ont pas chang\xE9\u2026", "warn");
         return true;
-      } else if (invalidity = await this.checkItem(fakeItem)) {
+      }
+      let invalidity = await this.checkItem(fakeItem);
+      console.log("J'AI FINI LE CHECK DE L'ITEM");
+      if (invalidity) {
         this.panel.flash("Les donn\xE9es sont invalides : " + invalidity, "error");
         return true;
       }
@@ -1621,7 +1658,7 @@
     ];
     static REG_SHORT_DEF = /\b(cf\.|voir|synonyme|contraire)\b/;
     static REGEX_APPELS_ENTRIES = new RegExp(`(?:${Object.keys(Constants.MARK_ENTRIES).join("|")})\\(([^)]+)\\)`, "g");
-    static REG_OEUVRES = /\boeuvre\([^)]+\)/g;
+    static REG_OEUVRES = /\boeuvre\(([^)]+)\)/g;
     onChangeEntree() {
       const itemIsNew = this.getValueOf("id") === "";
       if (itemIsNew) {
@@ -1643,56 +1680,85 @@
     async checkItem(item) {
       const isNew = item.isNew;
       const errors = [];
-      if (item.entree === "") {
-        errors.push("L'entr\xE9e doit \xEAtre d\xE9finie");
-      }
-      if (item.changeset.has("entree")) {
-        const newEntree = item.changeset.get("entree");
-        console.log("L'entr\xE9e a chang\xE9 (%s/%s)", item.original.entree, newEntree);
-        if (Entry.doesEntreeExist(newEntree)) {
-          errors.push(`L'entr\xE9e "${newEntree}" existe d\xE9j\xE0\u2026`);
-        }
-      }
-      if (item.id === "") {
-        errors.push("L'identifiant doit absoluement \xEAtre d\xE9fini");
-      } else if (item.changeset.has("id")) {
-        if (Entry.doesIdExist(item.id)) {
-          errors.push(`L'identifiant "${item.id}" existe d\xE9j\xE0. Je ne peux le r\xE9attribuer`);
-        }
-      }
-      if (item.definition === "") {
-        errors.push("La d\xE9finition du mot doit \xEAtre donn\xE9e");
-      } else if (item.changeset.has("definition")) {
-        if (item.definition.length < 50 && null === item.definition.match(_EntryForm.REG_SHORT_DEF)) {
-          errors.push("La d\xE9finition est courte, sans justification\u2026");
-        }
-        const unknownEntries = this.searchUnknownEntriesIn(item.definition);
-        if (unknownEntries.length > 0) {
-          errors.push(`entr\xE9es inconnues dans la d\xE9fintion (${unknownEntries.join(", ")})`);
-        }
-        const unknownOeuvres = await this.searchUnkownOeuvreIn(item.definition, 1);
-        if (unknownOeuvres.length) {
-          errors.push(`\u0153uvres introuvables, dans la d\xE9finition (${unknownOeuvres.join(", ")})`);
-        }
-      } else {
-        console.log("La d\xE9finition n'a pas \xE9t\xE9 modifi\xE9e.");
-      }
-      if (item.genre === "") {
-        errors.push("Le genre de l'entr\xE9e doit \xEAtre donn\xE9");
-      } else if (item.changeset.has("genre") && Object.keys(Constants.ENTRIES_GENRES).includes(item.genre)) {
-        errors.push(`bizarrement, le genre "${item.genre} est inconnu\u2026`);
-      }
-      if (item.categorie_id !== "" && item.changeset.has("categorie_id")) {
-        const unknownCategorie = this.checkUnknownCategoriesIn(item.categorie_id);
-        if (unknownCategorie.length) {
-          errors.push(`des cat\xE9gories sont inconnues : ${unknownCategorie.join(", ")}`);
-        }
+      const unknownOeuvres = await this.checkExistenceOeuvres(item);
+      if (unknownOeuvres.length) {
+        errors.push(`des \u0153uvres sont introuvables : ${unknownOeuvres.map((t) => `"${t}"`).join(", ")}`);
       }
       if (errors.length) {
         console.error("Donn\xE9es invalides", errors);
         return errors.join(", ").toLowerCase();
       }
     }
+    async checkExistenceOeuvres(item) {
+      const checkerOeuvres = new ComplexRpc({
+        call: this.searchUnknownOeuvresIn.bind(this, item.definition)
+      });
+      let resultat = await checkerOeuvres.run();
+      const res = resultat;
+      console.log("Retour apr\xE8s checkerOeuvres", resultat);
+      return res.unknown;
+    }
+    // OLD_checkItem_A_REMETTRE(){
+    //   // L'entrée doit être définie
+    //   if (item.entree === '') {
+    //     errors.push("L'entrée doit être définie");
+    //   }
+    //   // L'entrée doit être unique (si elle a changée)
+    //   if (item.changeset.has('entree')) {
+    //     const newEntree = item.changeset.get('entree');
+    //     console.log("L'entrée a changé (%s/%s)", item.original.entree, newEntree);
+    //     if ( Entry.doesEntreeExist(newEntree)) {
+    //       errors.push(`L'entrée "${newEntree}" existe déjà…`);
+    //     }
+    //   }
+    //   // L'identifiant doit être défini
+    //   if (item.id === ''){
+    //     errors.push("L'identifiant doit absoluement être défini");
+    //   } else if (item.changeset.has('id')) {
+    //     // L'identifiant doit être unique (si nouveau)
+    //     if (Entry.doesIdExist(item.id)) {
+    //       errors.push(`L'identifiant "${item.id}" existe déjà. Je ne peux le réattribuer`);
+    //     }
+    //   }
+    //   // La définition doit être donnée et valide
+    //   if ( item.definition === ''){
+    //     errors.push("La définition du mot doit être donnée");
+    //   } else if (item.changeset.has('definition')) {
+    //     // Définition trop courte, sans justifications
+    //     if ( item.definition.length < 50 && null === item.definition.match(EntryForm.REG_SHORT_DEF)) {
+    //       errors.push("La définition est courte, sans justification…");
+    //     }
+    //     const unknownEntries = this.searchUnknownEntriesIn(item.definition);
+    //     if ( unknownEntries.length > 0) {
+    //       errors.push(`entrées inconnues dans la défintion (${unknownEntries.join(', ')})`);
+    //     }
+    //     const resultat = await this.searchUnknownOeuvresIn({
+    //       in: item.definition, phase: 1, resultat: {known: [], unknown: []}
+    //     });
+    //     console.log("Résultat du check des oeuvres", resultat);
+    //     if ( resultat.unknown.length ) {
+    //       errors.push(`œuvres introuvables, dans la définition (${resultat.unknown.join(', ')})`);
+    //     }
+    //   } else {
+    //     console.log("La définition n'a pas été modifiée.");
+    //   }
+    //   // Le genre doit être donné
+    //   if ( item.genre === '') {
+    //     errors.push("Le genre de l'entrée doit être donné");
+    //   } else if (item.changeset.has('genre') && Object.keys(Constants.ENTRIES_GENRES).includes(item.genre)) {
+    //     errors.push(`bizarrement, le genre "${item.genre} est inconnu…`);
+    //   }
+    //   // Si les catégories sont définies, il faut qu'elles existent
+    //   // Rappel : Une "catégorie", c'est simplement l'ID d'une entrée
+    //   // (c'est la particularité du dictionnaire, mais ça tombe sous le
+    //   // sens) 
+    //   if (item.categorie_id !== '' && item.changeset.has('categorie_id')) {
+    //     const unknownCategorie = this.checkUnknownCategoriesIn(item.categorie_id);
+    //     if ( unknownCategorie.length ) {
+    //       errors.push(`des catégories sont inconnues : ${unknownCategorie.join(', ')}`);
+    //     }
+    //   }
+    //  }
     // Pour chercher les entrées mentionnées dans la définition
     searchUnknownEntriesIn(str) {
       const founds = [];
@@ -1721,6 +1787,7 @@
     /**
      * Vérifie que les œuvres désignées dans les balises oeuvre(...) existent
      * bel et bien.
+     * C'est une requête Rpc complexe (ComplexRpc)
      * Pour ce faire, on a besoin de passer par l'extension car on n'a pas 
      * accès aux oeuvres depuis ici.
      * 
@@ -1728,23 +1795,14 @@
      * @param phase Pour savoir si on remonte de la vérifiation (phase 2)
      * @returns La liste des œuvres qui n'ont pas été trouvées
      */
-    async searchUnkownOeuvreIn(str, phase) {
-      if (phase === 1) {
-        const matches = str.matchAll(_EntryForm.REG_OEUVRES);
-        const oeuvres = [];
-        for (let match of matches) {
-          oeuvres.push(match[0]);
-        }
-        console.log("Oeuvres \xE0 checker", oeuvres);
-        RpcEntry.ask("check-oeuvres", { oeuvres });
-        return [];
-      } else if (phase === 2) {
-        const res = JSON.parse(str);
-        return res.unknown;
-      } else {
-        console.error("Phase inconnue", phase);
-        return [`Phase inconnue (${phase}) V\xE9rification des oeuvres impossible`];
+    searchUnknownOeuvresIn(str, CRId) {
+      const matches = str.matchAll(_EntryForm.REG_OEUVRES);
+      const oeuvres = [];
+      for (let match of matches) {
+        oeuvres.push(match[1]);
       }
+      console.log("Oeuvres \xE0 checker", oeuvres);
+      RpcEntry.notify("check-oeuvres", { CRId, oeuvres });
     }
     searchUnknownExempleIn(str) {
       return ["Les exemples sont \xE0 checker"];
@@ -1867,6 +1925,10 @@
   RpcEntry.on("display-entry", (params) => {
     console.log("[CLIENT] Je dois afficher l'entr\xE9e '%s'", params.entry_id);
     EntryPanel.scrollToAndSelect(params.entry_id);
+  });
+  RpcEntry.on("check-oeuvres-resultat", (params) => {
+    console.log("[CLIENT ENTRY] Je re\xE7ois le r\xE9sultat du check des oeuvres", params);
+    ComplexRpc.resolveRequest(params.CRId, params.resultat);
   });
   window.Entry = Entry;
 })();

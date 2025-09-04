@@ -19,6 +19,7 @@ import { AnyElementType } from './AnyClientElement';
 import { AccessTable } from '../services/AccessTable';
 import { PanelClient } from '../PanelClient';
 import { EntryForm } from './EntryForm';
+import { ComplexRpc } from '../services/ComplexRpc';
 
 export class Entry extends ClientItem<UEntry, FullEntry> {
   declare public data: FullEntry;
@@ -125,6 +126,11 @@ RpcEntry.on('populate', (params) => {
 RpcEntry.on('display-entry', (params) => {
   console.log("[CLIENT] Je dois afficher l'entrée '%s'", params.entry_id);
   EntryPanel.scrollToAndSelect(params.entry_id);
+});
+
+RpcEntry.on('check-oeuvres-resultat', (params: {CRId: string, resultat: {[x: string]: any}}) => {
+  console.log("[CLIENT ENTRY] Je reçois le résultat du check des oeuvres", params );
+  ComplexRpc.resolveRequest(params.CRId, params.resultat);
 });
 
 // Pour exposer globalement

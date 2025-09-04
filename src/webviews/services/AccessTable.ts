@@ -143,8 +143,6 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
     }
   }
 
-
-
   setSelectState(id: string, state: boolean) {
     this.getAccKeyById(id).selected = state;
   }

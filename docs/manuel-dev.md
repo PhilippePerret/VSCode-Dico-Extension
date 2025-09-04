@@ -29,18 +29,47 @@ checkOeuvres(params){
 }
 ~~~
 
-Ensuite, dans le panneau de réception (Oeuvre ici), on met le récepteur de ce message :
+Ensuite, dans le panneau de réception (le panneau Oeuvre ici), on met le récepteur de ce message :
 
 ~~~typescript
 // Dans webview/models/oeuvre.ts
 RpcOeuvre.on('check-oeuvres', (params) => {
   console.log("[CLIENT-OEUVRE] réception d'une demande de vérification des oeuvres : ", params);
-});
+  // [suite ci-dessous]
 ~~~
 
 Depuis cette fonction, on appelle la fonction qui va vérifier l'existence des œuvres transmises.
 
-[poursuivre]
+~~~typescript
+  // [...]
+  retour = Oeuvre.doOeuvresExist(oeuvres: string[])
+  // [suite ci-dessous]
+~~~
+
+Et on appelle alors l'extension pour lui envoyer le résultat, comme on l'a fait depuis le panneau précédent pour le demander.
+
+~~~typescript
+RpcOeuvre.notify('check-oeuvres-resultat', {resultat: retour});
+~~~
+
+On réceptionne le message côté extension et on appelle le premier panneau (panneau des entrées) pour lui retourner le résultat.
+
+~~~typescript
+// Dans extension/service/Rpc.ts
+
+// Dans RpcOeuvre.initialize
+this.rpc.on('check-oeuvre-resultat', (params: {known: string[], unknown: string[]}) => {
+  CanalEntry.resultatCheckingOeuvres(params);
+});
+
+// Dans RpcEntry
+resultatCheckingOeuvres(params: {resultat: any}){
+  this.rpc.notify('check-oeuvre-resultat', params);
+}
+~~~
+
+
+---
 
 ## Aide contextuelle
 

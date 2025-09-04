@@ -1294,7 +1294,6 @@
     }
     async itemIsNotSavable() {
       this.panel.cleanFlash();
-      let invalidity;
       const fakeItem = this.collectValues();
       if (!this.originalData.id) {
         Object.assign(fakeItem, { isNew: true });
@@ -1314,10 +1313,14 @@
       if (this.itemIsEmpty(fakeItem)) {
         this.panel.flash("Aucune donn\xE9e n'a \xE9t\xE9 founie\u2026", "error");
         return true;
-      } else if (changeset.size === 0) {
+      }
+      if (changeset.size === 0) {
         this.panel.flash("Les donn\xE9es n'ont pas chang\xE9\u2026", "warn");
         return true;
-      } else if (invalidity = await this.checkItem(fakeItem)) {
+      }
+      let invalidity = await this.checkItem(fakeItem);
+      console.log("J'AI FINI LE CHECK DE L'ITEM");
+      if (invalidity) {
         this.panel.flash("Les donn\xE9es sont invalides : " + invalidity, "error");
         return true;
       }
