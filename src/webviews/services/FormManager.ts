@@ -74,7 +74,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
     map.set('o', this.onConfirmSave.bind(this, andQuit));
     map.set('n', this.cancelEdit.bind(this));
     this.panel.flashAction(
-      "Confirmes-tu la sauvegarde ? (o = oui, n = non)", map
+      "<b>👍 Donnée validée 🎉</b><br />Confirmes-tu la sauvegarde ? (o = oui, n = non)", map
     );
   }
 
@@ -105,7 +105,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
       return true;
     }
     let invalidity: string | undefined = await this.checkItem(fakeItem);
-    console.log("J'AI FINI LE CHECK DE L'ITEM");
+    console.log("=== FIN DU CHECK DE L'ITEM ===");
     if (invalidity) {
       this.panel.flash("Les données sont invalides : " + invalidity, 'error');
       return true;

@@ -1288,7 +1288,7 @@
       map.set("o", this.onConfirmSave.bind(this, andQuit));
       map.set("n", this.cancelEdit.bind(this));
       this.panel.flashAction(
-        "Confirmes-tu la sauvegarde ? (o = oui, n = non)",
+        "<b>\u{1F44D} Donn\xE9e valid\xE9e \u{1F389}</b><br />Confirmes-tu la sauvegarde ? (o = oui, n = non)",
         map
       );
     }
@@ -1319,7 +1319,7 @@
         return true;
       }
       let invalidity = await this.checkItem(fakeItem);
-      console.log("J'AI FINI LE CHECK DE L'ITEM");
+      console.log("=== FIN DU CHECK DE L'ITEM ===");
       if (invalidity) {
         this.panel.flash("Les donn\xE9es sont invalides : " + invalidity, "error");
         return true;

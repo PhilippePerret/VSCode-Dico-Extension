@@ -1,11 +1,11 @@
 # Todo list
 
-J'en suis à : fin de l'implémentation de la procédure de vérification des exemples (panneau exemple -> extension -> panneau entrées)
-
 * BUGS À CORRIGER
   - quand je filtre et que je fais "f", ça ne sélectionne pas un des éléments affichés (avec la console, obtenir la valeur de l'item sélectionné)
   - quand je clique sur l'erreur, elle ne se ferme pas
 
+* Indiquer dans le message "Données validée"
+* Mettre le champ de définition plus grand, dans le formulaire
 * Traiter l'affichage de la définition
   - dim(…)
   - toutes les marques d'appel/index de définition (cf MARK_ENTRIES)
