@@ -7,17 +7,26 @@ class OeuvreDb {
     constructor(dbService) {
         this.dbService = dbService;
     }
+    RowsCountInDb;
     async getAll() {
+        // Pour connaitre le nombre exact de rangées
+        let rindb = await this.dbService.get('SELECT COUNT(*) FROM oeuvres');
+        this.RowsCountInDb = rindb['COUNT(*)'];
+        console.log("OEUVRES : Nombre EXACT de rangées in DB : %i", this.RowsCountInDb);
         const rows = await this.dbService.all(`
             SELECT * FROM oeuvres 
             ORDER BY 
                 CASE WHEN titre_francais IS NOT NULL THEN titre_francais ELSE titre_original END COLLATE NOCASE
         `);
-        return rows.map(row => Oeuvre_1.Oeuvre.fromRow(row));
+        console.log("OEUVRES : Nombre de rangées relevées : %i", rows.length);
+        if (rows.length !== this.RowsCountInDb) {
+            throw new Error(`Divergence dans le nombre d'œuvres dans la table (${this.RowsCountInDb}) et le nombre d'œuvres relevées (${rows.length}).`);
+        }
+        return rows.map(row => Oeuvre_1.Oeuvre.fromRow(row) || null);
     }
     async getById(id) {
         const row = await this.dbService.get('SELECT * FROM oeuvres WHERE id = ?', [id]);
-        return row ? Oeuvre_1.Oeuvre.fromRow(row) : null;
+        return row ? Oeuvre_1.Oeuvre.fromRow(row) || null : null;
     }
     async create(oeuvre) {
         const row = oeuvre.toRow();
@@ -37,7 +46,7 @@ class OeuvreDb {
             ORDER BY 
                 CASE WHEN titre_francais IS NOT NULL THEN titre_francais ELSE titre_original END COLLATE NOCASE
         `, [`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`]);
-        return rows.map(row => Oeuvre_1.Oeuvre.fromRow(row));
+        return rows.map(row => Oeuvre_1.Oeuvre.fromRow(row) || null);
     }
     async getAllIds() {
         const rows = await this.dbService.all('SELECT id FROM oeuvres');

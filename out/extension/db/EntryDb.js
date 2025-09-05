@@ -7,13 +7,22 @@ class EntryDb {
     constructor(dbService) {
         this.dbService = dbService;
     }
+    RowsCountInDb;
     async getAll() {
+        // Pour connaitre le nombre exact de rangées
+        let rindb = await this.dbService.get('SELECT COUNT(*) FROM entrees');
+        this.RowsCountInDb = rindb['COUNT(*)'];
+        console.log("ENTRÉES : Nombre EXACT de rangées in DB : %i", this.RowsCountInDb);
         const rows = await this.dbService.all('SELECT * FROM entrees ORDER BY entree COLLATE NOCASE');
-        return rows.map(row => Entry_1.Entry.fromRow(row));
+        console.log("ENTRÉES : Nombre de rangées relevées : %i", rows.length);
+        if (rows.length !== this.RowsCountInDb) {
+            throw new Error(`Divergence dans le nombre d'entrées dans la table (${this.RowsCountInDb}) et le nombre d'entrées relevées (${rows.length}).`);
+        }
+        return rows.map(row => Entry_1.Entry.fromRow(row) || null);
     }
     async getById(id) {
         const row = await this.dbService.get('SELECT * FROM entrees WHERE id = ?', [id]);
-        return row ? Entry_1.Entry.fromRow(row) : null;
+        return row ? Entry_1.Entry.fromRow(row) || null : null;
     }
     async create(entry) {
         const row = entry.toRow();

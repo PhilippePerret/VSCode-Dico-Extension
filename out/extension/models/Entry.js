@@ -97,7 +97,12 @@ class Entry extends UEntry_1.UEntry {
      * Create from database row
      */
     static fromRow(row) {
-        return new Entry(row);
+        try {
+            return new Entry(row);
+        }
+        catch (erreur) {
+            console.error("# ERREUR avec L'entrée : %s", erreur, row);
+        }
     }
     /**
      * Post-processing after DOM elements are displayed

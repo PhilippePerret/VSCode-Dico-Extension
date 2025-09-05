@@ -29,7 +29,7 @@ export interface FullExemple extends IExemple {
 export class Exemple extends UExemple {
 	public static panelId = 'exemples';
 
-	public static cacheDebug() { return this.cache; }
+	public static cacheDebug() { return this.cache; } // Pour les tests
 	protected static _cacheManagerInstance: UniversalCacheManager<IExemple, FullExemple> = new UniversalCacheManager();
   protected static get cache() { return this._cacheManagerInstance; };
 
@@ -100,8 +100,13 @@ export class Exemple extends UExemple {
 	/**
 	 * Create from database row
 	 */
-	static fromRow(row: IExemple): Exemple {
-		return new Exemple(row);
+	static fromRow(row: IExemple): Exemple | undefined {
+		try {
+			return new Exemple(row);
+		} catch(erreur) {
+			console.error("# ERREUR avec l'EXEMPLE : %s", erreur, row);
+		}
+	
 	}
 
 	/**

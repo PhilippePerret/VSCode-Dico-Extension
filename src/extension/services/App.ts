@@ -93,9 +93,10 @@ export class App {
     dbService.initialize();
     const db = new Db(dbService);
     const rawData = await db.getAll();
+    console.log("Nombre de données %s persistante relevées : %i", classI.name, rawData.length);
     const sortedItems = rawData.sort(classI.sortFonction.bind(classI)) ; 
     (classI as AnyElementClass).cacheAllData.call(classI, sortedItems);
-    this.incAndCheckReadyCounter();
+    this.incAndCheckReadyCounter(); // asynchronicité
     return true ;
   }
 }

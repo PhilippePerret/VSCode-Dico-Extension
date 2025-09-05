@@ -34,7 +34,7 @@ class Exemple
           else
             entry_id = dindice['entry_id']
           end
-          # Contenu de l'exemple, qui peut être multiple
+          # Contenu de l'exemple, qui peut être multiple (:exemples)
           exemple = (dindice['exemple']||dindice['exemples']).to_json
           data_exemple = {
             oeuvre_id: id,
@@ -66,11 +66,11 @@ class Exemple
     end
 
 
-    def inject_data_essai
-      DB.inject_data(name: 'exemples', data: [
-        {oeuvre_id: 'WHIP14', indice: 1, entry_id: 'structure', content: 'Salieri est compositeur (dimension Travail), vient d\'une famille où l\'art n\'existait pas (dimension Famille), a fait vœu de chasteté (dimension Amour), est très gourmand (dimension Passion).', notes: 'Portrait multidimensionnel'}
-      ])
-    end
+    # def inject_data_essai
+    #   DB.inject_data(name: 'exemples', data: [
+    #     {oeuvre_id: 'WHIP14', indice: 1, entry_id: 'structure', content: 'Salieri est compositeur (dimension Travail), vient d\'une famille où l\'art n\'existait pas (dimension Famille), a fait vœu de chasteté (dimension Amour), est très gourmand (dimension Passion).', notes: 'Portrait multidimensionnel'}
+    #   ])
+    # end
 
     def data_path
       @data_path ||= File.join(__dir__, '..', 'files', 'exemples.yaml')

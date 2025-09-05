@@ -209,7 +209,12 @@ class Oeuvre extends UOeuvre_1.UOeuvre {
      * Create from database row
      */
     static fromRow(row) {
-        return new Oeuvre(row);
+        try {
+            return new Oeuvre(row);
+        }
+        catch (erreur) {
+            console.error("# ERREUR avec l'OEUVRE : %s", erreur, row);
+        }
     }
     /**
      * Sort function for oeuvres (by titre_original, respecting accents/diacritics)

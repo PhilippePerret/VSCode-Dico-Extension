@@ -4,6 +4,7 @@ exports.Constants = void 0;
 class Constants {
     static ENTRIES_GENRES = {
         'nm': 'n.m.',
+        'nmp': 'n.m.pl.',
         'nf': 'n.f.',
         'np': 'n.pl.',
         'vb': 'verbe',

@@ -244,8 +244,12 @@ export class Oeuvre extends UOeuvre {
 	/**
 	 * Create from database row
 	 */
-	static fromRow(row: IOeuvre): Oeuvre {
-		return new Oeuvre(row);
+	static fromRow(row: IOeuvre): Oeuvre | undefined {
+		try {
+			return new Oeuvre(row);
+		} catch(erreur) {
+			console.error("# ERREUR avec l'OEUVRE : %s", erreur, row);
+		}
 	}
 
 	/**

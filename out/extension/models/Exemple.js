@@ -10,7 +10,7 @@ const Oeuvre_1 = require("./Oeuvre");
 // La donnée telle qu'elle sera en cache
 class Exemple extends UExemple_1.UExemple {
     static panelId = 'exemples';
-    static cacheDebug() { return this.cache; }
+    static cacheDebug() { return this.cache; } // Pour les tests
     static _cacheManagerInstance = new UniversalCacheManager_1.UniversalCacheManager();
     static get cache() { return this._cacheManagerInstance; }
     ;
@@ -77,7 +77,12 @@ class Exemple extends UExemple_1.UExemple {
      * Create from database row
      */
     static fromRow(row) {
-        return new Exemple(row);
+        try {
+            return new Exemple(row);
+        }
+        catch (erreur) {
+            console.error("# ERREUR avec l'EXEMPLE : %s", erreur, row);
+        }
     }
     /**
      * Sort function for exemples (by oeuvre_id then by indice)

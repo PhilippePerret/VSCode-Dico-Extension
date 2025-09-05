@@ -3,7 +3,7 @@
 J'en suis à : fin de l'implémentation de la procédure de vérification des exemples (panneau exemple -> extension -> panneau entrées)
 
 * BUGS À CORRIGER
-  - PROBLÈME AVEC LES EXEMPLES : Les oeuvres ne correspondent plus. Il faut revoir le script de parsing des données originales pour retrouver les bons identifiants (voir dès le premier avec STA:1)
+  - PROBLÈME AVEC LES EXEMPLES : En fait, les exemples sont parfaitement mis dans la base de données, mais ils ne sont pas tous chargés dans l'application. Voir dès le premier avec STA:1)
   - quand je filtre et que je fais "f", ça ne sélectionne pas un des éléments affichés (avec la console, obtenir la valeur de l'item sélectionné)
   - quand je clique sur l'erreur, elle ne se ferme pas
 

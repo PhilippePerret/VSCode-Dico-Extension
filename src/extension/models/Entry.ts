@@ -125,8 +125,12 @@ export class Entry extends UEntry {
 	/**
 	 * Create from database row
 	 */
-	static fromRow(row: any): Entry {
-		return new Entry(row); 
+	static fromRow(row: any): Entry | undefined {
+		try {
+			return new Entry(row); 
+		} catch(erreur) {
+			console.error("# ERREUR avec L'entrée : %s", erreur, row);
+		}
 	}
 
 	/**
