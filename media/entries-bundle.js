@@ -1974,6 +1974,10 @@
     console.log("[CLIENT ENTRY] Je re\xE7ois le r\xE9sultat du check des oeuvres", params);
     ComplexRpc.resolveRequest(params.CRId, params.resultat);
   });
+  RpcEntry.on("check-exemples-resultat", (params) => {
+    console.log("[CLIENT ENTRY] R\xE9ception du r\xE9sultat du check des exemples : ", params);
+    ComplexRpc.resolveRequest(params.CRId, params.resultat);
+  });
   window.Entry = Entry;
 })();
 //# sourceMappingURL=entries-bundle.js.map

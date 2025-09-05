@@ -255,6 +255,7 @@ RpcEx.on('check-exemples', (params) => {
   console.log("[PANNEAU EXEMPLE] Demande de vérification des exemples :", params.exemples);
   const resultat = Exemple.doExemplesExist(params.exemples);
   console.log("Résultat du check", resultat);
+  RpcEx.notify('check-exemples-resultat', {CRId: params.CRId, resultat: resultat});
 });
 
 (window as any).Exemple = Exemple;

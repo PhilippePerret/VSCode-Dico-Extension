@@ -133,5 +133,10 @@ RpcEntry.on('check-oeuvres-resultat', (params: {CRId: string, resultat: {[x: str
   ComplexRpc.resolveRequest(params.CRId, params.resultat);
 });
 
+RpcEntry.on('check-exemples-resultat', (params: {CRId: string, resultat: {known: string[], unknown: string[]}}) => {
+  console.log("[CLIENT ENTRY] Réception du résultat du check des exemples : ", params);
+  ComplexRpc.resolveRequest(params.CRId, params.resultat);
+});
+
 // Pour exposer globalement
 (window as any).Entry = Entry ;

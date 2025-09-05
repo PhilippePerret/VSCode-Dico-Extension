@@ -50,6 +50,12 @@ class RpcEntry extends Rpc {
     console.log("[EXTENSION] Envoi des résultats du check des oeuvres au panneau Entrées");
     this.rpc.notify('check-oeuvres-resultat', params);
   }
+  // Pour retourner le résultat du check des oeuvres au panneau des oeuvres
+  resultatCheckingExemples(params: {CRId: string, resultat: {known: string[], unknown: string[]}}){
+    console.log("[EXTENSION] Envoi des résultats du check des exemples au panneau Entrées");
+    this.rpc.notify('check-exemples-resultat', params);
+  }
+
 
 
   initialize(panel: vscode.WebviewPanel): void {
@@ -108,6 +114,11 @@ class RpcExemple extends Rpc {
     this.rpc.on('display-oeuvre', async (params: { oeuvreId: string }) => {
       console.log("[EXTENSION] Demande affichage oeuvre %s", params.oeuvreId, params);
       CanalOeuvre.displayOeuvre(params);
+    });
+
+    this.rpc.on('check-exemples-resultat', async (params: {CRId: string, resultat: {known: string[], unknown: string[]}}) => {
+      console.log("[EXTENSION] Réception du résultat du check des exemples", params);
+      CanalEntry.resultatCheckingExemples(params);
     });
   }
 }

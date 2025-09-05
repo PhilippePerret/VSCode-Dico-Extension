@@ -1801,6 +1801,7 @@
     console.log("[PANNEAU EXEMPLE] Demande de v\xE9rification des exemples :", params.exemples);
     const resultat = Exemple.doExemplesExist(params.exemples);
     console.log("R\xE9sultat du check", resultat);
+    RpcEx.notify("check-exemples-resultat", { CRId: params.CRId, resultat });
   });
   window.Exemple = Exemple;
 })();
