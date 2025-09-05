@@ -6,14 +6,28 @@ class Oeuvre
       inject_data_in_db
       DB.check_data_count(name: 'oeuvres', count: @oeuvres_count)
     end
-  
+
+    # Retourne une table avec en clé les identifiant des oeuvres
+    # et en données la donnée de l'oeuvre.
+    # Cette table est fait pour pouvoir vérifier l'existence de
+    # l'oeuvre_id dans les exemples.
+    def table_oeuvre_ids
+      @table_oeuvre_id ||= get_oeuvre_ids
+    end
+    def get_oeuvre_ids
+      table = {}
+      YAML.safe_load(File.read(data_path)).each do |id, doeuvre|
+        next if doeuvre['id']
+        table.store(id.to_s, doeuvre);
+      end
+      table
+    end
+
     def inject_data_in_db
       # inject_juste_pour_essai
       # return
       data = []
-      YAML.safe_load(File.read(data_path)).each do |id, doeuvre|
-        next if doeuvre['id']
-        id = id.to_s
+      table_oeuvre_ids.each do |id, doeuvre|
         annee = doeuvre['annee'] || doeuvre['year'] || begin
           if id.match?(/[12][0-9]{3}^/)
             id[-4..-1].to_i

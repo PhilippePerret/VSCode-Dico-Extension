@@ -20,6 +20,11 @@
 # Requiem for a dream
 # Rocky - 1976
 #
+
+Fictive:
+  title: Œuvre fictive
+  authors: ['Ph. Perret[H]']
+
 # 1
 12AngryMen:
   id: 12AngryMen_1957
@@ -30,9 +35,7 @@
   type: film
   authors: ["S. Lumet[H]", "R. Rose[H]"]
 
-'1984':
-  id: 1984_1949
-1984_1949:
+GO1984:
   title:  "1984"
   type:   livre
   authors: ["G. Orwell[H]"]

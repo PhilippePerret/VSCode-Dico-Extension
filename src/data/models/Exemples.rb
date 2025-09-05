@@ -17,9 +17,20 @@ class Exemple
     # @Return les données lues dans le fichier YAML
     def data_exemples
       d = []
+      # Table pour mettre les id d'oeuvres remplacés
       @table_orig_id_to_short_id = {}
+
+      # Table pour mettre tous les identifiants d'œuvres erronés
+      @bad_oeuvre_ids = []
+
+      # Boucle sur toutes les données
       YAML.safe_load(File.read(data_path)).each do |id, dex|
         id = id.to_s
+
+        # On vérifie d'abord l'existence de l'oeuvre
+        unless Oeuvre.table_oeuvre_ids[dex['oeuvre']] 
+          @bad_oeuvre_ids << dex['oeuvre']
+        end
         @table_orig_id_to_short_id.store(dex['oeuvre'], id)
 
         i = 0
@@ -34,7 +45,7 @@ class Exemple
           else
             entry_id = dindice['entry_id']
           end
-          # Contenu de l'exemple, qui peut être multiple (:exemples)
+          # Contenu textuel de l'exemple, qui peut être multiple (:exemples)
           exemple = (dindice['exemple']||dindice['exemples']).to_json
           data_exemple = {
             oeuvre_id: id,
@@ -46,6 +57,12 @@ class Exemple
           d << data_exemple
         end
       end
+     if @bad_oeuvre_ids.count > 0
+      puts "MAUVAIS IDENTIFIANTS"
+      puts "--------------------"
+      puts @bad_oeuvre_ids.join("\n")
+        throw ArgumentError.new("Identifiant d'oeuvres à corriger")
+     end
       @exemples_count = d.count
       return d
     end
