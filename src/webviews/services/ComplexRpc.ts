@@ -32,7 +32,7 @@
  * 
  *    // Et dans la fonction finale qui reçoit le résultat du check
  *    RpcEntry.on('check-oeuvres-resultat', (params) => {
- *      ComplexRpc.resolve(params.CRId, params.resultat);
+ *      ComplexRpc.resolveRequest(params.CRId, params.resultat);
  *      // Bien sûr, il faut s'assurer que CRId a bien été transmis
  *      // partout, à toutes les fonctions
  *    });

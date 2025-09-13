@@ -11,7 +11,7 @@
  *     panneaux.
  */
 import { UEntry } from '../../bothside/UEntry';
-import { FullEntry } from '../../extension/models/Entry';
+import { FullEntry, IEntry } from '../../extension/models/Entry';
 import { StringNormalizer } from '../../bothside/StringUtils';
 import { ClientItem } from '../ClientItem';
 import { createRpcClient } from '../RpcClient';
@@ -54,7 +54,26 @@ export class Entry extends ClientItem<UEntry, FullEntry> {
     if (this.accessTable.existsById(id)) { return true; }
     return false;
   }
-}
+
+  /**
+   * Méthode pour enregistrer l'item dans la table
+   * 
+   * 
+   */
+  public static saveItem(item: IEntry, compRpcId: string) {
+    RpcEntry.notify('save-item', {CRId: compRpcId, item: item});
+  }
+  public static onSavedItem(params: {CRId: string, ok: boolean, error: any, item: IEntry}){
+    console.log("[CLIENT ENTRY] Retour dans le panneau Entry avec le résultat de l'enregistrement", params);
+    ComplexRpc.resolveRequest(params.CRId, params);
+    if ( params.ok ) {
+
+    } else {
+
+    }
+  }
+
+}// class Entry
 
 class EntryPanelClass extends PanelClient<Entry, typeof Entry> {
   protected get accessTable(){ return Entry.accessTable ; }
@@ -136,6 +155,11 @@ RpcEntry.on('check-oeuvres-resultat', (params: {CRId: string, resultat: {[x: str
 RpcEntry.on('check-exemples-resultat', (params: {CRId: string, resultat: {known: string[], unknown: string[]}}) => {
   console.log("[CLIENT ENTRY] Réception du résultat du check des exemples : ", params);
   ComplexRpc.resolveRequest(params.CRId, params.resultat);
+});
+
+RpcEntry.on('after-saved-item', (params) => {
+  console.log("[CLIENT Entry] Réception du after-saved-item", params);
+  Entry.onSavedItem(params);
 });
 
 // Pour exposer globalement

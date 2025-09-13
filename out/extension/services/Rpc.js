@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CanalExemple = exports.CanalOeuvre = exports.CanalEntry = void 0;
 const RpcServer_1 = require("./panels/RpcServer");
+const Entry_1 = require("../models/Entry");
 class Rpc {
     panel;
     rpc;
@@ -47,6 +48,12 @@ class RpcEntry extends Rpc {
         console.log("[EXTENSION] Envoi des résultats du check des exemples au panneau Entrées");
         this.rpc.notify('check-exemples-resultat', params);
     }
+    // Appelée après l'enregistrement de l'item, pour confirmation ou 
+    // signalement d'une erreur
+    afterSaveItem(params) {
+        console.log("[ENTENSIONS] Remontée au panneau après sauvegarde Item", params);
+        this.rpc.notify('after-saved-item', params);
+    }
     initialize(panel) {
         super.initialize(panel);
         this.rpc.on('check-oeuvres', async (params) => {
@@ -56,6 +63,10 @@ class RpcEntry extends Rpc {
         this.rpc.on('check-exemples', async (params) => {
             console.log("[EXTENTION] Demande de vérification des exemples :", params);
             exports.CanalExemple.checkExemples(params);
+        });
+        this.rpc.on('save-item', async (params) => {
+            console.log("[EXTENSION] Je dois apprendre à sauver l'item", params);
+            Entry_1.Entry.saveItem(params);
         });
     }
 }

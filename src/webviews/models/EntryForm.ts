@@ -1,4 +1,6 @@
 import { Constants } from '../../bothside/UConstants';
+import { IEntry } from '../../extension/models/Entry';
+import { PanelClassEntry } from '../../extension/services/panels/panelClassEntry';
 import { ComplexRpc } from '../services/ComplexRpc';
 import { FormManager, FormProperty } from "../services/FormManager";
 import { Entry, RpcEntry } from "./Entry";
@@ -252,8 +254,18 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
     return cats.filter(cat => false === Entry.doesIdExist(cat));
   }
   async onSave(item: Entry){
-    console.log("Je dois apprendre à sauver l'entrée", item);
-    console.log("Je dois apprendre à updater l'item (plutôt en méthode générale ?)");
+    const itemSaver = new ComplexRpc({
+      call: Entry.saveItem.bind(Entry, item.data as IEntry)
+    });
+    const res = await itemSaver.run() as {ok: boolean, errors: any, item: IEntry};
+    console.log("res dans onSave", res);
+    if ( res.ok) {
+      console.log("Après l'enregistrement de l'item, je dois apprendre à updater l'item (plutôt en méthode générale ?)");
+      Entry.panel.flash("Item enregistré avec succès.", 'notice');
+    } else {
+      console.error("ERREURS LORS DE L'ENREGISTREMENT DE L'ITEM", res.errors);
+    }
+
     return true; // quand ça a été bien enregistré
   }
 

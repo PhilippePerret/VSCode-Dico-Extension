@@ -4,7 +4,6 @@ import { Entry } from "./models/Entry";
 import { Exemple } from "./models/Exemple";
 import { Oeuvre } from "./models/Oeuvre";
 import { AccedableItem, AccessTable } from "./services/AccessTable";
-import { stopEvent } from "./services/DomUtils";
 import { FormManager } from "./services/FormManager";
 import { Help } from "./services/HelpManager";
 import { VimLikeManager } from "./services/VimLikeManager";

@@ -1,5 +1,11 @@
 # dico-sc-nario README
 
+Pour lancer la compilation
+
+~~~bash
+> npm run compile
+~~~
+
 This is the README for your extension "dico-sc-nario". After writing up a brief description, we recommend including the following sections.
 
 ## Features

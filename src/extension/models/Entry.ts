@@ -2,6 +2,7 @@ import { UEntry } from '../../bothside/UEntry';
 import { UniversalCacheManager } from '../../bothside/UniversalCacheManager';
 import { App } from '../services/App';
 import { StringNormalizer } from '../../bothside/StringUtils';
+import { CanalEntry } from '../services/Rpc';
 
 // Forme de la donnée persistante (en tout cas celle
 // qui sera envoyée au cache)
@@ -41,6 +42,18 @@ export class Entry extends UEntry {
       numeric: true,
       caseFirst: 'lower'
     });
+	}
+
+	public static saveItem(params: {CRId: string, item: IEntry, ok?: boolean, errors?: any}){
+		console.log("Je reçois l'item à sauver dans Entry", params);
+		Object.assign(params, {ok: true, errors: null});
+		// TODO Ici la sauvegarde
+		// todo Duplication de la base (toujours, pour le moment)
+		// todo Vérification du nombre d'entrées après insertion
+		// todo Opérations en conséquence et message d'erreur
+		// todo Confirmation ou non de l'opération
+		// On retourne au panneau
+		CanalEntry.afterSaveItem(params);
 	}
 
 	constructor(data: IEntry) {

@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { createRpcServer } from './panels/RpcServer';
+import { Entry, IEntry } from '../models/Entry';
 
 abstract class Rpc {
   protected panel: any;
@@ -56,6 +57,13 @@ class RpcEntry extends Rpc {
     this.rpc.notify('check-exemples-resultat', params);
   }
 
+  // Appelée après l'enregistrement de l'item, pour confirmation ou 
+  // signalement d'une erreur
+  afterSaveItem(params: {CRId: string, ok?: boolean, errors?: any, item: any}){
+    console.log("[ENTENSIONS] Remontée au panneau après sauvegarde Item", params);
+    this.rpc.notify('after-saved-item', params);
+  }
+
 
 
   initialize(panel: vscode.WebviewPanel): void {
@@ -69,6 +77,11 @@ class RpcEntry extends Rpc {
     this.rpc.on('check-exemples', async (params: {CRId: string, exemples: string[][]}) => {
       console.log("[EXTENTION] Demande de vérification des exemples :", params);
       CanalExemple.checkExemples(params);
+    });
+
+    this.rpc.on('save-item', async (params: {CRId: string, item: IEntry}) => {
+      console.log("[EXTENSION] Je dois apprendre à sauver l'item", params);
+      Entry.saveItem(params);
     });
   }
 }

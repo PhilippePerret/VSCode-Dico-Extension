@@ -1857,8 +1857,17 @@
       return cats.filter((cat) => false === Entry.doesIdExist(cat));
     }
     async onSave(item) {
-      console.log("Je dois apprendre \xE0 sauver l'entr\xE9e", item);
-      console.log("Je dois apprendre \xE0 updater l'item (plut\xF4t en m\xE9thode g\xE9n\xE9rale ?)");
+      const itemSaver = new ComplexRpc({
+        call: Entry.saveItem.bind(Entry, item.data)
+      });
+      const res = await itemSaver.run();
+      console.log("res dans onSave", res);
+      if (res.ok) {
+        console.log("Apr\xE8s l'enregistrement de l'item, je dois apprendre \xE0 updater l'item (plut\xF4t en m\xE9thode g\xE9n\xE9rale ?)");
+        Entry.panel.flash("Item enregistr\xE9 avec succ\xE8s.", "notice");
+      } else {
+        console.error("ERREURS LORS DE L'ENREGISTREMENT DE L'ITEM", res.errors);
+      }
       return true;
     }
     /**
@@ -1909,6 +1918,21 @@
         return true;
       }
       return false;
+    }
+    /**
+     * Méthode pour enregistrer l'item dans la table
+     * 
+     * 
+     */
+    static saveItem(item, compRpcId) {
+      RpcEntry.notify("save-item", { CRId: compRpcId, item });
+    }
+    static onSavedItem(params) {
+      console.log("[CLIENT ENTRY] Retour dans le panneau Entry avec le r\xE9sultat de l'enregistrement", params);
+      ComplexRpc.resolveRequest(params.CRId, params);
+      if (params.ok) {
+      } else {
+      }
     }
   };
   var EntryPanelClass = class extends PanelClient {
@@ -1977,6 +2001,10 @@
   RpcEntry.on("check-exemples-resultat", (params) => {
     console.log("[CLIENT ENTRY] R\xE9ception du r\xE9sultat du check des exemples : ", params);
     ComplexRpc.resolveRequest(params.CRId, params.resultat);
+  });
+  RpcEntry.on("after-saved-item", (params) => {
+    console.log("[CLIENT Entry] R\xE9ception du after-saved-item", params);
+    Entry.onSavedItem(params);
   });
   window.Entry = Entry;
 })();
