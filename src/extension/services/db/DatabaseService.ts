@@ -6,7 +6,7 @@ import * as fs from 'fs';
 export class DatabaseService {
     private static instance: DatabaseService | null = null;
     private db: sqlite3.Database | null = null;
-    private dbPath: string;
+    public dbPath: string;
 
     private constructor(context: vscode.ExtensionContext, isTest: boolean = false) {
         const dbName = isTest ? 'dico-test.db' : 'dico.db';
