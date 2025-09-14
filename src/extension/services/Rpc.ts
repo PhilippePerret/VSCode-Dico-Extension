@@ -48,39 +48,38 @@ class RpcEntry extends Rpc {
 
   // Pour retourner le résultat du check des oeuvres au panneau des oeuvres
   resultatCheckingOeuvres(params: {CRId: string, resultat: {known: string[], unknown: string[]}}){
-    console.log("[EXTENSION] Envoi des résultats du check des oeuvres au panneau Entrées");
+    // console.log("[EXTENSION] Envoi des résultats du check des oeuvres au panneau Entrées");
     this.rpc.notify('check-oeuvres-resultat', params);
   }
   // Pour retourner le résultat du check des oeuvres au panneau des oeuvres
   resultatCheckingExemples(params: {CRId: string, resultat: {known: string[], unknown: string[]}}){
-    console.log("[EXTENSION] Envoi des résultats du check des exemples au panneau Entrées");
+    // console.log("[EXTENSION] Envoi des résultats du check des exemples au panneau Entrées");
     this.rpc.notify('check-exemples-resultat', params);
   }
 
   // Appelée après l'enregistrement de l'item, pour confirmation ou 
   // signalement d'une erreur
   afterSaveItem(params: {CRId: string, ok: boolean, errors: any, item: any}){
-    console.log("[ENTENSIONS] Remontée au panneau après sauvegarde Item", params);
+    // console.log("[ENTENSIONS] Remontée au panneau après sauvegarde Item", params);
     this.rpc.notify('after-saved-item', params);
   }
-
 
 
   initialize(panel: vscode.WebviewPanel): void {
     super.initialize(panel);
 
     this.rpc.on('check-oeuvres', async (params: { CRId: string, oeuvres: string[] }) => {
-      console.log("[EXTENSION Demande de vérification des oeuvres : ", params);
+      // console.log("[EXTENSION Demande de vérification des oeuvres : ", params);
       CanalOeuvre.checkOeuvres(params);
     });
 
     this.rpc.on('check-exemples', async (params: {CRId: string, exemples: string[][]}) => {
-      console.log("[EXTENTION] Demande de vérification des exemples :", params);
+      // console.log("[EXTENTION] Demande de vérification des exemples :", params);
       CanalExemple.checkExemples(params);
     });
 
     this.rpc.on('save-item', async (params: any) => {
-      console.log("[EXTENSION] Reception de l'entrée à sauver", params);
+      // console.log("[EXTENSION] Reception de l'entrée à sauver", params);
       Object.assign(params, { ok: null, errors: [] });
       Entry.saveItem(params);
     });

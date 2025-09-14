@@ -40,32 +40,32 @@ class RpcEntry extends Rpc {
     }
     // Pour retourner le résultat du check des oeuvres au panneau des oeuvres
     resultatCheckingOeuvres(params) {
-        console.log("[EXTENSION] Envoi des résultats du check des oeuvres au panneau Entrées");
+        // console.log("[EXTENSION] Envoi des résultats du check des oeuvres au panneau Entrées");
         this.rpc.notify('check-oeuvres-resultat', params);
     }
     // Pour retourner le résultat du check des oeuvres au panneau des oeuvres
     resultatCheckingExemples(params) {
-        console.log("[EXTENSION] Envoi des résultats du check des exemples au panneau Entrées");
+        // console.log("[EXTENSION] Envoi des résultats du check des exemples au panneau Entrées");
         this.rpc.notify('check-exemples-resultat', params);
     }
     // Appelée après l'enregistrement de l'item, pour confirmation ou 
     // signalement d'une erreur
     afterSaveItem(params) {
-        console.log("[ENTENSIONS] Remontée au panneau après sauvegarde Item", params);
+        // console.log("[ENTENSIONS] Remontée au panneau après sauvegarde Item", params);
         this.rpc.notify('after-saved-item', params);
     }
     initialize(panel) {
         super.initialize(panel);
         this.rpc.on('check-oeuvres', async (params) => {
-            console.log("[EXTENSION Demande de vérification des oeuvres : ", params);
+            // console.log("[EXTENSION Demande de vérification des oeuvres : ", params);
             exports.CanalOeuvre.checkOeuvres(params);
         });
         this.rpc.on('check-exemples', async (params) => {
-            console.log("[EXTENTION] Demande de vérification des exemples :", params);
+            // console.log("[EXTENTION] Demande de vérification des exemples :", params);
             exports.CanalExemple.checkExemples(params);
         });
         this.rpc.on('save-item', async (params) => {
-            console.log("[EXTENSION] Reception de l'entrée à sauver", params);
+            // console.log("[EXTENSION] Reception de l'entrée à sauver", params);
             Object.assign(params, { ok: null, errors: [] });
             Entry_1.Entry.saveItem(params);
         });

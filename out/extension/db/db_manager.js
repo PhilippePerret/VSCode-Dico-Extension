@@ -41,6 +41,14 @@ const fs = __importStar(require("fs"));
 const path_1 = __importDefault(require("path"));
 const DatabaseService_1 = require("../services/db/DatabaseService");
 const App_1 = require("../services/App");
+class SaveError extends Error {
+    severity;
+    constructor(message, severity = undefined) {
+        super(message);
+        this.name = this.constructor.name;
+        this.severity = severity;
+    }
+}
 class DBManager {
     static instance;
     dbService;
@@ -69,6 +77,14 @@ class DBManager {
         console.log("Backup DB in %s", backupPath);
         return backupPath;
     }
+    /**
+     * @api
+     * Pour enregistrer vraiment la donnée.
+     *
+     * @param table La table dans laquelle enregistrer
+     * @param item Les données de l'item (entrée, exemple, oeuvre)
+     * @param params Les paramètres de suivi
+     */
     async saveItemIn(table, item, params) {
         params.errors = []; // pour mettre les éventuels erreurs
         params.ok = true; // soyons optimistes
@@ -81,18 +97,16 @@ class DBManager {
             // Vérifier le nombre d'entrées
             const countAfter = await this.getRowCountIn(table);
             const diffCount = exists ? 0 : 1;
-            if (countAfter === (countBefore + diffCount)) {
-                params.ok = true;
-            }
-            else {
-                throw new Error(`Après enregistrement de l'item ${item.id}, le nombre de données dans ${table} ne correspond pas au résultat attendu.`, severity, 3);
+            if (countAfter !== (countBefore + diffCount)) {
+                throw new SaveError(`Après enregistrement de l'item ${item.id}, le nombre de données dans ${table} ne correspond pas au résultat attendu.`, 3);
             }
         }
         catch (error) {
             params.ok = false;
-            params.errors.push(error);
+            params.errors.push(error.message);
         }
     }
+    // Procède véritablement à l'enregistrement
     async doSave(table, data, exists) {
         let sql, params;
         if (exists) {

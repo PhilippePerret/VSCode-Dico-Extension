@@ -6,6 +6,16 @@ import { IOeuvre } from '../models/Oeuvre';
 import { IExemple } from '../models/Exemple';
 import { App } from '../services/App';
 
+class SaveError extends Error {
+  public severity: number | undefined;
+  
+  constructor(message:string, severity: number | undefined = undefined) {
+    super(message);
+    this.name = this.constructor.name;
+    this.severity = severity;
+  }
+}
+
 export class DBManager {
   private static instance: DBManager;
   private dbService: DatabaseService;
@@ -38,6 +48,14 @@ export class DBManager {
     return backupPath;
   }
 
+  /**
+   * @api
+   * Pour enregistrer vraiment la donnée.
+   * 
+   * @param table La table dans laquelle enregistrer
+   * @param item Les données de l'item (entrée, exemple, oeuvre)
+   * @param params Les paramètres de suivi
+   */
   async saveItemIn(table: string, item: any, params: any){
     params.errors = []; // pour mettre les éventuels erreurs
     params.ok = true ; // soyons optimistes
@@ -50,22 +68,19 @@ export class DBManager {
       // Vérifier le nombre d'entrées
       const countAfter = await this.getRowCountIn(table);
       const diffCount = exists ? 0 : 1 ;
-      if ( countAfter === (countBefore + diffCount)) {
-        params.ok = true;
-      } else {
-        throw new Error(
+      if ( countAfter !== (countBefore + diffCount)) {
+        throw new SaveError(
           `Après enregistrement de l'item ${item.id}, le nombre de données dans ${table} ne correspond pas au résultat attendu.`,
-          severity: 3
+          3
         );
-        
       }
-    } catch(error){
+    } catch(error: any){
       params.ok = false;
-      params.errors.push(error);
+      params.errors.push(error.message);
     }
   }
 
-
+  // Procède véritablement à l'enregistrement
   private async doSave(table: string, data: any, exists: boolean): Promise<void> {
     let sql, params;
     if (exists) {
