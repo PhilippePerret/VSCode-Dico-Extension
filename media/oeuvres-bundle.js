@@ -1422,6 +1422,27 @@
       });
       return this.fakeItem;
     }
+    /**
+     * Pendant de la précédente, donne la valeur +value+ à la propriété
+     * +property+
+     */
+    setValueOf(property, value) {
+      const propData = this.tablePropertiesByPropName.get(property);
+      switch (propData.fieldType) {
+        case "checkbox":
+        case "radio":
+          propData.field.checked = value;
+          break;
+        default:
+          propData.field.value = value;
+      }
+    }
+    /**
+     * Retourne la valeur de la propriété +foo+
+     * 
+     * @param foo Nom de la propriété dont il faut retourne la valeur
+     * @returns Retourne la valeur de la propriété en fonction de son type
+     */
     getValueOf(foo) {
       if ("string" === typeof foo) {
         return this.getValueOfByPropName(foo);
@@ -1627,36 +1648,26 @@
     properties = [
       { propName: "titre_affiche", type: String, required: true, fieldType: "text", onChange: this.onChangeTitreAffiched.bind(this) },
       { propName: "id", type: String, required: true, fieldType: "text" },
-      { propName: "titre_original", type: String, required: true, fieldType: "text" },
+      { propName: "titre_original", type: String, required: true, fieldType: "text", onChange: this.onChangeTitreOriginal.bind(this) },
       { propName: "titre_francais", type: String, required: false, fieldType: "text" },
-      { propName: "auteurs", type: String, required: true, fieldType: "text" },
+      { propName: "auteurs", type: String, required: true, fieldType: "text", onChange: this.onChangeAuteurs.bind(this) },
+      { propName: "annee", type: String, required: true, fieldType: "text" },
       { propName: "resume", type: String, required: false, fieldType: "textarea" },
       { propName: "notes", type: String, required: false, fieldType: "textarea" }
     ];
     static REG_AUTEUR = /([^ ]+) ([^\[])\[(H|F)\]/;
-    onChangeTitreAffiched() {
-      const itemIsNew = this.getValueOf("id") === "";
-      if (itemIsNew) {
-        console.log("Nouvelle \u0153uvre \xE0 renseigner.");
-      }
-      const noTitreOriginal = this.getValueOf("titre_original") === "";
-      if (noTitreOriginal) {
-        console.log("Il faut essayer de d\xE9finir le titre original d'apr\xE8s le titre affich\xE9.");
-      }
-      if (itemIsNew && noTitreOriginal) {
-        console.log("Il faut que je demande s'il faut rechercher les information du film sur TMDB");
-      }
-    }
     afterEdit() {
       const id = this.getValueOf("id");
       const isNew = id === "";
       this.setIdLock(!isNew);
     }
     async checkItem(item) {
-      console.error("Il faut apprendre \xE0 checker l'oeuvre");
       const errors = [];
       let errs;
-      if (item.isNew) {
+      if (this.isNewItem) {
+      }
+      if (item.id === "" || !item.id) {
+        errors.push("Il faut absolument que cet item ait un identifiant.");
       }
       if (item.titre_original.trim().length === 0) {
         errors.push("Il faut fournir le titre de l\u2019\u0153uvre original.");
@@ -1675,25 +1686,136 @@
         return "Il faut imp\xE9rativement fournir les autrices et auteurs";
       }
       auts = auts.split(",").map((a) => a.trim());
-      const errs = auts.map((aut) => {
-        if (false === aut.match(/\[(H|F)\]$/)) {
-          return `il faut pr\xE9ciser le sexe de ${aut} (H ou F entre crochets)`;
+      const errs = [];
+      const genderErrs = this.checkAuteursHaveGender(auts);
+      genderErrs && errs.push(genderErrs);
+      if (errs.length) {
+        return errs.join(", ");
+      }
+    }
+    /**
+     * Vérifie si les auteurs sont bien formatés (sexe au bout)
+     * 
+     * @param auteurs Liste des auteurs de l'œuvre
+     * @returns Liste des erreurs trouvées (liste vide si aucune)
+     */
+    checkAuteursHaveGender(auteurs) {
+      const errs = auteurs.map((aut) => {
+        if (null === aut.match(/\[(H|F)\]$/)) {
+          return aut;
         } else {
           return null;
         }
       }).filter((e) => e !== null);
       if (errs.length) {
-        return errs.join(", ");
+        return `Il faut pr\xE9ciser le sexe de ${errs.join(", ")} (en mettant "[H]" ou "[F]" \xE0 la fin)`;
       }
     }
     observeForm() {
-      this.field("titre_original").addEventListener("change", this.onChangeTitreOriginal.bind(this));
     }
-    onChangeTitreOriginal(ev) {
+    onChangeAuteurs(ev = void 0) {
+      let auteurs = this.getValueOf("auteurs").trim();
+      if (auteurs !== "") {
+        auteurs = auteurs.split(",").map((au) => au.trim());
+        const errs = this.checkAuteursHaveGender(auteurs);
+        if (errs) {
+          this.flash(errs + ".", "error");
+        }
+      }
+      return ev && stopEvent(ev);
+    }
+    onChangeTitreAffiched(ev = void 0) {
+      const noTitreOriginal = this.getValueOf("titre_original") === "";
+      const titaff = this.getValueOf("titre_affiche");
       if (this.isNewItem) {
-        Oeuvre.panel.flash("C'est une nouvelle \u0153uvre", "notice");
+        console.log("Il faut que je demande s'il faut rechercher les information du film sur TMDB");
+        if (Oeuvre.doOeuvresExist([titaff]).known.length) {
+          this.flash("Ce titre existe d\xE9j\xE0. Si vous voulez vraiment le conserver, ajoutez un indice.", "error");
+          this.setValueOf("titre_affiche", "");
+          return ev && stopEvent(ev);
+        }
+        if (noTitreOriginal) {
+          this.setTitreOriginalFromTitreAffiched();
+        } else {
+          this.flash("Le titre original est d\xE9fini, je ne le touche pas.");
+        }
+      }
+    }
+    flash(message, type = "notice") {
+      Oeuvre.panel.flash(message, type);
+    }
+    REG_TITRE_AFF = /^(Les|Le|La|Une|Un|The|A) (.+)$/;
+    setTitreOriginalFromTitreAffiched() {
+      let titreOriginal = this.getValueOf("titre_affiche");
+      if (titreOriginal.match(this.REG_TITRE_AFF)) {
+        titreOriginal = titreOriginal.replace(this.REG_TITRE_AFF, (tout, article, reste) => {
+          return `${reste} (${article})`;
+        });
+      }
+      this.setValueOf("titre_original", titreOriginal);
+      this.onChangeTitreOriginal();
+    }
+    /**
+     * Méthode appelée quand on modifie le titre original (normalement,
+     * ça n'arrive qu'en cas de nouvelle œuvre).
+     * 
+     * Noter qu'elle est appelée automatiquement quand le titre
+     * original n'était pas défini et qu'on a défini le titre d'affi-
+     * chage de l'œuvre.
+     * 
+     * C'est aussi ici qu'on met un ID automatique s'il n'est pas
+     * défini.
+     * 
+     */
+    onChangeTitreOriginal(ev = void 0) {
+      const idNotDefined = this.getValueOf("id").trim() === "";
+      const titorig = this.getValueOf("titre_original");
+      if (titorig === "") {
+        return;
+      }
+      if (this.isNewItem) {
+        if (Oeuvre.doOeuvresExist([titorig]).known.length) {
+          Oeuvre.panel.flash("Ce titre existe d\xE9j\xE0. Si c'est vraiment une autre \u0153uvre, ajoutez-lui un indice", "error");
+          this.setValueOf("titre_original", "");
+          return;
+        }
+        if (idNotDefined) {
+          this.setValueOf("id", this.idFromTitre(titorig));
+        }
       }
       Oeuvre.panel.flash("Vous avez modifi\xE9 le titre original", "notice");
+      ev && stopEvent(ev);
+    }
+    /**
+     * Compose un ID unique en fonction du titre original de l'œuvre
+     */
+    idFromTitre(titre) {
+      let proposId = "";
+      const mots = titre.split(" ").map((m) => StringNormalizer.rationalize(m));
+      const nbMots = mots.length;
+      if (nbMots >= 3) {
+        const nbLettresFin = nbMots === 3 ? 2 : 1;
+        proposId = mots.map((m, i) => {
+          const isLastMot = i === nbMots - 1;
+          const nbLettres = isLastMot ? nbLettresFin : 1;
+          return m.substring(0, nbLettres).toUpperCase();
+        }).join("");
+        proposId = proposId.substring(0, 5);
+      } else {
+        proposId = titre.substring(0, 5).toUpperCase();
+      }
+      let annee;
+      if (annee = this.getValueOf("annee")) {
+        proposId += String(annee);
+      } else {
+        this.flash("Quand l\u2019ann\xE9e est pr\xE9cis\xE9e, elle est ajout\xE9e \xE0 l\u2019ID");
+      }
+      var iVar = 1;
+      var idTested = String(proposId);
+      while (Oeuvre.doIdExist(idTested)) {
+        idTested = `${proposId}{++iVar}`;
+      }
+      return proposId;
     }
     /**
      * 
@@ -1739,6 +1861,12 @@
     /**
           ==== MÉTHODES DE CHECK ===
      */
+    /**
+     * Méthode qui checke l'existence de l'identifiant
+     */
+    static doIdExist(id) {
+      return this.accessTable.existsById(id);
+    }
     /**
      * Méthode qui checke l'existence des oeuvres
      * 

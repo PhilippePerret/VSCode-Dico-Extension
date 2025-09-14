@@ -36,6 +36,12 @@ export class Oeuvre extends ClientItem<UOeuvre, FullOeuvre> {
    */
 
   /**
+   * Méthode qui checke l'existence de l'identifiant
+   */
+  public static doIdExist(id: string): boolean {
+    return this.accessTable.existsById(id);
+  }
+  /**
    * Méthode qui checke l'existence des oeuvres
    * 
    * @param oeuvres Liste des oeuvres, désignées par leur identifiant ou un de leurs titres

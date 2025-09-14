@@ -2,7 +2,8 @@
 
 * J'EN SUIS À :
   - Implémentation du formulaire pour les oeuvres
-    - procédure de check complet
+    - on doit sélectionner tout le champ, en focussant dedans
+    - recherche des informations sur TMDB
     - procédure d'actualisation dans accessTable 
     - bouton pour forcer la recherche des informations sur TMDB
   - Enregistrement des entrées
@@ -89,10 +90,6 @@ Comment activer/désactiver les écouteurs d'évènements clavier.
 
 
 <a name="version-2"></name>
-
-## Tout repenser (version 2)
-
-Comme je viens d’apprendre que les panneaux ne pouvaient pas communiquer, je dois repenser intégralement la gestion des données pour que chaque panneau puisse y avoir accès.
 
 ### Idées directrices
 

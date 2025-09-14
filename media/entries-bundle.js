@@ -1449,6 +1449,27 @@
       });
       return this.fakeItem;
     }
+    /**
+     * Pendant de la précédente, donne la valeur +value+ à la propriété
+     * +property+
+     */
+    setValueOf(property, value) {
+      const propData = this.tablePropertiesByPropName.get(property);
+      switch (propData.fieldType) {
+        case "checkbox":
+        case "radio":
+          propData.field.checked = value;
+          break;
+        default:
+          propData.field.value = value;
+      }
+    }
+    /**
+     * Retourne la valeur de la propriété +foo+
+     * 
+     * @param foo Nom de la propriété dont il faut retourne la valeur
+     * @returns Retourne la valeur de la propriété en fonction de son type
+     */
     getValueOf(foo) {
       if ("string" === typeof foo) {
         return this.getValueOfByPropName(foo);
