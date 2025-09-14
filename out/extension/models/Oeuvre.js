@@ -5,6 +5,8 @@ const UniversalCacheManager_1 = require("../../bothside/UniversalCacheManager");
 const UOeuvre_1 = require("../../bothside/UOeuvre");
 const App_1 = require("../services/App");
 const StringUtils_1 = require("../../bothside/StringUtils");
+const db_manager_1 = require("../db/db_manager");
+const Rpc_1 = require("../services/Rpc");
 class Oeuvre extends UOeuvre_1.UOeuvre {
     static panelId = 'oeuvres';
     static REG_ARTICLES = /\b(an|a|the|le|la|les|l'|de|du)\b/i;
@@ -21,6 +23,16 @@ class Oeuvre extends UOeuvre_1.UOeuvre {
             numeric: true,
             caseFirst: 'lower'
         });
+    }
+    /**
+     * @api
+     *
+     * Sauvegarde de l'œuvre
+     */
+    static async saveOeuvre(params) {
+        const dbManager = db_manager_1.DBManager.getInstance(App_1.App._context);
+        await dbManager.saveItemIn('oeuvres', params.item, params);
+        Rpc_1.CanalOeuvre.afterSaveOeuvre(params);
     }
     constructor(data) {
         super(data);

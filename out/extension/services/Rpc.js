@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CanalExemple = exports.CanalOeuvre = exports.CanalEntry = void 0;
 const RpcServer_1 = require("./panels/RpcServer");
 const Entry_1 = require("../models/Entry");
+const Oeuvre_1 = require("../models/Oeuvre");
 class Rpc {
     panel;
     rpc;
@@ -80,11 +81,21 @@ class RpcOeuvre extends Rpc {
     displayOeuvre(param) {
         this.rpc.notify('display-oeuvre', param);
     }
+    afterSaveOeuvre(params) {
+        // console.log("[EXTENSION RpcOeuvre] Remontée au panneau après save", params);
+        this.rpc.notify('after-save-oeuvre', params);
+    }
+    // Définition des récepteurs on
     initialize(panel) {
         super.initialize(panel);
         this.rpc.on('check-oeuvres-resultat', (params) => {
-            console.log("[EXTENSION] Réception du résultat du check des oeuvres", params);
+            // console.log("[EXTENSION] Réception du résultat du check des oeuvres", params);
             exports.CanalEntry.resultatCheckingOeuvres(params);
+        });
+        this.rpc.on('save-oeuvre', async (params) => {
+            // console.log("[EXTENSION OEUVRE] Réception de l'œuvre à sauver", params);
+            Object.assign(params, { ok: null, errors: [] });
+            Oeuvre_1.Oeuvre.saveOeuvre(params);
         });
     }
 }
@@ -98,17 +109,17 @@ class RpcExemple extends Rpc {
         super.initialize(panel);
         // console.log("-> initialisation du rpc et des méthodes", this.rpc);
         this.rpc.on("display-entry", async (params) => {
-            console.log("[EXTENSION] Demande d'affichage de l'Entrée ", params.entry_id);
+            // console.log("[EXTENSION] Demande d'affichage de l'Entrée ", params.entry_id);
             // return { ok: true };
             // On le relaye au panneau des entrées
             exports.CanalEntry.displayEntry(params);
         });
         this.rpc.on('display-oeuvre', async (params) => {
-            console.log("[EXTENSION] Demande affichage oeuvre %s", params.oeuvreId, params);
+            // console.log("[EXTENSION] Demande affichage oeuvre %s", params.oeuvreId, params);
             exports.CanalOeuvre.displayOeuvre(params);
         });
         this.rpc.on('check-exemples-resultat', async (params) => {
-            console.log("[EXTENSION] Réception du résultat du check des exemples", params);
+            // console.log("[EXTENSION] Réception du résultat du check des exemples", params);
             exports.CanalEntry.resultatCheckingExemples(params);
         });
     }

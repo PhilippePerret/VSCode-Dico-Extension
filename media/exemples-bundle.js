@@ -1242,6 +1242,7 @@
   // src/webviews/services/FormManager.ts
   var FormManager = class {
     tablePropertiesByPropName;
+    isNewItem;
     // Fonction pour sauver (appelée quand on sauve la donnée)
     async checkItem(item) {
       return void 0;
@@ -1263,7 +1264,7 @@
       this.panel.keyManager.setMode(mode);
     }
     /**
-     * API
+     * @api
      * Point d'entrée de l'édition, on envoi l'item à éditer. La manager
      * affiche ses données et affiche le formulaire.
      * 
@@ -1271,6 +1272,7 @@
      */
     editItem(item) {
       this.originalData = item.data;
+      this.isNewItem = !item.data.id;
       this.openForm();
       this.dispatchValues(item.data);
       if ("function" === typeof this.afterEdit) {

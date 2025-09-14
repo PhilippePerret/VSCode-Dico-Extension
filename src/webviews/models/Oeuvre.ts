@@ -2,13 +2,14 @@ import { UOeuvre } from '../../bothside/UOeuvre';
 import { RpcChannel } from '../../bothside/RpcChannel';
 import { createRpcClient } from '../RpcClient';
 import { ClientItem } from '../ClientItem';
-import { FullOeuvre } from '../../extension/models/Oeuvre';
+import { FullOeuvre, IOeuvre } from '../../extension/models/Oeuvre';
 import { StringNormalizer } from '../../bothside/StringUtils';
 import { VimLikeManager } from '../services/VimLikeManager';
 import { AnyElementType } from './AnyClientElement';
 import { PanelClient } from '../PanelClient';
 import { AccessTable } from '../services/AccessTable';
 import { OeuvreForm } from './OeuvreForm';
+import { ComplexRpc } from '../services/ComplexRpc';
 
 export class Oeuvre extends ClientItem<UOeuvre, FullOeuvre> {
   declare public data: FullOeuvre;
@@ -54,6 +55,19 @@ export class Oeuvre extends ClientItem<UOeuvre, FullOeuvre> {
   private static oeuvreExistsByTitle(title: string): boolean {
     title = StringNormalizer.rationalize(title);
     return !!this.accessTable.find(item => item.data.titresLookUp.includes(title));
+  }
+
+  /**
+   * 
+   * Méthodes pour enregistrer les oeuvres
+   */
+  public static saveItem(item: IOeuvre, compRpcId: string) {
+    RpcOeuvre.notify('save-oeuvre', {CRId: compRpcId, item: item});
+  }
+
+  public static onSavedOeuvre(params: {CRId: string, ok: boolean, errors: any, item: IOeuvre}){
+    console.log("[CLIENT OEUVRE] Retour dans le panneau des oeuvres", params);
+    ComplexRpc.resolveRequest(params.CRId, params);
   }
 
   constructor(data: FullOeuvre) {
@@ -123,6 +137,11 @@ RpcOeuvre.on('check-oeuvres', (params) => {
   const resultat = Oeuvre.doOeuvresExist(params.oeuvres);
   console.log("résultat du check", resultat);
   RpcOeuvre.notify('check-oeuvres-resultat', { CRId: params.CRId, resultat: resultat });
+});
+
+RpcOeuvre.on('after-save-oeuvre', (params) => {
+  console.log("[CLIENT Oeuvre] Réception du after-save-oeuvre", params);
+  Oeuvre.onSavedOeuvre(params);
 });
 
 (window as any).Oeuvre = Oeuvre ;

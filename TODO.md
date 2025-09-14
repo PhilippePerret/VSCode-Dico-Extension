@@ -1,13 +1,17 @@
 # Todo list
 
-* BUG Les auteurs ne sont pas récupérés/enregistrés
-
 * J'EN SUIS À :
-  - SOIT implémentation du formulaire pour les oeuvres
-    - formulaire d'édition
-    - procédure d'enregistrement
+  - Implémentation du formulaire pour les oeuvres
     - procédure de check complet
+    - procédure d'actualisation dans accessTable 
     - bouton pour forcer la recherche des informations sur TMDB
+  - Enregistrement des entrées
+    - [si update]
+      - actualisation de l'affichage
+      - actualisation de la donnée dans accessTable
+    - [Si create]
+      - insertion au bon endroit dans l'affichage
+      - intégration de la donnée dans accessTable
 
 * BUGS À CORRIGER
   - quand je filtre et que je fais "f", ça ne sélectionne pas un des éléments affichés (avec la console, obtenir la valeur de l'item sélectionné)

@@ -31,6 +31,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   abstract prefix: string; // utilisé pour nommer les champs
   abstract properties: FormProperty[];
   private tablePropertiesByPropName!: Map<string, FormProperty>;
+  public isNewItem!: boolean; //
   abstract afterEdit(): void; // à faire après l'édition d'un élément
   abstract onSave(item: T): Promise<boolean>; // Fonction pour sauver (appelée quand on sauve la donnée)
   async checkItem(item: T): Promise<string | undefined> { return undefined ; }; // Pour checker les données 
@@ -56,7 +57,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
     this.panel.keyManager.setMode(mode);
   }
   /**
-   * API
+   * @api
    * Point d'entrée de l'édition, on envoi l'item à éditer. La manager
    * affiche ses données et affiche le formulaire.
    * 
@@ -65,6 +66,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   public editItem(item: T): void {
     // console.log("Édition de l'item", item);
     this.originalData = item.data;
+    this.isNewItem = !item.data.id;
     this.openForm();
     this.dispatchValues(item.data);
     if ( 'function' === typeof this.afterEdit ) { this.afterEdit.call(this); }
@@ -178,6 +180,27 @@ export abstract class FormManager<C, T extends ConcreteElement> {
     return this.fakeItem;
   }
 
+  /**
+   * Pendant de la précédente, donne la valeur +value+ à la propriété
+   * +property+
+   */
+  setValueOf(property: string, value: any) {
+    const propData = this.tablePropertiesByPropName.get(property) as FormProperty;
+    switch (propData.fieldType) {
+      case 'checkbox':
+      case 'radio':
+        propData.field.checked = value;
+        break;
+      default:
+        propData.field.value = value;
+    }
+  }
+  /**
+   * Retourne la valeur de la propriété +foo+
+   * 
+   * @param foo Nom de la propriété dont il faut retourne la valeur
+   * @returns Retourne la valeur de la propriété en fonction de son type
+   */
   getValueOf(foo: string | FormProperty): string | number | boolean | null {
     if ( 'string' === typeof foo ) {
       return this.getValueOfByPropName(foo);

@@ -258,7 +258,7 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
    * Procédure complexe (ComplexRpc)
    */
   async onSave(item: Entry): Promise<boolean> {
-    console.info("Données à sauvegarder", item);
+    // console.info("Données à sauvegarder", item);
     const itemSaver = new ComplexRpc({
       call: Entry.saveItem.bind(Entry, item as unknown as IEntry)
     });
@@ -269,6 +269,7 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
       Entry.panel.flash("Item enregistré avec succès.", 'notice');
     } else {
       console.error("ERREURS LORS DE L'ENREGISTREMENT DE L'ITEM", res.errors);
+      Entry.panel.flash('Erreur (enregistrement de l’entrée (voir la console', 'error');
     }
 
     return true; // quand ça a été bien enregistré

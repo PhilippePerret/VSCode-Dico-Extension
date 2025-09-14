@@ -2,6 +2,8 @@ import { UniversalCacheManager } from '../../bothside/UniversalCacheManager';
 import { UOeuvre } from '../../bothside/UOeuvre';
 import { App } from '../services/App';
 import { StringNormalizer } from '../../bothside/StringUtils';
+import { DBManager } from '../db/db_manager';
+import { CanalOeuvre } from '../services/Rpc';
 
 export interface IOeuvre {
 	id: string;
@@ -43,6 +45,22 @@ export class Oeuvre extends UOeuvre {
 			caseFirst: 'lower'
 		});
 	}
+
+	/**
+	 * @api
+	 * 
+	 * Sauvegarde de l'œuvre 
+	 */
+	public static async saveOeuvre(params: {CRId: string, item: IOeuvre, ok: boolean, errors: any, [x: string]: any}){
+		const dbManager = DBManager.getInstance(App._context);
+		await dbManager.saveItemIn('oeuvres', params.item, params);
+		CanalOeuvre.afterSaveOeuvre(params);
+	}
+
+
+
+
+
 	constructor(data: IOeuvre) {
 		super(data);
 	}

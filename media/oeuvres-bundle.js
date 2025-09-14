@@ -1239,9 +1239,45 @@
     }
   };
 
+  // src/webviews/services/ComplexRpc.ts
+  var ComplexRpc = class _ComplexRpc {
+    static requestTable = /* @__PURE__ */ new Map();
+    static addRequest(req) {
+      this.requestTable.set(req.id, req);
+    }
+    // À appeler à la fin, pour résoudre
+    static resolveRequest(requestId, params) {
+      this.requestTable.get(requestId).resolve(params);
+    }
+    id;
+    call;
+    // Fonction qui va lancer l'appel (reçoit en DERNIER argument l'identifiant de cette instance — pour le transmettre)
+    ok;
+    // le 'resolve' de new Promise((resolve, reject) => {})
+    ko;
+    // le reject de new Promise((resolve,reject) => {})
+    constructor(param) {
+      this.id = crypto.randomUUID();
+      this.call = param.call;
+      _ComplexRpc.addRequest(this);
+    }
+    run() {
+      return new Promise((ok, ko) => {
+        this.ok = ok;
+        this.ko = ko;
+        setTimeout(this.ko.bind(this, "timeout-20"), 10 * 1e4);
+        this.call(this.id);
+      });
+    }
+    resolve(params) {
+      this.ok(params);
+    }
+  };
+
   // src/webviews/services/FormManager.ts
   var FormManager = class {
     tablePropertiesByPropName;
+    isNewItem;
     // Fonction pour sauver (appelée quand on sauve la donnée)
     async checkItem(item) {
       return void 0;
@@ -1263,7 +1299,7 @@
       this.panel.keyManager.setMode(mode);
     }
     /**
-     * API
+     * @api
      * Point d'entrée de l'édition, on envoi l'item à éditer. La manager
      * affiche ses données et affiche le formulaire.
      * 
@@ -1271,6 +1307,7 @@
      */
     editItem(item) {
       this.originalData = item.data;
+      this.isNewItem = !item.data.id;
       this.openForm();
       this.dispatchValues(item.data);
       if ("function" === typeof this.afterEdit) {
@@ -1589,9 +1626,9 @@
     formId = "oeuvre-form";
     properties = [
       { propName: "titre_affiche", type: String, required: true, fieldType: "text", onChange: this.onChangeTitreAffiched.bind(this) },
+      { propName: "id", type: String, required: true, fieldType: "text" },
       { propName: "titre_original", type: String, required: true, fieldType: "text" },
       { propName: "titre_francais", type: String, required: false, fieldType: "text" },
-      { propName: "id", type: String, required: true, fieldType: "text" },
       { propName: "auteurs", type: String, required: true, fieldType: "text" },
       { propName: "resume", type: String, required: false, fieldType: "textarea" },
       { propName: "notes", type: String, required: false, fieldType: "textarea" }
@@ -1618,12 +1655,45 @@
     async checkItem(item) {
       console.error("Il faut apprendre \xE0 checker l'oeuvre");
       const errors = [];
+      let errs;
+      if (item.isNew) {
+      }
+      if (item.titre_original.trim().length === 0) {
+        errors.push("Il faut fournir le titre de l\u2019\u0153uvre original.");
+      }
+      if (errs = this.checkAuteurs(item)) {
+        errors.push("erreurs trouv\xE9s sur les auteurs : " + errs);
+      }
       if (errors.length) {
         console.error("Donn\xE9es invalides", errors);
         return errors.join(", ").toLowerCase();
       }
     }
+    checkAuteurs(item) {
+      let auts = item.auteurs.trim();
+      if (auts.length === 0) {
+        return "Il faut imp\xE9rativement fournir les autrices et auteurs";
+      }
+      auts = auts.split(",").map((a) => a.trim());
+      const errs = auts.map((aut) => {
+        if (false === aut.match(/\[(H|F)\]$/)) {
+          return `il faut pr\xE9ciser le sexe de ${aut} (H ou F entre crochets)`;
+        } else {
+          return null;
+        }
+      }).filter((e) => e !== null);
+      if (errs.length) {
+        return errs.join(", ");
+      }
+    }
     observeForm() {
+      this.field("titre_original").addEventListener("change", this.onChangeTitreOriginal.bind(this));
+    }
+    onChangeTitreOriginal(ev) {
+      if (this.isNewItem) {
+        Oeuvre.panel.flash("C'est une nouvelle \u0153uvre", "notice");
+      }
+      Oeuvre.panel.flash("Vous avez modifi\xE9 le titre original", "notice");
     }
     /**
      * 
@@ -1632,6 +1702,17 @@
      */
     async onSave(item) {
       console.log("Il faut que j'apprendre \xE0 sauver : ", item);
+      const itemSaver = new ComplexRpc({
+        call: Oeuvre.saveItem.bind(Oeuvre, item)
+      });
+      const res = await itemSaver.run();
+      if (res.ok) {
+        console.log("Je dois apprendre \xE0 actualiser l'affichage de l'oeuvre ou l'ins\xE9rer.");
+        Oeuvre.panel.flash("\u0152uvre enregistr\xE9e avec succ\xE8s.", "notice");
+      } else {
+        console.error("ERREUR LORS DE L'ENREGISTREMENT DE L'OEUVRE", res.errors);
+        Oeuvre.panel.flash("Erreur (enregistrement de l\u2019\u0153uvre (voir la console", "error");
+      }
       return true;
     }
   };
@@ -1678,6 +1759,17 @@
     static oeuvreExistsByTitle(title) {
       title = StringNormalizer.rationalize(title);
       return !!this.accessTable.find((item) => item.data.titresLookUp.includes(title));
+    }
+    /**
+     * 
+     * Méthodes pour enregistrer les oeuvres
+     */
+    static saveItem(item, compRpcId) {
+      RpcOeuvre.notify("save-oeuvre", { CRId: compRpcId, item });
+    }
+    static onSavedOeuvre(params) {
+      console.log("[CLIENT OEUVRE] Retour dans le panneau des oeuvres", params);
+      ComplexRpc.resolveRequest(params.CRId, params);
     }
     constructor(data) {
       super(data);
@@ -1737,6 +1829,10 @@
     const resultat = Oeuvre.doOeuvresExist(params.oeuvres);
     console.log("r\xE9sultat du check", resultat);
     RpcOeuvre.notify("check-oeuvres-resultat", { CRId: params.CRId, resultat });
+  });
+  RpcOeuvre.on("after-save-oeuvre", (params) => {
+    console.log("[CLIENT Oeuvre] R\xE9ception du after-save-oeuvre", params);
+    Oeuvre.onSavedOeuvre(params);
   });
   window.Oeuvre = Oeuvre;
 })();

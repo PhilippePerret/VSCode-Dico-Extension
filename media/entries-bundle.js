@@ -1304,6 +1304,7 @@
   // src/webviews/services/FormManager.ts
   var FormManager = class {
     tablePropertiesByPropName;
+    isNewItem;
     // Fonction pour sauver (appelée quand on sauve la donnée)
     async checkItem(item) {
       return void 0;
@@ -1325,7 +1326,7 @@
       this.panel.keyManager.setMode(mode);
     }
     /**
-     * API
+     * @api
      * Point d'entrée de l'édition, on envoi l'item à éditer. La manager
      * affiche ses données et affiche le formulaire.
      * 
@@ -1333,6 +1334,7 @@
      */
     editItem(item) {
       this.originalData = item.data;
+      this.isNewItem = !item.data.id;
       this.openForm();
       this.dispatchValues(item.data);
       if ("function" === typeof this.afterEdit) {
@@ -1846,7 +1848,6 @@
      * Procédure complexe (ComplexRpc)
      */
     async onSave(item) {
-      console.info("Donn\xE9es \xE0 sauvegarder", item);
       const itemSaver = new ComplexRpc({
         call: Entry.saveItem.bind(Entry, item)
       });
@@ -1857,6 +1858,7 @@
         Entry.panel.flash("Item enregistr\xE9 avec succ\xE8s.", "notice");
       } else {
         console.error("ERREURS LORS DE L'ENREGISTREMENT DE L'ITEM", res.errors);
+        Entry.panel.flash("Erreur (enregistrement de l\u2019entr\xE9e (voir la console", "error");
       }
       return true;
     }
@@ -1920,9 +1922,6 @@
     static onSavedItem(params) {
       console.log("[CLIENT ENTRY] Retour dans le panneau Entry avec le r\xE9sultat de l'enregistrement", params);
       ComplexRpc.resolveRequest(params.CRId, params);
-      if (params.ok) {
-      } else {
-      }
     }
   };
   var EntryPanelClass = class extends PanelClient {
