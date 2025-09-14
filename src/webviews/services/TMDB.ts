@@ -114,16 +114,14 @@ export class TMDB {
     const data = await response.json();
 
     // Filtrer les rôles qui t'intéressent
-    const director = data.crew.find(person => person.job === 'Director');
-    const writers = data.crew.filter(person =>
-      person.job === 'Writer' ||
-      person.job === 'Screenplay' ||
-      person.job === 'Story'
-    );
+    const director = data.crew.find((person: {[x: string]: any}) => person.job === 'Director');
+    const writers = data.crew.filter((person: {[x: string]: any}) => {
+      person.job === 'Writer' || person.job === 'Screenplay' || person.job === 'Story';
+    });
 
     return {
       director: director?.name,
-      writers: writers.map(w => w.name)
+      writers: writers.map((w: {[x: string]: any}) => w.name)
     };
   }
 }

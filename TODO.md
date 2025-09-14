@@ -5,6 +5,7 @@
     - OU : indiquer une table {i: this.fonctionI.bind(this), w: this.FontionW.bind(this), etc.} pour préciser quelle fonction doit être appelée par quelle touche (OUI !!!)
     - Dire dans le panneau oeuvre : {i: this.getInfosFilm.bind(this)}
     - on doit sélectionner tout le champ, en focussant dedans
+    - Implémenter la recherche dans wikipédia aussi, quand le film n'est pas trouvé
     - recherche des informations sur TMDB
     - procédure d'actualisation dans accessTable 
     - bouton pour forcer la recherche des informations sur TMDB
