@@ -1,6 +1,6 @@
 # dico-sc-nario README
 
-Pour lancer la compilation
+Pour compiler le code après modification.
 
 ~~~bash
 > npm run compile
