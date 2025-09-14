@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { createRpcServer } from './panels/RpcServer';
 import { Entry } from '../models/Entry';
 import { Oeuvre } from '../models/Oeuvre';
+import { App } from './App';
 
 abstract class Rpc {
   protected panel: any;
@@ -118,6 +119,11 @@ class RpcOeuvre extends Rpc {
       Oeuvre.saveOeuvre(params);
     });
 
+    this.rpc.on('tmdb-secrets', async () => {
+      console.log("[EXTENSION] Demande des secrets TMDB");
+      const secrets = App.getTMDBSecrets();
+      return secrets;
+    });
  }
   
 }

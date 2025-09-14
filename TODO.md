@@ -2,6 +2,8 @@
 
 * J'EN SUIS À :
   - Implémentation du formulaire pour les oeuvres
+    - OU : indiquer une table {i: this.fonctionI.bind(this), w: this.FontionW.bind(this), etc.} pour préciser quelle fonction doit être appelée par quelle touche (OUI !!!)
+    - Dire dans le panneau oeuvre : {i: this.getInfosFilm.bind(this)}
     - on doit sélectionner tout le champ, en focussant dedans
     - recherche des informations sur TMDB
     - procédure d'actualisation dans accessTable 

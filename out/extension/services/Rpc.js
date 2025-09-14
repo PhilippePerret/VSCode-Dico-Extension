@@ -4,6 +4,7 @@ exports.CanalExemple = exports.CanalOeuvre = exports.CanalEntry = void 0;
 const RpcServer_1 = require("./panels/RpcServer");
 const Entry_1 = require("../models/Entry");
 const Oeuvre_1 = require("../models/Oeuvre");
+const App_1 = require("./App");
 class Rpc {
     panel;
     rpc;
@@ -96,6 +97,11 @@ class RpcOeuvre extends Rpc {
             // console.log("[EXTENSION OEUVRE] Réception de l'œuvre à sauver", params);
             Object.assign(params, { ok: null, errors: [] });
             Oeuvre_1.Oeuvre.saveOeuvre(params);
+        });
+        this.rpc.on('tmdb-secrets', async () => {
+            console.log("[EXTENSION] Demande des secrets TMDB");
+            const secrets = App_1.App.getTMDBSecrets();
+            return secrets;
         });
     }
 }

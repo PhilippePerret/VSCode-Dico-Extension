@@ -1,4 +1,3 @@
-import { findPackageJSON } from "module";
 import { PanelClient } from "../PanelClient";
 
 // Type pour la définition d'une propriété

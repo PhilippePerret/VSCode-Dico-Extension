@@ -3,6 +3,7 @@ import { IOeuvre } from "../../extension/models/Oeuvre";
 import { ComplexRpc } from "../services/ComplexRpc";
 import { stopEvent } from "../services/DomUtils";
 import { FormManager, FormProperty } from "../services/FormManager";
+import { TMDB } from "../services/TMDB";
 import { Oeuvre } from "./Oeuvre";
 
 class FOeuvre extends Oeuvre {
@@ -97,8 +98,20 @@ export class OeuvreForm extends FormManager<typeof Oeuvre, FOeuvre> {
   }
 
   observeForm(): void {
+    const btnTMDB = this.obj.querySelector('button.btn-tmdb-get-infos');
+    btnTMDB?.addEventListener('click', this.onClickGetTMDBInfos.bind(this));
   }
 
+  async onClickGetTMDBInfos(ev: Event){
+    const titre = ((this.getValueOf('titre_original') || this.getValueOf('titre_affiche')) as string).trim();
+    if (titre === '') {
+      this.flash('Il faut indiquer le titre !', 'error');
+    } else {
+      this.flash('Je récupère les informations du film ' + titre + '…');
+      const infos = await TMDB.getInfoFilm(titre);
+    }
+  }
+  
   onChangeAuteurs(ev: Event | undefined = undefined) {
     let auteurs: string | string[] = (this.getValueOf('auteurs') as string).trim();
     if ( auteurs !== '') {

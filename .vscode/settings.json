@@ -36,5 +36,6 @@
 	"editor.bracketPairColorization.enabled": false,
 	"editor.matchBrackets": "never",
 	"workbench.editor.closeEmptyGroups": false,
-	"explorer.autoReveal": false
+	"explorer.autoReveal": false,
+	"editor.tabCompletion": "on"
 }

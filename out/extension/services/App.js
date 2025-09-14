@@ -35,6 +35,8 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.App = void 0;
 const vscode = __importStar(require("vscode"));
+const fs = __importStar(require("fs"));
+const path = __importStar(require("path"));
 const PanelManager_1 = require("./panels/PanelManager");
 const DatabaseService_1 = require("./db/DatabaseService");
 const Entry_1 = require("../models/Entry");
@@ -124,6 +126,10 @@ class App {
         classI.cacheAllData.call(classI, sortedItems);
         this.incAndCheckReadyCounter(); // asynchronicité
         return true;
+    }
+    static getTMDBSecrets() {
+        const secretsPath = path.join(process.env.HOME, '.secret', 'TMDB.json');
+        return JSON.parse(fs.readFileSync(secretsPath, 'utf8'));
     }
 }
 exports.App = App;

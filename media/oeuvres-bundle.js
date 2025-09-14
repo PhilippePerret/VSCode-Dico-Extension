@@ -1641,6 +1641,103 @@
     }
   };
 
+  // src/webviews/services/TMDB.ts
+  var TMDB = class {
+    /**
+     * @api
+     * Récupère et retourne les informations du film de titre +titre+
+     * 
+     * @param titre Le titre du film dont il faut avoir les informations. Plus tard, on verra si on peut avoir plusieurs films d'un coup.
+     * @returns 
+     */
+    static async getInfoFilm(titre) {
+      const dataProv = await this.getMovieInfo(titre);
+      console.log("Infos de film r\xE9cup\xE9r\xE9es !", dataProv);
+      const dataFilm = {
+        tmdbId: null,
+        titre_original: null,
+        titre_francais: null,
+        annee: null
+      };
+      return dataFilm;
+    }
+    // Usage combiné : rechercher puis récupérer les détails
+    static async getMovieInfo(title) {
+      const searchResults = await this.searchMovie(title);
+      if (searchResults.length > 0) {
+        const movieId = searchResults[0].id;
+        const movieDetails = await this.getMovieDetails(movieId);
+        const movieCredits = await this.getMovieCredits(movieId);
+        return Object.assign(movieDetails, movieCredits);
+      }
+      return null;
+    }
+    static _TMDBSecrets;
+    static get TMDB_READING_API_TOKEN() {
+      return this._TMDBSecrets.reading_api_token;
+    }
+    static get TMDB_API_KEY() {
+      return this._TMDBSecrets.api_key;
+    }
+    static async getTMDBSecrets() {
+      return RpcOeuvre.ask("tmdb-secrets").then((retour) => {
+        console.log("Retour des secrets : ", retour);
+        this._TMDBSecrets = retour;
+        return retour;
+      }).catch((error) => {
+        console.error("Une erreur est survenue", error);
+      });
+    }
+    // Recherche par titre
+    static async searchMovie(title) {
+      console.log("this._TMDBSecrets", this._TMDBSecrets);
+      if (void 0 === this._TMDBSecrets) {
+        await this.getTMDBSecrets();
+      }
+      console.log("J'ai pu r\xE9cup\xE9rer les codes secrets");
+      const url = `https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(title)}`;
+      const response = await fetch(url, {
+        headers: {
+          "Authorization": `Bearer ${this.TMDB_READING_API_TOKEN}`,
+          "Content-Type": "application/json"
+        }
+      });
+      const data = await response.json();
+      console.log("Premi\xE8re data", data);
+      return data.results;
+    }
+    // Informations détaillées d'un film par ID
+    static async getMovieDetails(movieId) {
+      const url = `https://api.themoviedb.org/3/movie/${movieId}`;
+      const response = await fetch(url, {
+        headers: {
+          "Authorization": `Bearer ${this.TMDB_READING_API_TOKEN}`,
+          "Content-Type": "application/json"
+        }
+      });
+      return await response.json();
+    }
+    // Informations techniques (cast & crew)
+    static async getMovieCredits(movieId) {
+      const url = `https://api.themoviedb.org/3/movie/${movieId}/credits`;
+      const response = await fetch(url, {
+        headers: {
+          "Authorization": `Bearer ${this.TMDB_READING_API_TOKEN}`,
+          "Content-Type": "application/json"
+        }
+      });
+      const data = await response.json();
+      const director = data.crew.find((person) => person.job === "Director");
+      const writers = data.crew.filter(
+        (person) => person.job === "Writer" || person.job === "Screenplay" || person.job === "Story"
+      );
+      return {
+        director: director?.name,
+        writers: writers.map((w) => w.name)
+      };
+    }
+  };
+
   // src/webviews/models/OeuvreForm.ts
   var OeuvreForm = class extends FormManager {
     prefix = "oeuvre";
@@ -1712,6 +1809,17 @@
       }
     }
     observeForm() {
+      const btnTMDB = this.obj.querySelector("button.btn-tmdb-get-infos");
+      btnTMDB?.addEventListener("click", this.onClickGetTMDBInfos.bind(this));
+    }
+    async onClickGetTMDBInfos(ev) {
+      const titre = (this.getValueOf("titre_original") || this.getValueOf("titre_affiche")).trim();
+      if (titre === "") {
+        this.flash("Il faut indiquer le titre !", "error");
+      } else {
+        this.flash("Je r\xE9cup\xE8re les informations du film " + titre + "\u2026");
+        const infos = await TMDB.getInfoFilm(titre);
+      }
     }
     onChangeAuteurs(ev = void 0) {
       let auteurs = this.getValueOf("auteurs").trim();
@@ -1728,7 +1836,6 @@
       const noTitreOriginal = this.getValueOf("titre_original") === "";
       const titaff = this.getValueOf("titre_affiche");
       if (this.isNewItem) {
-        console.log("Il faut que je demande s'il faut rechercher les information du film sur TMDB");
         if (Oeuvre.doOeuvresExist([titaff]).known.length) {
           this.flash("Ce titre existe d\xE9j\xE0. Si vous voulez vraiment le conserver, ajoutez un indice.", "error");
           this.setValueOf("titre_affiche", "");
@@ -1736,6 +1843,7 @@
         }
         if (noTitreOriginal) {
           this.setTitreOriginalFromTitreAffiched();
+          console.log("Il faut que je demande s'il faut rechercher les information du film sur TMDB");
         } else {
           this.flash("Le titre original est d\xE9fini, je ne le touche pas.");
         }
@@ -1783,7 +1891,6 @@
           this.setValueOf("id", this.idFromTitre(titorig));
         }
       }
-      Oeuvre.panel.flash("Vous avez modifi\xE9 le titre original", "notice");
       ev && stopEvent(ev);
     }
     /**

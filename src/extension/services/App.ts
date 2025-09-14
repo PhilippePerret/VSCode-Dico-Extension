@@ -1,10 +1,14 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
+
 import { PanelManager } from './panels/PanelManager';
 import { DatabaseService } from './db/DatabaseService';
 import { Entry } from '../models/Entry';
 import { Oeuvre } from '../models/Oeuvre';
 import { Exemple } from '../models/Exemple';
 import { AnyElementClass } from '../models/AnyElement';
+import { CanalOeuvre } from './Rpc';
 
 export class App {
   public static _context: vscode.ExtensionContext;
@@ -98,5 +102,10 @@ export class App {
     (classI as AnyElementClass).cacheAllData.call(classI, sortedItems);
     this.incAndCheckReadyCounter(); // asynchronicité
     return true ;
+  }
+
+  public static getTMDBSecrets(){
+    const secretsPath = path.join(process.env.HOME as string, '.secret', 'TMDB.json');
+    return JSON.parse(fs.readFileSync(secretsPath, 'utf8'));
   }
 }
