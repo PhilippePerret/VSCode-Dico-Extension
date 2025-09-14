@@ -11,9 +11,9 @@ export class OeuvreForm extends FormManager<typeof Oeuvre, FOeuvre> {
   formId = 'oeuvre-form';
   properties: FormProperty[] = [
     {propName: 'titre_affiche', type: String, required: true, fieldType: 'text', onChange: this.onChangeTitreAffiched.bind(this)},
+    {propName: 'id', type: String, required: true, fieldType: 'text'},
     {propName: 'titre_original', type: String, required: true, fieldType: 'text'},
     {propName: 'titre_francais', type: String, required: false, fieldType: 'text'},
-    {propName: 'id', type: String, required: true, fieldType: 'text'},
     {propName: 'auteurs', type: String, required: true, fieldType: 'text'},
     {propName: 'resume', type: String, required: false, fieldType: 'textarea'},
     {propName: 'notes', type: String, required: false, fieldType: 'textarea'}
@@ -42,18 +42,29 @@ export class OeuvreForm extends FormManager<typeof Oeuvre, FOeuvre> {
     this.setIdLock(!isNew);
   }
 
-  async onSave(item: Oeuvre): Promise<boolean> {
-    console.log("Il faut que j'apprendre à sauver : ", item);
-    return true;
-  }
-
-  async checkItem(item: Oeuvre): Promise<string | undefined> {
+  async checkItem(item: FOeuvre): Promise<string | undefined> {
     console.error("Il faut apprendre à checker l'oeuvre");
-    return 'Les données ne sont pas checkés';
+    const errors: string[] = [];
+
+    if (errors.length) {
+      console.error("Données invalides", errors);
+      return errors.join(', ').toLowerCase();
+    }
   }
 
   observeForm(): void {
     // TODO
   }
+
+  /**
+   * 
+   * @param item L'oeuvre à enregistrer
+   * @returns True si l'enregistrement a pu se faire correctement.
+   */
+  async onSave(item: Oeuvre): Promise<boolean> {
+    console.log("Il faut que j'apprendre à sauver : ", item);
+    return true;
+  }
+
 
 }

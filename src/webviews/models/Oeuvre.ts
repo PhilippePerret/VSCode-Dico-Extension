@@ -21,6 +21,15 @@ export class Oeuvre extends ClientItem<UOeuvre, FullOeuvre> {
     this._accessTable = new AccessTable<Oeuvre>(Oeuvre, items);
   }
 
+
+  // retourn le premier item visible après l'item +item+
+  static getFirstVisibleAfter(refItem: Oeuvre): AnyElementType | undefined {
+    const aT = this.accessTable ;
+    return aT.findAfter(
+      (item: AnyElementType) => { return aT.getAccKeyById(item.data.id).visible === true; },
+      refItem.data.id
+    );
+  }
   /**
         ==== MÉTHODES DE CHECK ===
    */
@@ -55,6 +64,7 @@ export class Oeuvre extends ClientItem<UOeuvre, FullOeuvre> {
 
 class OeuvrePanelClass extends PanelClient<Oeuvre, typeof Oeuvre> {
   protected get accessTable(){ return Oeuvre.accessTable ; }
+
   searchMatchingItems(searched: string): Oeuvre[] {
     const searchLower = StringNormalizer.toLower(searched);
     return this.filter(Oeuvre.accessTable, (oeuvre: AnyElementType) => {
@@ -65,9 +75,9 @@ class OeuvrePanelClass extends PanelClient<Oeuvre, typeof Oeuvre> {
     }) as Oeuvre[];
   }
 
-  initKeyManager() {
-    this._keyManager = new VimLikeManager(document.body as HTMLBodyElement, this, Oeuvre);
-  }
+  // initKeyManager() {
+  //   this._keyManager = new VimLikeManager(document.body as HTMLBodyElement, this, Oeuvre);
+  // }
 }
 
 const OeuvrePanel = new OeuvrePanelClass({
@@ -76,6 +86,7 @@ const OeuvrePanel = new OeuvrePanelClass({
   klass: Oeuvre,
   form: new OeuvreForm()
 });
+OeuvrePanel.form.setPanel(OeuvrePanel);
 Oeuvre.panel = OeuvrePanel;
 
 

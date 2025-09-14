@@ -257,7 +257,7 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
    * -------------------------- 
    * Procédure complexe (ComplexRpc)
    */
-  async onSave(item: Entry) {
+  async onSave(item: Entry): Promise<boolean> {
     console.info("Données à sauvegarder", item);
     const itemSaver = new ComplexRpc({
       call: Entry.saveItem.bind(Entry, item as unknown as IEntry)

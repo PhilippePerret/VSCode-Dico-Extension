@@ -20,6 +20,11 @@ interface ConcreteElement {
 
 type FieldType = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
 
+
+/**
+ * Classe pour étendre le formulaire de chaque élément
+ */
+
 export abstract class FormManager<C, T extends ConcreteElement> {
 
   abstract formId: string; // Identifiant unique du formulaire
@@ -28,7 +33,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   private tablePropertiesByPropName!: Map<string, FormProperty>;
   abstract afterEdit(): void; // à faire après l'édition d'un élément
   abstract onSave(item: T): Promise<boolean>; // Fonction pour sauver (appelée quand on sauve la donnée)
-  async checkItem(item: T): Promise<string | undefined> { return undefined ; }; // Pour checker les données (en plus des données de l'item, contient :original (les données originales et :changeset, les données modifiées))
+  async checkItem(item: T): Promise<string | undefined> { return undefined ; }; // Pour checker les données 
   onCancel?(): void; // Fonction appelée en cas d'annulation
   abstract observeForm(): void; // fonction d'observation propre du formulaire
   onFocusForm?(ev: FocusEvent): any;

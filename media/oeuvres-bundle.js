@@ -160,6 +160,154 @@
     }
   };
 
+  // src/webviews/ConsoleManager.ts
+  var ConsoleManager = class {
+    constructor(panel) {
+      this.panel = panel;
+      this.console = panel.consoleInput;
+    }
+    console;
+    history = [];
+    ihistory = 0;
+    runCode() {
+      const code = this.console.value;
+      try {
+        console.log("\xC9valuation du code %s", code, (0, eval)(code));
+        this.history.push(code);
+        this.ihistory = this.history.length;
+        this.console.value = "";
+      } catch (error) {
+        console.error("Une erreur s'est produite en \xE9valuant le cde : ", code, error);
+      }
+    }
+    setCode() {
+      console.log("Console.setCode. History. iHistory", this.history, this.ihistory);
+      this.console.value = this.history[this.ihistory];
+    }
+    backHistory() {
+      if (this.ihistory === 0) {
+        console.log("Fin de l'historique");
+        this.console.value = "";
+        return;
+      }
+      this.ihistory--;
+      this.setCode();
+    }
+    forwardHistory() {
+      if (this.ihistory === this.history.length - 1) {
+        console.log("Bout de l'historique");
+        return;
+      }
+      this.ihistory++;
+      this.setCode();
+    }
+  };
+
+  // src/webviews/services/HelpManager.ts
+  var Help = class _Help {
+    constructor(panel) {
+      this.panel = panel;
+    }
+    /**
+     * Définitions des aides contextuelles.
+     * Soit un simple string (si pas de raccourcis clavier)
+     * Soit un array [aide, {lettre: methode-string}] 
+     */
+    static get CHELPS() {
+      return {
+        "start": `Pour commencer, activer la fen\xEAtre avec \u23181.
+
+      \xC0 tout moment, vous pouvez obtenir de l'aide contextuelle en tapant "?".
+      
+      Les raccourcis de base sont les suivants :
+      
+      **s** : (comme "search") pour rechercher un \xE9l\xE9ment (par filtrage).
+      **f**/**k** : pour s\xE9lectionner d'\xE9l\xE9ment en \xE9l\xE9ment en montant et en descendant.
+      **n** : (comme "nouveau") pour cr\xE9er un nouvel \xE9l\xE9ment avant la s\xE9lection.
+      **e**: (comme "\xE9diter") pour modifier l'\xE9l\xE9ment s\xE9lectionn\xE9.
+      
+      \xC0 tout moment, taper **?** pour afficher l'aide contextuelle.`,
+        "create-element": `
+      ## Cr\xE9ation d'un \xE9l\xE9ment
+      
+      Vous pouvez vous d\xE9placer de champ en champ avec les touches <shortcut>a</shortcut>, <shortcut>b</shortcut>, etc. ou la touche tabulation.`,
+        "edit-element": `
+      ## \xC9dition d'un \xE9l\xE9ment
+      
+      Vous pouvez aller de champ en champ avec les touches etc.`
+      };
+    }
+    /**
+     * API
+     * Méthode activant l'aide circonstantielle.
+     * (voir le manuel)
+     */
+    activateContextualHelp() {
+      const context = this.panel.context;
+      const extraParams = this.affineContexte(context);
+      const [content, KbBypass] = this.defineCHelp(context, extraParams);
+      this.showCHelp(content);
+      this.panel.keyManager.keyboardBypass = KbBypass;
+    }
+    affineContexte(context) {
+      switch (context) {
+        case "create-new-element":
+          return {};
+        default:
+          return;
+      }
+    }
+    defineCHelp(context, params) {
+      const kbb = /* @__PURE__ */ new Map();
+      kbb.set("q", this.closeCHelp.bind(this));
+      let bypass;
+      let content = _Help.CHELPS[context];
+      if (Array.isArray(content)) {
+        [content, bypass] = content;
+        for (var k in bypass) {
+          kbb.set(k, bypass[k]);
+        }
+      }
+      return [this.formate(content), kbb];
+    }
+    formate(str) {
+      return str.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\*(.+?)\*/g, "<em>$1</em>").split("\n").map((s) => `<div>${s}\xA0</div>`).join("");
+    }
+    /**
+     * Affichage du texte d'aide contextuelle et mise en attente
+     * 
+     * (note : le "C" de "Chelp" pour "contextual")
+     * 
+     * @param content Le contenu textuel à afficher
+     */
+    showCHelp(content) {
+      this.CHbuilt || this.CHbuild();
+      this.CHObj.classList.remove("hidden");
+      const divCont = this.CHObj.querySelector(".content");
+      divCont.innerHTML = content;
+    }
+    CHObj;
+    CHbuilt = false;
+    closeCHelp() {
+      this.CHObj.classList.add("hidden");
+    }
+    // Construction du div de l'aide contextuelle
+    CHbuild() {
+      let o = document.createElement("div");
+      o.className = "aide-contextuelle hidden";
+      let cont = document.createElement("div");
+      cont.className = "content";
+      o.appendChild(cont);
+      let btns = document.createElement("div");
+      btns.className = "buttons";
+      btns.innerHTML = "q: quitter l\u2019aide";
+      o.appendChild(btns);
+      document.body.appendChild(o);
+      this.CHObj = o;
+      this.CHbuilt = true;
+    }
+  };
+
   // src/webviews/services/DomUtils.ts
   var stopEvent = function(ev) {
     ev.preventDefault();
@@ -403,154 +551,6 @@
     // @return true si la cible de l'évènement +ev+ est un champ éditable
     targetEventIsEditable(ev) {
       return ev.target.matches("input, textarea, [contenteditable]");
-    }
-  };
-
-  // src/webviews/ConsoleManager.ts
-  var ConsoleManager = class {
-    constructor(panel) {
-      this.panel = panel;
-      this.console = panel.consoleInput;
-    }
-    console;
-    history = [];
-    ihistory = 0;
-    runCode() {
-      const code = this.console.value;
-      try {
-        console.log("\xC9valuation du code %s", code, (0, eval)(code));
-        this.history.push(code);
-        this.ihistory = this.history.length;
-        this.console.value = "";
-      } catch (error) {
-        console.error("Une erreur s'est produite en \xE9valuant le cde : ", code, error);
-      }
-    }
-    setCode() {
-      console.log("Console.setCode. History. iHistory", this.history, this.ihistory);
-      this.console.value = this.history[this.ihistory];
-    }
-    backHistory() {
-      if (this.ihistory === 0) {
-        console.log("Fin de l'historique");
-        this.console.value = "";
-        return;
-      }
-      this.ihistory--;
-      this.setCode();
-    }
-    forwardHistory() {
-      if (this.ihistory === this.history.length - 1) {
-        console.log("Bout de l'historique");
-        return;
-      }
-      this.ihistory++;
-      this.setCode();
-    }
-  };
-
-  // src/webviews/services/HelpManager.ts
-  var Help = class _Help {
-    constructor(panel) {
-      this.panel = panel;
-    }
-    /**
-     * Définitions des aides contextuelles.
-     * Soit un simple string (si pas de raccourcis clavier)
-     * Soit un array [aide, {lettre: methode-string}] 
-     */
-    static get CHELPS() {
-      return {
-        "start": `Pour commencer, activer la fen\xEAtre avec \u23181.
-
-      \xC0 tout moment, vous pouvez obtenir de l'aide contextuelle en tapant "?".
-      
-      Les raccourcis de base sont les suivants :
-      
-      **s** : (comme "search") pour rechercher un \xE9l\xE9ment (par filtrage).
-      **f**/**k** : pour s\xE9lectionner d'\xE9l\xE9ment en \xE9l\xE9ment en montant et en descendant.
-      **n** : (comme "nouveau") pour cr\xE9er un nouvel \xE9l\xE9ment avant la s\xE9lection.
-      **e**: (comme "\xE9diter") pour modifier l'\xE9l\xE9ment s\xE9lectionn\xE9.
-      
-      \xC0 tout moment, taper **?** pour afficher l'aide contextuelle.`,
-        "create-element": `
-      ## Cr\xE9ation d'un \xE9l\xE9ment
-      
-      Vous pouvez vous d\xE9placer de champ en champ avec les touches <shortcut>a</shortcut>, <shortcut>b</shortcut>, etc. ou la touche tabulation.`,
-        "edit-element": `
-      ## \xC9dition d'un \xE9l\xE9ment
-      
-      Vous pouvez aller de champ en champ avec les touches etc.`
-      };
-    }
-    /**
-     * API
-     * Méthode activant l'aide circonstantielle.
-     * (voir le manuel)
-     */
-    activateContextualHelp() {
-      const context = this.panel.context;
-      const extraParams = this.affineContexte(context);
-      const [content, KbBypass] = this.defineCHelp(context, extraParams);
-      this.showCHelp(content);
-      this.panel.keyManager.keyboardBypass = KbBypass;
-    }
-    affineContexte(context) {
-      switch (context) {
-        case "create-new-element":
-          return {};
-        default:
-          return;
-      }
-    }
-    defineCHelp(context, params) {
-      const kbb = /* @__PURE__ */ new Map();
-      kbb.set("q", this.closeCHelp.bind(this));
-      let bypass;
-      let content = _Help.CHELPS[context];
-      if (Array.isArray(content)) {
-        [content, bypass] = content;
-        for (var k in bypass) {
-          kbb.set(k, bypass[k]);
-        }
-      }
-      return [this.formate(content), kbb];
-    }
-    formate(str) {
-      return str.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\*(.+?)\*/g, "<em>$1</em>").split("\n").map((s) => `<div>${s}\xA0</div>`).join("");
-    }
-    /**
-     * Affichage du texte d'aide contextuelle et mise en attente
-     * 
-     * (note : le "C" de "Chelp" pour "contextual")
-     * 
-     * @param content Le contenu textuel à afficher
-     */
-    showCHelp(content) {
-      this.CHbuilt || this.CHbuild();
-      this.CHObj.classList.remove("hidden");
-      const divCont = this.CHObj.querySelector(".content");
-      divCont.innerHTML = content;
-    }
-    CHObj;
-    CHbuilt = false;
-    closeCHelp() {
-      this.CHObj.classList.add("hidden");
-    }
-    // Construction du div de l'aide contextuelle
-    CHbuild() {
-      let o = document.createElement("div");
-      o.className = "aide-contextuelle hidden";
-      let cont = document.createElement("div");
-      cont.className = "content";
-      o.appendChild(cont);
-      let btns = document.createElement("div");
-      btns.className = "buttons";
-      btns.innerHTML = "q: quitter l\u2019aide";
-      o.appendChild(btns);
-      document.body.appendChild(o);
-      this.CHObj = o;
-      this.CHbuilt = true;
     }
   };
 
@@ -1587,17 +1587,52 @@
   var OeuvreForm = class extends FormManager {
     prefix = "oeuvre";
     formId = "oeuvre-form";
-    properties = [];
-    async onSave(item) {
-      console.log("Il faut que j'apprendre \xE0 sauver : ", item);
-      return true;
+    properties = [
+      { propName: "titre_affiche", type: String, required: true, fieldType: "text", onChange: this.onChangeTitreAffiched.bind(this) },
+      { propName: "titre_original", type: String, required: true, fieldType: "text" },
+      { propName: "titre_francais", type: String, required: false, fieldType: "text" },
+      { propName: "id", type: String, required: true, fieldType: "text" },
+      { propName: "auteurs", type: String, required: true, fieldType: "text" },
+      { propName: "resume", type: String, required: false, fieldType: "textarea" },
+      { propName: "notes", type: String, required: false, fieldType: "textarea" }
+    ];
+    static REG_AUTEUR = /([^ ]+) ([^\[])\[(H|F)\]/;
+    onChangeTitreAffiched() {
+      const itemIsNew = this.getValueOf("id") === "";
+      if (itemIsNew) {
+        console.log("Nouvelle \u0153uvre \xE0 renseigner.");
+      }
+      const noTitreOriginal = this.getValueOf("titre_original") === "";
+      if (noTitreOriginal) {
+        console.log("Il faut essayer de d\xE9finir le titre original d'apr\xE8s le titre affich\xE9.");
+      }
+      if (itemIsNew && noTitreOriginal) {
+        console.log("Il faut que je demande s'il faut rechercher les information du film sur TMDB");
+      }
+    }
+    afterEdit() {
+      const id = this.getValueOf("id");
+      const isNew = id === "";
+      this.setIdLock(!isNew);
     }
     async checkItem(item) {
-      return "Les donn\xE9es ne sont pas check\xE9s";
+      console.error("Il faut apprendre \xE0 checker l'oeuvre");
+      const errors = [];
+      if (errors.length) {
+        console.error("Donn\xE9es invalides", errors);
+        return errors.join(", ").toLowerCase();
+      }
     }
     observeForm() {
     }
-    afterEdit() {
+    /**
+     * 
+     * @param item L'oeuvre à enregistrer
+     * @returns True si l'enregistrement a pu se faire correctement.
+     */
+    async onSave(item) {
+      console.log("Il faut que j'apprendre \xE0 sauver : ", item);
+      return true;
     }
   };
 
@@ -1609,6 +1644,16 @@
     static currentItem;
     static setAccessTable(items) {
       this._accessTable = new AccessTable(_Oeuvre, items);
+    }
+    // retourn le premier item visible après l'item +item+
+    static getFirstVisibleAfter(refItem) {
+      const aT = this.accessTable;
+      return aT.findAfter(
+        (item) => {
+          return aT.getAccKeyById(item.data.id).visible === true;
+        },
+        refItem.data.id
+      );
     }
     /**
           ==== MÉTHODES DE CHECK ===
@@ -1651,9 +1696,9 @@
         });
       });
     }
-    initKeyManager() {
-      this._keyManager = new VimLikeManager(document.body, this, Oeuvre);
-    }
+    // initKeyManager() {
+    //   this._keyManager = new VimLikeManager(document.body as HTMLBodyElement, this, Oeuvre);
+    // }
   };
   var OeuvrePanel = new OeuvrePanelClass({
     minName: "oeuvre",
@@ -1661,6 +1706,7 @@
     klass: Oeuvre,
     form: new OeuvreForm()
   });
+  OeuvrePanel.form.setPanel(OeuvrePanel);
   Oeuvre.panel = OeuvrePanel;
   var RpcOeuvre = createRpcClient();
   RpcOeuvre.on("activate", () => {
