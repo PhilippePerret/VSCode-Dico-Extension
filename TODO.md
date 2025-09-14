@@ -1,6 +1,10 @@
 # Todo list
 
 * J'EN SUIS À :
+  - FILTRAGE DES FILMS RELEVÉS
+
+* POURSUIVRE AVEC : 
+
   - Implémentation du formulaire pour les oeuvres
     - OU : indiquer une table {i: this.fonctionI.bind(this), w: this.FontionW.bind(this), etc.} pour préciser quelle fonction doit être appelée par quelle touche (OUI !!!)
     - Dire dans le panneau oeuvre : {i: this.getInfosFilm.bind(this)}

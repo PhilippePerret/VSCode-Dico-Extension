@@ -37,5 +37,6 @@
 	"editor.matchBrackets": "never",
 	"workbench.editor.closeEmptyGroups": false,
 	"explorer.autoReveal": false,
-	"editor.tabCompletion": "on"
+	"editor.tabCompletion": "on",
+	"editor.acceptSuggestionOnCommitCharacter": false
 }

@@ -1690,11 +1690,9 @@
     }
     // Recherche par titre
     static async searchMovie(title) {
-      console.log("this._TMDBSecrets", this._TMDBSecrets);
       if (void 0 === this._TMDBSecrets) {
         await this.getTMDBSecrets();
       }
-      console.log("J'ai pu r\xE9cup\xE9rer les codes secrets");
       const url = `https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(title)}`;
       const response = await fetch(url, {
         headers: {
@@ -1728,9 +1726,9 @@
       });
       const data = await response.json();
       const director = data.crew.find((person) => person.job === "Director");
-      const writers = data.crew.filter(
-        (person) => person.job === "Writer" || person.job === "Screenplay" || person.job === "Story"
-      );
+      const writers = data.crew.filter((person) => {
+        person.job === "Writer" || person.job === "Screenplay" || person.job === "Story";
+      });
       return {
         director: director?.name,
         writers: writers.map((w) => w.name)
