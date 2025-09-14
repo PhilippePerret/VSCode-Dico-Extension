@@ -45,17 +45,13 @@ export class Entry extends UEntry {
     });
 	}
 
-	public  static async saveItem(params: {CRId: string, item: IEntry, ok?: boolean, errors?: any}){
-		console.log("Je reçois l'item à sauver dans Entry", params);
-		Object.assign(params, {ok: true, errors: null});
-		try {
-			const dbManager = DBManager.getInstance(App._context);
-			params = await dbManager.saveEntry(params.item, params);
-		} catch(erreur) {
-			params.ok = false;
-			params.errors = [erreur];	
-		}
-		// On retourne au panneau
+	/**
+	 * Sauvegarde de l'entrée
+	 */
+	public  static async saveItem(params: {CRId: string, item: IEntry, ok: boolean, errors: any, [x: string]: any}){
+		const dbManager = DBManager.getInstance(App._context);
+		await dbManager.saveItemIn('entrees', params.item, params);
+		// On retourne le résultat au panneau
 		CanalEntry.afterSaveItem(params);
 	}
 

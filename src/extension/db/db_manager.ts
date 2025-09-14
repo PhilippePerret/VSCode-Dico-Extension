@@ -38,20 +38,31 @@ export class DBManager {
     return backupPath;
   }
 
-  private async saveItemIn(table: string, item: any, params: any){
+  async saveItemIn(table: string, item: any, params: any){
     params.errors = []; // pour mettre les éventuels erreurs
+    params.ok = true ; // soyons optimistes
     try {
       await this.createBackup();
       const exists = await this.checkIfExists(item.id, table);      
-      //TODO Prendre le nombre d'entrées et déterminer le nouveau nombre attendu
+      // Prendre le nombre d'entrées et déterminer le nouveau nombre attendu
+      const countBefore = await this.getRowCountIn(table);
       await this.doSave(table, item, exists);
-      // TODO Vérifier le nombre d'entrées
-      params.ok = true;
+      // Vérifier le nombre d'entrées
+      const countAfter = await this.getRowCountIn(table);
+      const diffCount = exists ? 0 : 1 ;
+      if ( countAfter === (countBefore + diffCount)) {
+        params.ok = true;
+      } else {
+        throw new Error(
+          `Après enregistrement de l'item ${item.id}, le nombre de données dans ${table} ne correspond pas au résultat attendu.`,
+          severity: 3
+        );
+        
+      }
     } catch(error){
       params.ok = false;
       params.errors.push(error);
     }
-    return params;
   }
 
 
@@ -75,19 +86,9 @@ export class DBManager {
     const exists = await this.dbService.get(`SELECT 1 FROM ${table} WHERE id = ?`, [id]);
     return !!exists;
   }
-
-  async saveEntry(item: IEntry, params: any): Promise<any> {
-    params = await this.saveItemIn('entrees', item, params);
-    return params;
-  }
- 
-  async saveOeuvre(item: IOeuvre, params: any): Promise<any> {
-    params = await this.saveItemIn('oeuvres', item, params);
-    return params;
-  }
-
-  async saveExemple(item: IExemple, params: any): Promise<any> {
-    params = await this.saveItemIn('exemples', item, params);
-    return params;
+  
+  async getRowCountIn(table: string): Promise<number> {
+    const result = await this.dbService.get(`SELECT COUNT(*) as count FROM ${table}`);
+    return result.count;
   }
 }

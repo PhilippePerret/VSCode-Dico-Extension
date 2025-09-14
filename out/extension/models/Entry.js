@@ -6,6 +6,7 @@ const UniversalCacheManager_1 = require("../../bothside/UniversalCacheManager");
 const App_1 = require("../services/App");
 const StringUtils_1 = require("../../bothside/StringUtils");
 const Rpc_1 = require("../services/Rpc");
+const db_manager_1 = require("../db/db_manager");
 // Classe de la donnée mise en cache
 class Entry extends UEntry_1.UEntry {
     static panelId = 'entries';
@@ -21,15 +22,13 @@ class Entry extends UEntry_1.UEntry {
             caseFirst: 'lower'
         });
     }
-    static saveItem(params) {
-        console.log("Je reçois l'item à sauver dans Entry", params);
-        Object.assign(params, { ok: true, errors: null });
-        // TODO Ici la sauvegarde
-        // todo Duplication de la base (toujours, pour le moment)
-        // todo Vérification du nombre d'entrées après insertion
-        // todo Opérations en conséquence et message d'erreur
-        // todo Confirmation ou non de l'opération
-        // On retourne au panneau
+    /**
+     * Sauvegarde de l'entrée
+     */
+    static async saveItem(params) {
+        const dbManager = db_manager_1.DBManager.getInstance(App_1.App._context);
+        await dbManager.saveItemIn('entrees', params.item, params);
+        // On retourne le résultat au panneau
         Rpc_1.CanalEntry.afterSaveItem(params);
     }
     constructor(data) {

@@ -59,7 +59,7 @@ class RpcEntry extends Rpc {
 
   // Appelée après l'enregistrement de l'item, pour confirmation ou 
   // signalement d'une erreur
-  afterSaveItem(params: {CRId: string, ok?: boolean, errors?: any, item: any}){
+  afterSaveItem(params: {CRId: string, ok: boolean, errors: any, item: any}){
     console.log("[ENTENSIONS] Remontée au panneau après sauvegarde Item", params);
     this.rpc.notify('after-saved-item', params);
   }
@@ -79,8 +79,9 @@ class RpcEntry extends Rpc {
       CanalExemple.checkExemples(params);
     });
 
-    this.rpc.on('save-item', async (params: {CRId: string, item: IEntry}) => {
-      console.log("[EXTENSION] Je dois apprendre à sauver l'item", params);
+    this.rpc.on('save-item', async (params: any) => {
+      console.log("[EXTENSION] Reception de l'entrée à sauver", params);
+      Object.assign(params, { ok: null, errors: [] });
       Entry.saveItem(params);
     });
   }

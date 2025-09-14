@@ -63,6 +63,7 @@ export class Entry extends ClientItem<UEntry, FullEntry> {
   public static saveItem(item: IEntry, compRpcId: string) {
     RpcEntry.notify('save-item', {CRId: compRpcId, item: item});
   }
+
   public static onSavedItem(params: {CRId: string, ok: boolean, error: any, item: IEntry}){
     console.log("[CLIENT ENTRY] Retour dans le panneau Entry avec le résultat de l'enregistrement", params);
     ComplexRpc.resolveRequest(params.CRId, params);

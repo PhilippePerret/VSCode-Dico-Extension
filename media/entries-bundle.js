@@ -1682,6 +1682,7 @@
     async checkItem(item) {
       const isNew = item.isNew;
       const errors = [];
+      this.diverseChecks(item, errors);
       const unknownOeuvres = await this.checkExistenceOeuvres(item);
       if (unknownOeuvres.length) {
         errors.push(`des \u0153uvres sont introuvables : ${unknownOeuvres.map((t) => `"${t}"`).join(", ")}`);
@@ -1704,67 +1705,50 @@
       console.log("Retour apr\xE8s checkerOeuvres", resultat);
       return res.unknown;
     }
-    // OLD_checkItem_A_REMETTRE(){
-    //   // L'entrée doit être définie
-    //   if (item.entree === '') {
-    //     errors.push("L'entrée doit être définie");
-    //   }
-    //   // L'entrée doit être unique (si elle a changée)
-    //   if (item.changeset.has('entree')) {
-    //     const newEntree = item.changeset.get('entree');
-    //     console.log("L'entrée a changé (%s/%s)", item.original.entree, newEntree);
-    //     if ( Entry.doesEntreeExist(newEntree)) {
-    //       errors.push(`L'entrée "${newEntree}" existe déjà…`);
-    //     }
-    //   }
-    //   // L'identifiant doit être défini
-    //   if (item.id === ''){
-    //     errors.push("L'identifiant doit absoluement être défini");
-    //   } else if (item.changeset.has('id')) {
-    //     // L'identifiant doit être unique (si nouveau)
-    //     if (Entry.doesIdExist(item.id)) {
-    //       errors.push(`L'identifiant "${item.id}" existe déjà. Je ne peux le réattribuer`);
-    //     }
-    //   }
-    //   // La définition doit être donnée et valide
-    //   if ( item.definition === ''){
-    //     errors.push("La définition du mot doit être donnée");
-    //   } else if (item.changeset.has('definition')) {
-    //     // Définition trop courte, sans justifications
-    //     if ( item.definition.length < 50 && null === item.definition.match(EntryForm.REG_SHORT_DEF)) {
-    //       errors.push("La définition est courte, sans justification…");
-    //     }
-    //     const unknownEntries = this.searchUnknownEntriesIn(item.definition);
-    //     if ( unknownEntries.length > 0) {
-    //       errors.push(`entrées inconnues dans la défintion (${unknownEntries.join(', ')})`);
-    //     }
-    //     const resultat = await this.searchUnknownOeuvresIn({
-    //       in: item.definition, phase: 1, resultat: {known: [], unknown: []}
-    //     });
-    //     console.log("Résultat du check des oeuvres", resultat);
-    //     if ( resultat.unknown.length ) {
-    //       errors.push(`œuvres introuvables, dans la définition (${resultat.unknown.join(', ')})`);
-    //     }
-    //   } else {
-    //     console.log("La définition n'a pas été modifiée.");
-    //   }
-    //   // Le genre doit être donné
-    //   if ( item.genre === '') {
-    //     errors.push("Le genre de l'entrée doit être donné");
-    //   } else if (item.changeset.has('genre') && Object.keys(Constants.ENTRIES_GENRES).includes(item.genre)) {
-    //     errors.push(`bizarrement, le genre "${item.genre} est inconnu…`);
-    //   }
-    //   // Si les catégories sont définies, il faut qu'elles existent
-    //   // Rappel : Une "catégorie", c'est simplement l'ID d'une entrée
-    //   // (c'est la particularité du dictionnaire, mais ça tombe sous le
-    //   // sens) 
-    //   if (item.categorie_id !== '' && item.changeset.has('categorie_id')) {
-    //     const unknownCategorie = this.checkUnknownCategoriesIn(item.categorie_id);
-    //     if ( unknownCategorie.length ) {
-    //       errors.push(`des catégories sont inconnues : ${unknownCategorie.join(', ')}`);
-    //     }
-    //   }
-    //  }
+    diverseChecks(item, errors) {
+      if (item.entree === "") {
+        errors.push("L'entr\xE9e doit \xEAtre d\xE9finie");
+      }
+      if (item.changeset.has("entree")) {
+        const newEntree = item.changeset.get("entree");
+        console.log("L'entr\xE9e a chang\xE9 (%s/%s)", item.original.entree, newEntree);
+        if (Entry.doesEntreeExist(newEntree)) {
+          errors.push(`L'entr\xE9e "${newEntree}" existe d\xE9j\xE0\u2026`);
+        }
+      }
+      if (item.id === "") {
+        errors.push("L'identifiant doit absoluement \xEAtre d\xE9fini");
+      } else if (item.changeset.has("id")) {
+        if (Entry.doesIdExist(item.id)) {
+          errors.push(`L'identifiant "${item.id}" existe d\xE9j\xE0. Je ne peux le r\xE9attribuer`);
+        }
+      }
+      if (item.definition === "") {
+        errors.push("La d\xE9finition du mot doit \xEAtre donn\xE9e");
+      } else if (item.changeset.has("definition")) {
+        if (item.definition.length < 50 && null === item.definition.match(_EntryForm.REG_SHORT_DEF)) {
+          errors.push("La d\xE9finition est courte, sans justification\u2026");
+        }
+        const unknownEntries = this.searchUnknownEntriesIn(item.definition);
+        if (unknownEntries.length > 0) {
+          errors.push(`entr\xE9es inconnues dans la d\xE9fintion (${unknownEntries.join(", ")})`);
+        }
+      } else {
+        console.log("La d\xE9finition n'a pas \xE9t\xE9 modifi\xE9e.");
+      }
+      if (item.genre === "") {
+        errors.push("Le genre de l'entr\xE9e doit \xEAtre donn\xE9");
+      } else if (item.changeset.has("genre") && Object.keys(Constants.ENTRIES_GENRES).includes(item.genre)) {
+        errors.push(`bizarrement, le genre "${item.genre} est inconnu\u2026`);
+      }
+      if (item.categorie_id !== "" && item.changeset.has("categorie_id")) {
+        const unknownCategorie = this.checkUnknownCategoriesIn(item.categorie_id);
+        if (unknownCategorie.length) {
+          errors.push(`des cat\xE9gories sont inconnues : ${unknownCategorie.join(", ")}`);
+        }
+      }
+      return errors;
+    }
     // Pour chercher les entrées mentionnées dans la définition
     searchUnknownEntriesIn(str) {
       const founds = [];
@@ -1856,9 +1840,15 @@
       const cats = str.split(",").map((s) => s.trim());
       return cats.filter((cat) => false === Entry.doesIdExist(cat));
     }
+    /**
+     * ENREGISTREMENT DE L'ENTRÉE
+     * -------------------------- 
+     * Procédure complexe (ComplexRpc)
+     */
     async onSave(item) {
+      console.info("Donn\xE9es \xE0 sauvegarder", item);
       const itemSaver = new ComplexRpc({
-        call: Entry.saveItem.bind(Entry, item.data)
+        call: Entry.saveItem.bind(Entry, item)
       });
       const res = await itemSaver.run();
       console.log("res dans onSave", res);

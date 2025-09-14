@@ -50,6 +50,9 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
     const isNew = item.isNew;
     const errors: string[] = [];
 
+    // Vérifications diverses et synchrones sur les données
+    this.diverseChecks(item, errors);
+
     // Vérification de l'existence des oeuvres dans la
     // définition
     const unknownOeuvres: string[] = await this.checkExistenceOeuvres(item);
@@ -82,69 +85,64 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
     return res.unknown;
   }
 
-  // OLD_checkItem_A_REMETTRE(){
-  //   // L'entrée doit être définie
-  //   if (item.entree === '') {
-  //     errors.push("L'entrée doit être définie");
-  //   }
-  //   // L'entrée doit être unique (si elle a changée)
-  //   if (item.changeset.has('entree')) {
-  //     const newEntree = item.changeset.get('entree');
-  //     console.log("L'entrée a changé (%s/%s)", item.original.entree, newEntree);
-  //     if ( Entry.doesEntreeExist(newEntree)) {
-  //       errors.push(`L'entrée "${newEntree}" existe déjà…`);
-  //     }
-  //   }
-  //   // L'identifiant doit être défini
-  //   if (item.id === ''){
-  //     errors.push("L'identifiant doit absoluement être défini");
-  //   } else if (item.changeset.has('id')) {
-  //     // L'identifiant doit être unique (si nouveau)
-  //     if (Entry.doesIdExist(item.id)) {
-  //       errors.push(`L'identifiant "${item.id}" existe déjà. Je ne peux le réattribuer`);
-  //     }
-  //   }
-  //   // La définition doit être donnée et valide
-  //   if ( item.definition === ''){
-  //     errors.push("La définition du mot doit être donnée");
-  //   } else if (item.changeset.has('definition')) {
-  //     // Définition trop courte, sans justifications
-  //     if ( item.definition.length < 50 && null === item.definition.match(EntryForm.REG_SHORT_DEF)) {
-  //       errors.push("La définition est courte, sans justification…");
-  //     }
-  //     const unknownEntries = this.searchUnknownEntriesIn(item.definition);
-  //     if ( unknownEntries.length > 0) {
-  //       errors.push(`entrées inconnues dans la défintion (${unknownEntries.join(', ')})`);
-  //     }
-  //     const resultat = await this.searchUnknownOeuvresIn({
-  //       in: item.definition, phase: 1, resultat: {known: [], unknown: []}
-  //     });
-  //     console.log("Résultat du check des oeuvres", resultat);
-  //     if ( resultat.unknown.length ) {
-  //       errors.push(`œuvres introuvables, dans la définition (${resultat.unknown.join(', ')})`);
-  //     }
-  //   } else {
-  //     console.log("La définition n'a pas été modifiée.");
-  //   }
-
-  //   // Le genre doit être donné
-  //   if ( item.genre === '') {
-  //     errors.push("Le genre de l'entrée doit être donné");
-  //   } else if (item.changeset.has('genre') && Object.keys(Constants.ENTRIES_GENRES).includes(item.genre)) {
-  //     errors.push(`bizarrement, le genre "${item.genre} est inconnu…`);
-  //   }
+  diverseChecks(item: {[x: string]: any}, errors: string[]): string[] {
     
-  //   // Si les catégories sont définies, il faut qu'elles existent
-  //   // Rappel : Une "catégorie", c'est simplement l'ID d'une entrée
-  //   // (c'est la particularité du dictionnaire, mais ça tombe sous le
-  //   // sens) 
-  //   if (item.categorie_id !== '' && item.changeset.has('categorie_id')) {
-  //     const unknownCategorie = this.checkUnknownCategoriesIn(item.categorie_id);
-  //     if ( unknownCategorie.length ) {
-  //       errors.push(`des catégories sont inconnues : ${unknownCategorie.join(', ')}`);
-  //     }
-  //   }
-//  }
+    // L'entrée doit être définie
+    if (item.entree === '') {
+      errors.push("L'entrée doit être définie");
+    }
+    // L'entrée doit être unique (si elle a changée)
+    if (item.changeset.has('entree')) {
+      const newEntree = item.changeset.get('entree');
+      console.log("L'entrée a changé (%s/%s)", item.original.entree, newEntree);
+      if ( Entry.doesEntreeExist(newEntree)) {
+        errors.push(`L'entrée "${newEntree}" existe déjà…`);
+      }
+    }
+    // L'identifiant doit être défini
+    if (item.id === ''){
+      errors.push("L'identifiant doit absoluement être défini");
+    } else if (item.changeset.has('id')) {
+      // L'identifiant doit être unique (si nouveau)
+      if (Entry.doesIdExist(item.id)) {
+        errors.push(`L'identifiant "${item.id}" existe déjà. Je ne peux le réattribuer`);
+      }
+    }
+    // La définition doit être donnée et valide
+    if ( item.definition === ''){
+      errors.push("La définition du mot doit être donnée");
+    } else if (item.changeset.has('definition')) {
+      // Définition trop courte, sans justifications
+      if ( item.definition.length < 50 && null === item.definition.match(EntryForm.REG_SHORT_DEF)) {
+        errors.push("La définition est courte, sans justification…");
+      }
+      const unknownEntries = this.searchUnknownEntriesIn(item.definition);
+      if ( unknownEntries.length > 0) {
+        errors.push(`entrées inconnues dans la défintion (${unknownEntries.join(', ')})`);
+      }
+    } else {
+      console.log("La définition n'a pas été modifiée.");
+    }
+
+    // Le genre doit être donné
+    if ( item.genre === '') {
+      errors.push("Le genre de l'entrée doit être donné");
+    } else if (item.changeset.has('genre') && Object.keys(Constants.ENTRIES_GENRES).includes(item.genre)) {
+      errors.push(`bizarrement, le genre "${item.genre} est inconnu…`);
+    }
+    
+    //  Si les catégories sont définies, il faut qu'elles existent
+    // Rappel : Une "catégorie", c'est simplement l'ID d'une entrée
+    // (c'est la particularité du dictionnaire, mais ça tombe sous le
+    // sens) 
+    if (item.categorie_id !== '' && item.changeset.has('categorie_id')) {
+      const unknownCategorie = this.checkUnknownCategoriesIn(item.categorie_id);
+      if (unknownCategorie.length) {
+        errors.push(`des catégories sont inconnues : ${unknownCategorie.join(', ')}`);
+      }
+    }
+    return errors;
+  }
 
 
   // Pour chercher les entrées mentionnées dans la définition
@@ -253,13 +251,20 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
     // return cats.filter(Entry.doesIdExist.bind(Entry));
     return cats.filter(cat => false === Entry.doesIdExist(cat));
   }
-  async onSave(item: Entry){
+
+  /**
+   * ENREGISTREMENT DE L'ENTRÉE
+   * -------------------------- 
+   * Procédure complexe (ComplexRpc)
+   */
+  async onSave(item: Entry) {
+    console.info("Données à sauvegarder", item);
     const itemSaver = new ComplexRpc({
-      call: Entry.saveItem.bind(Entry, item.data as IEntry)
+      call: Entry.saveItem.bind(Entry, item as unknown as IEntry)
     });
     const res = await itemSaver.run() as {ok: boolean, errors: any, item: IEntry};
     console.log("res dans onSave", res);
-    if ( res.ok) {
+    if (res.ok) {
       console.log("Après l'enregistrement de l'item, je dois apprendre à updater l'item (plutôt en méthode générale ?)");
       Entry.panel.flash("Item enregistré avec succès.", 'notice');
     } else {

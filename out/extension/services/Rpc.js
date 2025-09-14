@@ -65,7 +65,8 @@ class RpcEntry extends Rpc {
             exports.CanalExemple.checkExemples(params);
         });
         this.rpc.on('save-item', async (params) => {
-            console.log("[EXTENSION] Je dois apprendre à sauver l'item", params);
+            console.log("[EXTENSION] Reception de l'entrée à sauver", params);
+            Object.assign(params, { ok: null, errors: [] });
             Entry_1.Entry.saveItem(params);
         });
     }
