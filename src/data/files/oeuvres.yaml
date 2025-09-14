@@ -46,6 +46,7 @@ GO1984:
   id: 21Grams
 21Grams:
   title: 21 Grams
+  annee: 2003
   title_fr: 21 Grammes
   type: film
   authors: ["A.G. Iñárritu[H]", "G. Arriaga[H]"]
@@ -56,7 +57,7 @@ GO1984:
   title_fr: "2001 : l’Odyssée de l’espace"
   type: film
   authors: ["St. Kubrick[H]", "A.C. Clarke[H]"]
-
+  annee: 1968
 # A
 
 AClockworkOrange_1971:
@@ -142,6 +143,7 @@ AutopsieDunMeurtre_1959:
   authors: ["O. Preminger[H]", "J.D. Voelker[H]", "W. Mayes[H]"]
 
 Avare:
+  annee: 1668
   title_in_text: "l’Avare"
   title: Avare (L’)
   type: pièce
@@ -212,6 +214,7 @@ Le Bossu:
   id: LeBossu_1960
 
 Bourgeois Gentilhomme:
+  annee: 1670
   title_in_text: Le Bourgeois Gentilhomme
   title: Bourgois Gentilhomme (Le)
   type: pièce
@@ -220,6 +223,7 @@ Bourgeois Gentilhomme:
 Breaking The Waves:
   id: BreakingTheWaves
 BreakingTheWaves:
+  annee: 1996
   title: Breaking The Waves
   type: film
   authors: ["L. von Trier[H]"]
@@ -255,6 +259,7 @@ CapitaineBada_1949:
 Chants de Maldoror:
   id: ChantsDeMaldoror
 ChantsDeMaldoror:
+  annee: 1869
   title_in_text: Les Chants de Maldoror
   title: Chants de Maldoror (Les)
   type: livre
@@ -321,72 +326,74 @@ WalkTheLine_2005:
   persos: {phoenix: "Johnny Cash"}
 
 CuriousCaseOfBenjaminButton:
-  title_in_text: The Curious Case of Benjamin Button
-  title: Curious Case of Benjamin Button (The)
-  title_fr: L’Étrange Histoire de Benjamin Button
+  annee: 2008
+  title_in_text: the curious case of benjamin button
+  title: curious case of benjamin button (the)
+  title_fr: l’étrange histoire de benjamin button
   type: film
-  authors: ["D. Fincher[H]", "E. Roth[H]"]
+  authors: ["d. fincher[h]", "e. roth[h]"]
 
-# D
+# d
 
-DancerInTheDark:
-  id: DancerInTheDark_2000
-Dancer In The Dark:
-  id: DancerInTheDark_2000
+dancerinthedark:
+  id: dancerinthedark_2000
+dancer in the dark:
+  id: dancerinthedark_2000
 DancerInTheDark_2000:
-  title: Dancer In The Dark
+  title: dancer in the dark
   type: film
-  authors: ["L. von Trier[H]"]
+  authors: ["l. von trier[h]"]
 
 DarkKnight_2008:
-  title_in_text: The Dark Knight
-  title:  Dark Knight (The)
+  title_in_text: the dark knight
+  title:  dark knight (the)
   type:   film
-  authors: ["Ch. Nolan[H]", "B. Kane[H]", "B. Finger[H]"]
-The Dark Knight:
-  id: DarkKnight_2008
+  authors: ["ch. nolan[h]", "b. kane[h]", "b. finger[h]"]
+the dark knight:
+  id: darkknight_2008
 
-Derrick:
-  id: Derrick_1974
+derrick:
+  id: derrick_1974
 Derrick_1974:
-  title:  Derrick
+  title:  derrick
   type:   série télévisée
-  authors: ["H. Reinecker[H]"]
+  authors: ["h. reinecker[h]"]
 
-Desperate Housewifes:
-  id: DesperateHousewifes_2004
-DesperateHousewifes:
-  id: DesperateHousewifes_2004
+desperate housewifes:
+  id: desperatehousewifes_2004
+desperatehousewifes:
+  id: desperatehousewifes_2004
 DesperateHousewifes_2004:
-  title: Desperate Housewife
+  title: desperate housewife
   type: série
-  authors: ["M. Cherry[H]"]
+  authors: ["m. cherry[h]"]
 
-Destination finale:
-  id: DestinationFinale_2000
+destination finale:
+  id: destinationfinale_2000
 DestinationFinale_2000:
-  title:  Destination finale
+  title:  destination finale
   type:   film
-  authors: ["Gl.  Morgan[H]", "J. Wong™H", "J.Reddick[H]"]
+  authors: ["gl.  morgan[h]", "j. wong™h", "j.reddick[h]"]
 
 Dictateur_1940:
-  title_in_text: Le Dictateur
-  title: Great Dictator (The)
-  title_fr:  Dictateur (Le)
+  title_in_text: le dictateur
+  title: great dictator (the)
+  title_fr:  dictateur (le)
   type:   film
-  authors: ["Ch. Chaplin"]
-Le Dictateur:
-  id: Dictateur_1940
+  authors: ["ch. chaplin"]
+le dictateur:
+  id: dictateur_1940
 
-DinerDeCons:
-  id: DinerDeCons_1998
+dinerdecons:
+  id: dinerdecons_1998
 DinerDeCons_1998:
-  title_in_text: Le Dîner de cons
-  title:  Dîner de cons (Le)
+  title_in_text: le dîner de cons
+  title:  dîner de cons (le)
   type:   film
-  authors: ["F. Veber[H]"]
+  authors: ["f. veber[h]"]
 
 DivineComedie:
+  annee: 1303
   title_in_text: La Divine comédie
   title: Divine comédie (La)
   type: livre
@@ -400,6 +407,7 @@ Dracula_1992:
   authors: ["F.F Coppola[H]", "J. V. Hart[H]", "Br. Stoker[H]"]
 
 Dramaturgie:
+  annee: 1994
   title_in_text: La Dramaturgie
   title: Dramaturgie (La)
   type: livre
@@ -577,6 +585,7 @@ GodFather:
   title_in_text: The God Father
   title: God Father (The)
   title_fr: Le Parrain
+  annee: 1972
   type: film
   authors: ["F.F. Coppola[H]"]
 
@@ -609,6 +618,7 @@ The Great Escape:
 Guide du scénariste:
   title_in_text: Le Guide du scénariste
   title: Writer Journey (The)
+  annee: 1992
   titre_fr: Guide du scénariste (Le)
   type: livre
   authors: ["Vogler, Christopher"]
@@ -647,6 +657,7 @@ Her_2013:
 
 Héros au mille et un visages:
   title_in_text: Le Héros au mille et un visages
+  annee: 1949
   title: Héros au mille et un visages (Le)
   type: livre
   authors: ["Campbell, Joseph"]
@@ -778,6 +789,7 @@ Maison des feuilles:
   id: MaisonDesFeuilles
 MaisonDesFeuilles:
   title: House of Leaves
+  annee: 2000
   title_fr: La Maison des feuilles
   type: livre
   authors: ["M.Z. Danielewski[H]"]
@@ -786,6 +798,7 @@ Malade imaginaire:
   title_in_text: Le Malade imaginaire
   title: Malade imaginaire (Le)
   type: pièce
+  annee: 1673
   authors: ["Molière[H]"]
 
 MamanEtLaPutain_1973:
@@ -822,11 +835,13 @@ MazeRunner_2014:
 Memento:
   title: Memento
   type: film
+  annee: 2000
   authors: ["Chr. Nolan[H]"]
 
 Méthodologie du Scénario Titanic:
   title_in_text: Méthodologie du Scénario Titanic
   title: Méthodologie du Scénario Titanic
+  annee: 1999
   authors: ["Rigollot, Sylvain"]
   refs: {editor: "Dixit", isbn: "978-2844810021", year: 1999}
 
@@ -901,6 +916,7 @@ Noah_2014:
 NomDeLaRose:
   title_in_text: Le Nom de la rose
   title: Nom de la rose (Le)
+  annee: 1986
   type: film
   authors: ["J.J. Annaud[H]", "Umb. Eco[H]", "And. Birkin[H]", "G. Brach[H]", "H. Franklin[H]", "Al. Godard[H]"]
 Nom de la rose:
@@ -996,6 +1012,7 @@ La Poétique:
 Poetique:
   title_in_text: La Poétique
   title:  Poétique (La)
+  annee: 335 av. J.-C.
   type:   oeuvre
   authors: ["Aristote[H]"]
 
@@ -1093,6 +1110,7 @@ Rubber_2010:
 Savoir rédiger et présenter son scénario:
   title: Savoir rédiger et présenter son scénario
   type: livre
+  annee: 1998
   authors: ["Ph. Perret[H]", "R. Barataud[H]"]
 
 Seabiscuit_2003:
@@ -1117,9 +1135,10 @@ ShortCuts_1993:
 Simplexité:
   title_in_text: La Simplexité
   title:  Simplexité (La)
+  annee: 2009
   type:   livre
   authors: ["Berthoz, Alain"]
-  refs: {isbn: "978-2738121691", editor: "Odile Jacob", year: 2009}
+  notes: "isbn: 978-2738121691, editor: Odile Jacob"
 La Simplexité:
   id: Simplexité
   
@@ -1127,6 +1146,7 @@ SingingInTheRain:
   title_in_text: Chantons sous la pluie
   title: Singin'in the Rain
   title_tr: Chantons sous la pluie
+  annee: 1952
   type: comédie musicale
   authors: ["Donen", "Kelly"]
 
@@ -1230,7 +1250,8 @@ TchaoPantin_1983:
 Tetsuo:
   title: Tetsuo
   type: film
-  authors: ["Tsukamoto"]
+  annee: 1989
+  authors: ["Tsukamoto[H]"]
 
 ThelmaEtLouise:
   id: ThelmaLouise_1991
@@ -1276,6 +1297,7 @@ Titanic_1997:
 TodoSobreMiMadre:
   title: Todo sobre mi madre
   title_fr: Tout sur ma mère
+  annee: 1999
   type: film
   authors: ["Almodóvar", ""]
 
@@ -1359,6 +1381,7 @@ WallE_2008:
 Watchmen:
   title: Watchmen
   type: bd
+  annee: 2009
   authors: ["Al. Moore[H", "D. Gibbons[H]"]
 
 West Side Story:

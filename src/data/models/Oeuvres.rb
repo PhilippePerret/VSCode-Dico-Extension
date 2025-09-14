@@ -28,10 +28,19 @@ class Oeuvre
       # return
       data = []
       table_oeuvre_ids.each do |id, doeuvre|
+
+        # On essaie d'extraire l'année de l'id si elle n'est pas explicitement définie
         annee = doeuvre['annee'] || doeuvre['year'] || begin
-          if id.match?(/[12][0-9]{3}^/)
+          if id.match?(/_?[12][0-9]{3}$/)
             id[-4..-1].to_i
           else nil end
+        end
+        if id.match?(/[0-9]/) && annee.nil?
+          puts "L'année n'a pas pu être déduite de '#{id}'"
+          raise "Pour s'arrêter tout de suite"
+          exit 1
+        elsif annee.nil?
+          puts "Année introuvable dans : #{id}"
         end
         # l'ID doit changer s'il est utilisé par les exemples
         final_id = Exemple.real_id_from_oeuvre_id(id)
@@ -45,13 +54,12 @@ class Oeuvre
           titre_francais: doeuvre['title_fr'],
           type: doeuvre['type'],
           annee: annee,
-          auteurs: doeuvre['auteurs'],
+          auteurs: doeuvre['authors'].join(', '),
           notes: doeuvre['notes'],
           resume: doeuvre['resume']
         }
         unless data_oeuvre[:titre_original]
           throw "L'œuvre #{id} n'a pas de titre original défini (#{doeuvre})"
-          exit 1
         end
         data << data_oeuvre
       end
