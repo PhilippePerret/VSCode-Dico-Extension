@@ -309,7 +309,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   }
   inscritAideInFooter(){
     let aide = '<shortcut>q</shortcut> : Renoncer | <shortcut>s</shortcut> : Enregistrer | <shortcut>w</shortcut> : Enregistrer et finir';
-    (this.obj.querySelector('footer') as HTMLElement).innerHTML = aide;
+    (this.obj.querySelector('div#footer') as HTMLElement).innerHTML = aide;
   }
   checkBoutonsValidity(): boolean {
     let ok = true;

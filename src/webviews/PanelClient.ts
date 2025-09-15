@@ -7,6 +7,7 @@ import { AccedableItem, AccessTable } from "./services/AccessTable";
 import { FormManager } from "./services/FormManager";
 import { Help } from "./services/HelpManager";
 import { VimLikeManager } from "./services/VimLikeManager";
+import "../bothside/class_extensions";
 
 interface PanelConstructorData {
   minName: string;
@@ -19,6 +20,8 @@ type Tplus = {
   [k: string]: any;
   data: Record<string, any>
 }
+
+
 export class PanelClient<T extends Tplus, C> {
   
   // ========== A P I ================
@@ -31,11 +34,43 @@ export class PanelClient<T extends Tplus, C> {
   // Pour marquer le panneau actif ou inactif
   public activate() { this.setPanelFocus(true); }
   public desactivate() { this.setPanelFocus(false); }
-  // Système de messagerie
+
+  /**
+   * Méthode puissante permettant d'attendre une réaction de l'utilisateur en affichant un 
+   * message. Typiquement, c'est le "Pour faire ça, tapez 1, pour faire ça, tapez 2".
+   * 
+   * Noter que ça n'est pas une méthode asynchrone. Si on l'utilise, c'est à l'ancienne, en
+   * arrêtant le flux après elle.
+   * 
+   * @param msg Le message à afficher
+   * @param buttons La table des raccourcis/fonctions qui doivent court-circuiter le fonctionnement
+   *    Ils peuvent avoir deux formes : 
+   *    - seulement la fonction buttons.set('<touche>', this.<fonction>.bind(this))
+   *    - le message et la fonction : buttons.set('<touche>', ['le message', this.<fonction>.bind(this)])
+   *      Dans ce dernier cas, le message sera affiché au-dessus et les boutons sous la console, dans la
+   *      partie des outils du panneau.
+   */
   public flashAction(msg: string, buttons: Map<string, any>) {
+    let realButtons = buttons;
     this.flash(msg, 'action');
-    this.keyManager.keyboardBypass = buttons;
+    if (Array.isArray(buttons.firstValue())) {
+      realButtons = new Map();
+      const outils: string[] = [];
+      buttons.forEach((ary: any, lettre: string ) => {
+        const [ordre, fonction] = ary;
+        outils.push(`<shortcut>${lettre}</shortcut> ${ordre}`);
+        realButtons.set(lettre, fonction);
+      });
+      console.log("outils", outils);
+      // On écrit dans le pied de page
+      this.footer.innerHTML = outils.join('&nbsp;&nbsp;');
+    } 
+    // On donne les boutons au manager de clavier
+    this.keyManager.keyboardBypass = realButtons;
   }
+
+
+
   public flash(msg:string, type: 'notice' | 'warn' | 'error' | 'action') {
     const o = document.createElement('div');
     o.className = type;
@@ -57,6 +92,10 @@ export class PanelClient<T extends Tplus, C> {
     msgbox.innerHTML = '';
     msgbox.style.zIndex = '-1';
   }
+  public cleanFooter(){
+    this.footer.innerHTML = '';
+  }
+
   public activateContextualHelp() {
     this.help.activateContextualHelp();
   }
@@ -200,6 +239,7 @@ export class PanelClient<T extends Tplus, C> {
   private get searchInput(){ return this._searchInput || (this._searchInput = document.querySelector('input#search-input') as HTMLInputElement);}
   public get consoleInput(){return this._consInput || (this._consInput = document.querySelector('input#panel-console') as HTMLInputElement);}
   private get messageBox(){ return document.querySelector('div#message') as HTMLDivElement;}
+  private get footer(){return document.querySelector('footer') as HTMLElement; }
   private get help(){return this._help || (this._help = new Help(this));}
 
   private minName:string;

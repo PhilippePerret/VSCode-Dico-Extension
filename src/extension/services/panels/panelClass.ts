@@ -56,7 +56,7 @@ export abstract class PanelClass {
     // const plurName = this.modelClass.names.tech.plur;
     const plurName = 'items';
     const mainContent = `<div class="loading">Chargement des ${plurName}…</div>`;
-    const toolsContent = `*Outils des ${plurName}*`;
+    const toolsContent = "";
     // Load form template using uniform convention: {panelId}/display.html
     const formTemplatePath = path.join(context.extensionPath, 'media', panelId, 'form.html');
     const editFormContent = fs.readFileSync(formTemplatePath, 'utf8'); 

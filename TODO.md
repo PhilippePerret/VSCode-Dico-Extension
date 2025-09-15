@@ -6,6 +6,7 @@
 * POURSUIVRE AVEC : 
 
   - Implémentation du formulaire pour les oeuvres
+    - vérifier que le type d'œuvre soit bien enregistrée
     - Implémenter la recherche dans wikipédia aussi, quand le film n'est pas trouvé
     - recherche des informations sur TMDB
     - procédure d'actualisation dans accessTable 

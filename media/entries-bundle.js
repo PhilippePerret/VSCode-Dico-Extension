@@ -854,8 +854,9 @@
         if (this.keyboardBypass.has(ev.key)) {
           const methodBypass = this.keyboardBypass.get(ev.key);
           delete this.keyboardBypass;
-          methodBypass();
           this.panel.cleanFlash();
+          this.panel.cleanFooter();
+          methodBypass();
         }
         return stopEvent(ev);
       }
@@ -1011,6 +1012,13 @@
     }
   };
 
+  // src/bothside/class_extensions.ts
+  Map.prototype.firstValue = function() {
+    for (var v of this.values()) {
+      return v;
+    }
+  };
+
   // src/webviews/PanelClient.ts
   var PanelClient = class {
     // ========== A P I ================
@@ -1032,10 +1040,36 @@
     desactivate() {
       this.setPanelFocus(false);
     }
-    // Système de messagerie
+    /**
+     * Méthode puissante permettant d'attendre une réaction de l'utilisateur en affichant un 
+     * message. Typiquement, c'est le "Pour faire ça, tapez 1, pour faire ça, tapez 2".
+     * 
+     * Noter que ça n'est pas une méthode asynchrone. Si on l'utilise, c'est à l'ancienne, en
+     * arrêtant le flux après elle.
+     * 
+     * @param msg Le message à afficher
+     * @param buttons La table des raccourcis/fonctions qui doivent court-circuiter le fonctionnement
+     *    Ils peuvent avoir deux formes : 
+     *    - seulement la fonction buttons.set('<touche>', this.<fonction>.bind(this))
+     *    - le message et la fonction : buttons.set('<touche>', ['le message', this.<fonction>.bind(this)])
+     *      Dans ce dernier cas, le message sera affiché au-dessus et les boutons sous la console, dans la
+     *      partie des outils du panneau.
+     */
     flashAction(msg, buttons) {
+      let realButtons = buttons;
       this.flash(msg, "action");
-      this.keyManager.keyboardBypass = buttons;
+      if (Array.isArray(buttons.firstValue())) {
+        realButtons = /* @__PURE__ */ new Map();
+        const outils = [];
+        buttons.forEach((ary, lettre) => {
+          const [ordre, fonction] = ary;
+          outils.push(`<shortcut>${lettre}</shortcut> ${ordre}`);
+          realButtons.set(lettre, fonction);
+        });
+        console.log("outils", outils);
+        this.footer.innerHTML = outils.join("&nbsp;&nbsp;");
+      }
+      this.keyManager.keyboardBypass = realButtons;
     }
     flash(msg, type) {
       const o = document.createElement("div");
@@ -1058,6 +1092,9 @@
       const msgbox = this.messageBox;
       msgbox.innerHTML = "";
       msgbox.style.zIndex = "-1";
+    }
+    cleanFooter() {
+      this.footer.innerHTML = "";
     }
     activateContextualHelp() {
       this.help.activateContextualHelp();
@@ -1204,6 +1241,9 @@
     }
     get messageBox() {
       return document.querySelector("div#message");
+    }
+    get footer() {
+      return document.querySelector("footer");
     }
     get help() {
       return this._help || (this._help = new Help(this));
@@ -1355,11 +1395,11 @@
       this.panel.context = item.data.id === "" ? "create-element" : "edit-element";
     }
     async saveItem(andQuit) {
-      const map = /* @__PURE__ */ new Map();
       const res = await this.itemIsNotSavable();
       if (res) {
         return;
       }
+      const map = /* @__PURE__ */ new Map();
       map.set("o", this.onConfirmSave.bind(this, andQuit));
       map.set("n", this.cancelEdit.bind(this));
       this.panel.flashAction(
@@ -1574,7 +1614,7 @@
     }
     inscritAideInFooter() {
       let aide = "<shortcut>q</shortcut> : Renoncer | <shortcut>s</shortcut> : Enregistrer | <shortcut>w</shortcut> : Enregistrer et finir";
-      this.obj.querySelector("footer").innerHTML = aide;
+      this.obj.querySelector("div#footer").innerHTML = aide;
     }
     checkBoutonsValidity() {
       let ok = true;

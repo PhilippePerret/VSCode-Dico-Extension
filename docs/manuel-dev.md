@@ -91,7 +91,7 @@ Une aide contextuelle permet d'afficher des messages d'aide au milieu du panneau
 
 Toutes les aides sont définies dans le module `HelpManager`.
 
-Chaque fois que le panneau passe dans un état, il définit sont `context`, permettant à l'aide de savoir ce qu'il faut afficher en cas de demande d'aide. Cette aide est affichée à l'ouverture du premier panneau, pour afficher l'aide du contexte `start`.
+Chaque fois que le panneau passe dans un état, il définit son `context`, permettant à l'aide de savoir ce qu'il faut afficher en cas de demande d'aide. Cette aide est affichée à l'ouverture du premier panneau, pour afficher l'aide du contexte `start`.
 
 Développement : Plus tard, on pourra imaginer pouvoir définir des valeurs contextuelles spéciales qui permettront d'afficher la pertinence de l'aide. 
 
@@ -118,6 +118,15 @@ const message = '<shortcut>n<shortcut> pour annuler et \
 	<shortcut>y</shortcut> pour continuer';
 this.panel.flashAction(message, mapCourtCircuit);
 ~~~
+
+ou :
+
+~~~typescript
+mapCC.set('n', ['effet avec n', this.fn1.bind(this));
+mapCC.set('o', ['effet avec o', this.fn2.bind(this));
+~~~
+
+Dans le deuxième cas, les raccourcis seront précisé en bas de panneau, dans le pied de page.
 
 Le système de « message avec action demandée » est un système qui affiche un message et demande d'activer une touche pour choisir l'opération à affectuer (ou confirmer une action à faire).
 

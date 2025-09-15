@@ -4,7 +4,6 @@
  *
  */
 
-import { resourceLimits } from "worker_threads";
 import { RpcOeuvre } from "../models/Oeuvre";
 import { FormManager } from "./FormManager";
 
@@ -40,12 +39,15 @@ export class TMDB {
         id: result.id,
         annee: Number(result.release_date.substring(0,4)),
         langue: result.original_language,
-        title_original: result.original_title,
+        titre_original: result.original_title,
+        titre: result.title,
         resume: result.overview,
       };
     });
+    console.log("Premiers résultats préparés (%i)", searchResults.length, structuredClone(searchResults));
 
     if (searchResults.length > 5) {
+      console.log("Résultat > 5 (premier filtre)");
       if (options) {
         if (undefined !== options.annee) { 
           options.annee = Number(options.annee); 
@@ -73,11 +75,16 @@ export class TMDB {
           searchResults = searchResults.filter( (result: any) => result.langue === options.langue );
         }
       }
-      if (searchResults > 5) {
+      if (searchResults.length > 5) {
+        // Si on n'a pas réussi à réduire le nombre d'œuvres candidates à moins de 6,
+        // on demande à l'utilisateur de faire un choix réduit.
         return this.selectFiveOeuvresMax({results: searchResults, kept: [], choosed: null});
       }
     }
+
+    console.log("Il y a moins de 5 résultats, je prends toutes les infos", searchResults);
     searchResults = this.getAllInfos(searchResults);
+    console.log("Toutes les informations", searchResults);
     if (searchResults.length === 1) {
       this.peupleFormWithOeuvre(searchResults[0]);
     } else {
@@ -89,24 +96,48 @@ export class TMDB {
    * Fonction permettant de choisir, parmi un (trop) grand nombre 
    * d'œuvres préselectionnées celles dont il faut réellement relever
    * les informations complètes pour choisir la bonne.
+   * 
+   * Malgré le titre, on peut choisir ici plus de 5 oeuvres. Mais ce
+   * sera alors en tout connaissance de cause.
+   * 
    */
-  private static selectFiveOeuvresMax(params:{results: any[], kept: any[], choosed: any}) {
+  private static selectFiveOeuvresMax(params: { results: any[], kept: any[], choosed: any }) {
+    console.log("Dans selectFive... il reste %i oeuvres", params.results.length);
     const oeuvreInfos = params.results.shift();
-    this.peupleFormWithOeuvre(oeuvreInfos);
-    const map = new Map();
-    map.set('o', this.onKeepOeuvreInfo.bind(this, oeuvreInfos, params));
-    map.set('n', this.selectFiveOeuvresMax.bind(this, params));
-    map.set('y', this.onChooseOeuvreInfo.bind(this, oeuvreInfos, params));
+    if (oeuvreInfos) {
+      this.peupleFormWithOeuvre(oeuvreInfos);
+      const map = new Map();
+      map.set('o', ['Mettre de côté', this.onKeepOeuvreInfo.bind(this, oeuvreInfos, params)]);
+      map.set('n', ['Rejeter', this.selectFiveOeuvresMax.bind(this, params)]);
+      map.set('y', ['C’est celle-ci !', this.onChooseOeuvreInfo.bind(this, oeuvreInfos, params)]);
+      map.set('q', ['Finir', this.onEndPickupOeuvres.bind(this, params)]);
+      this.form.panel.flashAction("Que dois-je faire de cette œuvre ?", map);
+    } else {
+      // Quand il n'y a plus d'œuvres
+      this.chooseFinalOeuvre(params.kept);
+    }
   }
-  static onKeepOeuvreInfo(oeuvreInfos: {[x: string]: any}, params: any){
+
+  // Méthode appelée, lorsqu'on choisit les oeuvres à investiguer,
+  // quand on veut arrêter le défilement (on a trouvé les candidates
+  // possible).
+  public static onEndPickupOeuvres(params: any) {
+    if (params.kept.length /* <= si des œuvres ont été gardées */) {
+      this.chooseFinalOeuvre(params.kept);
+    }
+  }
+
+  // Pour conserver l'oeuvre courante
+  public static onKeepOeuvreInfo(oeuvreInfos: {[x: string]: any}, params: any){
+    console.log("-> onKeepOeuvre avec", oeuvreInfos);
     params.kept.push(oeuvreInfos);
     this.selectFiveOeuvresMax(params);
   }
   // Méthode appelée quand on choisit l'œuvre comme la bonne
-  static onChooseOeuvreInfo(oeuvreInfo: any, params: any){
+  public static onChooseOeuvreInfo(oeuvreInfo: any, params: any){
     const oeuvreData = this.getAllInfos(oeuvreInfo);
     this.peupleFormWithOeuvre(oeuvreData);
-    return true;
+    return true; // on en a fini
   }
 
   /**
@@ -117,31 +148,45 @@ export class TMDB {
   private static peupleFormWithOeuvre(oeuvreData: {[x: string]: any}) {
     this.form.setValueOf('titre_original', oeuvreData.titre_original);
     this.form.setValueOf('titre_affiche', oeuvreData.titre);
-    this.form.setValueOf('auteurs', oeuvreData.auteurs);
+    oeuvreData.auteurs && this.form.setValueOf('auteurs', oeuvreData.auteurs);
     this.form.setValueOf('resume', oeuvreData.resume);
     const infos = {langue: oeuvreData.langue, pays: oeuvreData.pays};
     this.form.setValueOf('notes', JSON.stringify(infos));
   }
   
   // Fonction pour choisir l'œuvre finale parmi les œuvres trouvées,
-  // forcément plusieur
+  // quand il en reste plusieurs en lice.
   static chooseFinalOeuvre(searchResults: any[]){
     const dataOeuvre = searchResults.pop();
     if ( dataOeuvre) {
-      // il en reste une
+      // il en reste
+      this.peupleFormWithOeuvre(dataOeuvre);
+      const map = new Map();
+      map.set('o', ['Prendre cette œuvre', this.onChooseFinalOeuvre.bind(this)]);
+      map.set('n', ['Suivante', this.chooseFinalOeuvre.bind(this, searchResults)]);
+      this.form.panel.flashAction("Est-ce cette œuvre-là ?", map);
     } else {
       // Il ne reste plus d'œuvre
       this.form.panel.flash('Il n’y a pas d’autres œuvres, désolé…', 'error');
     }
   }
+  
+  public static onChooseFinalOeuvre(){
+    // En fait, il n'y a rien à faire puisqu'elle est déjà affichée dans le
+    // formulaire
+    this.form.panel.flash("Œuvre choisie, tu peux la compléter avant de l'enregistrer", 'notice');
+  }
+
   static getAllInfos(searchResults: any[]){
     return searchResults.map( async (result: any) => {
       const movieId = result.id;
       const details = await this.getMovieDetails(movieId);
+      console.log("details", details);
       const credits = await this.getMovieDetails(movieId);
+      console.log("credits", credits);
       return Object.assign(result, {
         idmbId: details.imdb_id,
-        pays: details.original_country.join(', '),
+        pays: details.origin_country.join(', '),
         director: credits.director,
         auteurs: [credits.director].push(...credits.writers.map((a: string) => `${a}[?]`))
       });
@@ -182,7 +227,6 @@ export class TMDB {
       }
     });
     const data = await response.json();
-    console.log("Première data", data);
     return data.results; // tableau de films
   }
 

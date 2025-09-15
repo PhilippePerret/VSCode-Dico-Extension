@@ -25,3 +25,10 @@ div.oeuvre div.oeuvre-resume {
 div.oeuvre div.auteurs {
   font-size: 0.8em;
 }
+
+form textarea#oeuvre-resume {
+  height: 120px;
+}
+form textarea#oeuvre-notes {
+  height: 80px;
+}

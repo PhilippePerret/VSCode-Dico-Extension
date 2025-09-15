@@ -114,16 +114,23 @@ export class VimLikeManager {
       // <= Un bypass existe (bloquant toutes les touches)
       // => Il faut voir si la touche est connue
       if (this.keyboardBypass.has(ev.key)) {
-        /* Ici, c'est un peu compliqué, car il faut détruit le bypass
+        /* Ici, c'est un peu compliqué, car il faut détruire le bypass
          * avant de jouer la méthode car cette méthode pourrait
-         * redéfinir un autre coupe-circuit à prendre ne compte
+         * redéfinir un autre coupe-circuit à prendre en compte
          */
         const methodBypass = (this.keyboardBypass as Map<string, any>).get(ev.key);
+        // console.log('methodBypass dans VimLike', methodBypass);
         delete this.keyboardBypass;
-        methodBypass(); 
+        // Attention, ci-dessous, j'ai peut-être un souci de niveau
+        // du "effacer avant de jouer la méthode bypass ou effacer
+        // après ?" Si j'ai plusieurs flashAction qui se suivent, il
+        // faut effacer avant. Vérifier si dans d'autres cas, c'est
+        // le contraire et voir comment on peut faire.
         this.panel.cleanFlash();
+        this.panel.cleanFooter(); // Les raccourcis ont pu y être affichés
+        methodBypass(); 
       }
-      // Dans tous les cas on bloque la touche et on supprime la
+      // Dans tous les cas on bloque la touche et on supprime le
       // coupe-circuit clavier
       return stopEvent(ev);
     }

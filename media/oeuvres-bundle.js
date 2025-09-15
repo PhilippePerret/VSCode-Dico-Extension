@@ -407,8 +407,9 @@
         if (this.keyboardBypass.has(ev.key)) {
           const methodBypass = this.keyboardBypass.get(ev.key);
           delete this.keyboardBypass;
-          methodBypass();
           this.panel.cleanFlash();
+          this.panel.cleanFooter();
+          methodBypass();
         }
         return stopEvent(ev);
       }
@@ -564,6 +565,13 @@
     }
   };
 
+  // src/bothside/class_extensions.ts
+  Map.prototype.firstValue = function() {
+    for (var v of this.values()) {
+      return v;
+    }
+  };
+
   // src/webviews/PanelClient.ts
   var PanelClient = class {
     // ========== A P I ================
@@ -585,10 +593,36 @@
     desactivate() {
       this.setPanelFocus(false);
     }
-    // Système de messagerie
+    /**
+     * Méthode puissante permettant d'attendre une réaction de l'utilisateur en affichant un 
+     * message. Typiquement, c'est le "Pour faire ça, tapez 1, pour faire ça, tapez 2".
+     * 
+     * Noter que ça n'est pas une méthode asynchrone. Si on l'utilise, c'est à l'ancienne, en
+     * arrêtant le flux après elle.
+     * 
+     * @param msg Le message à afficher
+     * @param buttons La table des raccourcis/fonctions qui doivent court-circuiter le fonctionnement
+     *    Ils peuvent avoir deux formes : 
+     *    - seulement la fonction buttons.set('<touche>', this.<fonction>.bind(this))
+     *    - le message et la fonction : buttons.set('<touche>', ['le message', this.<fonction>.bind(this)])
+     *      Dans ce dernier cas, le message sera affiché au-dessus et les boutons sous la console, dans la
+     *      partie des outils du panneau.
+     */
     flashAction(msg, buttons) {
+      let realButtons = buttons;
       this.flash(msg, "action");
-      this.keyManager.keyboardBypass = buttons;
+      if (Array.isArray(buttons.firstValue())) {
+        realButtons = /* @__PURE__ */ new Map();
+        const outils = [];
+        buttons.forEach((ary, lettre) => {
+          const [ordre, fonction] = ary;
+          outils.push(`<shortcut>${lettre}</shortcut> ${ordre}`);
+          realButtons.set(lettre, fonction);
+        });
+        console.log("outils", outils);
+        this.footer.innerHTML = outils.join("&nbsp;&nbsp;");
+      }
+      this.keyManager.keyboardBypass = realButtons;
     }
     flash(msg, type) {
       const o = document.createElement("div");
@@ -611,6 +645,9 @@
       const msgbox = this.messageBox;
       msgbox.innerHTML = "";
       msgbox.style.zIndex = "-1";
+    }
+    cleanFooter() {
+      this.footer.innerHTML = "";
     }
     activateContextualHelp() {
       this.help.activateContextualHelp();
@@ -757,6 +794,9 @@
     }
     get messageBox() {
       return document.querySelector("div#message");
+    }
+    get footer() {
+      return document.querySelector("footer");
     }
     get help() {
       return this._help || (this._help = new Help(this));
@@ -1328,11 +1368,11 @@
       this.panel.context = item.data.id === "" ? "create-element" : "edit-element";
     }
     async saveItem(andQuit) {
-      const map = /* @__PURE__ */ new Map();
       const res = await this.itemIsNotSavable();
       if (res) {
         return;
       }
+      const map = /* @__PURE__ */ new Map();
       map.set("o", this.onConfirmSave.bind(this, andQuit));
       map.set("n", this.cancelEdit.bind(this));
       this.panel.flashAction(
@@ -1547,7 +1587,7 @@
     }
     inscritAideInFooter() {
       let aide = "<shortcut>q</shortcut> : Renoncer | <shortcut>s</shortcut> : Enregistrer | <shortcut>w</shortcut> : Enregistrer et finir";
-      this.obj.querySelector("footer").innerHTML = aide;
+      this.obj.querySelector("div#footer").innerHTML = aide;
     }
     checkBoutonsValidity() {
       let ok = true;
@@ -1659,6 +1699,7 @@
 
   // src/webviews/services/TMDB.ts
   var TMDB = class {
+    static form;
     /**
      * @api
      * Récupère et retourne les informations des films de titre +titre+
@@ -1666,18 +1707,22 @@
      * @param titre Le titre du film dont il faut avoir les informations. Plus tard, on verra si on peut avoir plusieurs films d'un coup.
      * @returns 
      */
-    static async getInfoFilm(titre, options = void 0) {
+    static async getInfoFilm(titre, options = void 0, form) {
+      this.form = form;
       let searchResults = await this.searchMovie(titre);
       searchResults = searchResults.map((result) => {
         return {
           id: result.id,
           annee: Number(result.release_date.substring(0, 4)),
           langue: result.original_language,
-          title_original: result.original_title,
+          titre_original: result.original_title,
+          titre: result.title,
           resume: result.overview
         };
       });
+      console.log("Premiers r\xE9sultats pr\xE9par\xE9s (%i)", searchResults.length, structuredClone(searchResults));
       if (searchResults.length > 5) {
+        console.log("R\xE9sultat > 5 (premier filtre)");
         if (options) {
           if (void 0 !== options.annee) {
             options.annee = Number(options.annee);
@@ -1702,18 +1747,103 @@
             searchResults = searchResults.filter((result) => result.langue === options.langue);
           }
         }
-        if (searchResults > 5) {
-          searchResults = searchResults.map((result) => {
-          });
+        if (searchResults.length > 5) {
+          return this.selectFiveOeuvresMax({ results: searchResults, kept: [], choosed: null });
         }
       }
+      console.log("Il y a moins de 5 r\xE9sultats, je prends toutes les infos", searchResults);
+      searchResults = this.getAllInfos(searchResults);
+      console.log("Toutes les informations", searchResults);
+      if (searchResults.length === 1) {
+        this.peupleFormWithOeuvre(searchResults[0]);
+      } else {
+        this.chooseFinalOeuvre(searchResults);
+      }
+    }
+    /**
+     * Fonction permettant de choisir, parmi un (trop) grand nombre 
+     * d'œuvres préselectionnées celles dont il faut réellement relever
+     * les informations complètes pour choisir la bonne.
+     * 
+     * Malgré le titre, on peut choisir ici plus de 5 oeuvres. Mais ce
+     * sera alors en tout connaissance de cause.
+     * 
+     */
+    static selectFiveOeuvresMax(params) {
+      console.log("Dans selectFive... il reste %i oeuvres", params.results.length);
+      const oeuvreInfos = params.results.shift();
+      if (oeuvreInfos) {
+        this.peupleFormWithOeuvre(oeuvreInfos);
+        const map = /* @__PURE__ */ new Map();
+        map.set("o", ["Mettre de c\xF4t\xE9", this.onKeepOeuvreInfo.bind(this, oeuvreInfos, params)]);
+        map.set("n", ["Rejeter", this.selectFiveOeuvresMax.bind(this, params)]);
+        map.set("y", ["C\u2019est celle-ci\xA0!", this.onChooseOeuvreInfo.bind(this, oeuvreInfos, params)]);
+        map.set("q", ["Finir", this.onEndPickupOeuvres.bind(this, params)]);
+        this.form.panel.flashAction("Que dois-je faire de cette \u0153uvre\xA0?", map);
+      } else {
+        this.chooseFinalOeuvre(params.kept);
+      }
+    }
+    // Méthode appelée, lorsqu'on choisit les oeuvres à investiguer,
+    // quand on veut arrêter le défilement (on a trouvé les candidates
+    // possible).
+    static onEndPickupOeuvres(params) {
+      if (params.kept.length) {
+        this.chooseFinalOeuvre(params.kept);
+      }
+    }
+    // Pour conserver l'oeuvre courante
+    static onKeepOeuvreInfo(oeuvreInfos, params) {
+      console.log("-> onKeepOeuvre avec", oeuvreInfos);
+      params.kept.push(oeuvreInfos);
+      this.selectFiveOeuvresMax(params);
+    }
+    // Méthode appelée quand on choisit l'œuvre comme la bonne
+    static onChooseOeuvreInfo(oeuvreInfo, params) {
+      const oeuvreData = this.getAllInfos(oeuvreInfo);
+      this.peupleFormWithOeuvre(oeuvreData);
+      return true;
+    }
+    /**
+     * Affiche les données de l'œuvre dans le formulaire du panneau Oeuvres
+     * 
+     * @param oeuvreData Données complètes de l'œuvre
+     */
+    static peupleFormWithOeuvre(oeuvreData) {
+      this.form.setValueOf("titre_original", oeuvreData.titre_original);
+      this.form.setValueOf("titre_affiche", oeuvreData.titre);
+      oeuvreData.auteurs && this.form.setValueOf("auteurs", oeuvreData.auteurs);
+      this.form.setValueOf("resume", oeuvreData.resume);
+      const infos = { langue: oeuvreData.langue, pays: oeuvreData.pays };
+      this.form.setValueOf("notes", JSON.stringify(infos));
+    }
+    // Fonction pour choisir l'œuvre finale parmi les œuvres trouvées,
+    // quand il en reste plusieurs en lice.
+    static chooseFinalOeuvre(searchResults) {
+      const dataOeuvre = searchResults.pop();
+      if (dataOeuvre) {
+        this.peupleFormWithOeuvre(dataOeuvre);
+        const map = /* @__PURE__ */ new Map();
+        map.set("o", ["Prendre cette \u0153uvre", this.onChooseFinalOeuvre.bind(this)]);
+        map.set("n", ["Suivante", this.chooseFinalOeuvre.bind(this, searchResults)]);
+        this.form.panel.flashAction("Est-ce cette \u0153uvre-l\xE0 ?", map);
+      } else {
+        this.form.panel.flash("Il n\u2019y a pas d\u2019autres \u0153uvres, d\xE9sol\xE9\u2026", "error");
+      }
+    }
+    static onChooseFinalOeuvre() {
+      this.form.panel.flash("\u0152uvre choisie, tu peux la compl\xE9ter avant de l'enregistrer", "notice");
+    }
+    static getAllInfos(searchResults) {
       return searchResults.map(async (result) => {
         const movieId = result.id;
         const details = await this.getMovieDetails(movieId);
+        console.log("details", details);
         const credits = await this.getMovieDetails(movieId);
+        console.log("credits", credits);
         return Object.assign(result, {
           idmbId: details.imdb_id,
-          pays: details.original_country.join(", "),
+          pays: details.origin_country.join(", "),
           director: credits.director,
           auteurs: [credits.director].push(...credits.writers.map((a) => `${a}[?]`))
         });
@@ -1748,7 +1878,6 @@
         }
       });
       const data = await response.json();
-      console.log("Premi\xE8re data", data);
       return data.results;
     }
     // Informations détaillées d'un film par ID
@@ -1801,9 +1930,6 @@
     tableKeys = {
       i: this.getOeuvreExternInfo.bind(this)
     };
-    getOeuvreExternInfo() {
-      this.flash("Je dois apprendre \xE0 charger les infos du film", "error");
-    }
     static REG_AUTEUR = /([^ ]+) ([^\[])\[(H|F)\]/;
     afterEdit() {
       const id = this.getValueOf("id");
@@ -1862,16 +1988,21 @@
     }
     observeForm() {
       const btnTMDB = this.obj.querySelector(".btn-get-infos");
-      btnTMDB?.addEventListener("click", this.onClickGetTMDBInfos.bind(this));
+      btnTMDB?.addEventListener("click", this.getOeuvreExternInfo.bind(this));
     }
-    async onClickGetTMDBInfos(ev) {
+    async getOeuvreExternInfo(ev) {
       const titre = (this.getValueOf("titre_original") || this.getValueOf("titre_affiche")).trim();
       if (titre === "") {
-        this.flash("Il faut indiquer le titre !", "error");
+        this.flash("Il faut indiquer le titre de l\u2019\u0153uvre\xA0!", "error");
       } else {
         this.flash("Je r\xE9cup\xE8re les informations du film " + titre + "\u2026");
-        const infos = await TMDB.getInfoFilm(titre);
+        const options = { langue: void 0, annee: void 0 };
+        if (this.getValueOf("annee") !== "") {
+          Object.assign(options, { annee: Number(this.getValueOf("annee")) });
+        }
+        const infos = await TMDB.getInfoFilm(titre, options, this);
       }
+      ev && stopEvent(ev);
     }
     onChangeAuteurs(ev = void 0) {
       let auteurs = this.getValueOf("auteurs").trim();
