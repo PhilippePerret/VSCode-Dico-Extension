@@ -137,7 +137,7 @@ export class VimLikeManager {
       }
       // Dans tous les cas on bloque la touche et on supprime le
       // coupe-circuit clavier
-      return stopEvent(ev);
+      return ev && stopEvent(ev);
     }
     return true;
   }

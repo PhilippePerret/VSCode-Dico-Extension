@@ -651,7 +651,7 @@
         });
         console.log("outils", outils);
         const o = document.createElement("div");
-        o.id = "shortcuts";
+        o.id = "footer-shortcuts";
         o.innerHTML = outils.join("&nbsp;&nbsp;");
         this.footer.appendChild(o);
       }
@@ -680,7 +680,9 @@
       msgbox.style.zIndex = "-1";
     }
     cleanFooterShortcuts() {
-      this.footer.querySelector("div.shortcuts").innerHTML = "";
+      if (this.footer.querySelector("div#footer-shortcuts")) {
+        this.footer.querySelector("div#footer-shortcuts").remove();
+      }
     }
     activateContextualHelp() {
       this.help.activateContextualHelp();

@@ -179,7 +179,7 @@ export class TMDB {
 
   // Pour s'arrêter sans rien faire
   public static onStop(ev: Event){
-    stopEvent(ev);
+    ev && stopEvent(ev);
   }
   
   public static onChooseFinalOeuvre(){
