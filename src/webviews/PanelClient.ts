@@ -64,7 +64,7 @@ export class PanelClient<T extends Tplus, C> {
       console.log("outils", outils);
       // On écrit les raccourcis dans le pied de page
       const o = document.createElement('div');
-      o.id = 'shortcuts';
+      o.id = 'footer-shortcuts';
       o.innerHTML = outils.join('&nbsp;&nbsp;');
       this.footer.appendChild(o); 
     } 
@@ -96,7 +96,9 @@ export class PanelClient<T extends Tplus, C> {
     msgbox.style.zIndex = '-1';
   }
   public cleanFooterShortcuts(){
-    (this.footer.querySelector('div.shortcuts') as HTMLElement).innerHTML = '';
+    if ( this.footer.querySelector('div#footer-shortcuts')){
+      (this.footer.querySelector('div#footer-shortcuts') as HTMLElement).remove();
+    }
   }
 
   public activateContextualHelp() {
