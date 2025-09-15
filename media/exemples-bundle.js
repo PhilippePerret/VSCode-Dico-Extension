@@ -267,7 +267,7 @@
           this.panel.cleanFooterShortcuts();
           methodBypass();
         }
-        return stopEvent(ev);
+        return ev && stopEvent(ev);
       }
       return true;
     }

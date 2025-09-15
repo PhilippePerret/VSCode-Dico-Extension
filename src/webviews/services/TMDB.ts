@@ -85,7 +85,7 @@ export class TMDB {
 
     console.log("Il y a moins de 5 résultats, je prends toutes les infos", searchResults);
     // On récupère toutes les informations
-    const oeuvres = searchResults.map((dataOeuvre: {[x: string]: any}) => this.getAllInfos(dataOeuvre));
+    const oeuvres = searchResults.map(async (dataOeuvre: {[x: string]: any}) => await this.getAllInfos(dataOeuvre));
     if (oeuvres.length === 1) {
       this.peupleFormWithOeuvre(oeuvres[0]);
     } else {

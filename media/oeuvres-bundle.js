@@ -441,7 +441,7 @@
           this.panel.cleanFooterShortcuts();
           methodBypass();
         }
-        return stopEvent(ev);
+        return ev && stopEvent(ev);
       }
       return true;
     }
@@ -1787,7 +1787,7 @@
         }
       }
       console.log("Il y a moins de 5 r\xE9sultats, je prends toutes les infos", searchResults);
-      const oeuvres = searchResults.map((dataOeuvre) => this.getAllInfos(dataOeuvre));
+      const oeuvres = searchResults.map(async (dataOeuvre) => await this.getAllInfos(dataOeuvre));
       if (oeuvres.length === 1) {
         this.peupleFormWithOeuvre(oeuvres[0]);
       } else {
@@ -1876,7 +1876,7 @@
     }
     // Pour s'arrêter sans rien faire
     static onStop(ev) {
-      stopEvent(ev);
+      ev && stopEvent(ev);
     }
     static onChooseFinalOeuvre() {
       this.form.panel.flash("\u0152uvre choisie, tu peux la compl\xE9ter avant de l'enregistrer.", "notice");
