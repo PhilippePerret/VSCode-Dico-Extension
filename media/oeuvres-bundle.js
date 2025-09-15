@@ -398,8 +398,12 @@
           break;
       }
       this.root.dataset.mode = `mode-${mode}`;
-      const spanName = this.root.querySelector("span#mode-name");
-      spanName.innerHTML = mode.toLocaleUpperCase();
+      if (this.root.querySelector("span#mode-name")) {
+        const spanName = this.root.querySelector("span#mode-name");
+        spanName.innerHTML = mode.toLocaleUpperCase();
+      } else {
+        console.warn("Bizarrement, le span #mode-name affichant le mode du panneau est introuvable.");
+      }
     }
     searchInput;
     consoleInput;
@@ -1783,7 +1787,7 @@
       if (searchResults.length === 1) {
         this.peupleFormWithOeuvre(searchResults[0]);
       } else {
-        this.chooseFinalOeuvre(searchResults);
+        this.chooseFinalOeuvre({ oeuvres: searchResults, ioeuvre: 0 });
       }
     }
     /**
@@ -1807,7 +1811,7 @@
         map.set("q", ["Finir", this.onEndPickupOeuvres.bind(this, params)]);
         this.form.panel.flashAction("Que dois-je faire de cette \u0153uvre\xA0?", map);
       } else {
-        this.chooseFinalOeuvre(params.kept);
+        this.chooseFinalOeuvre({ oeuvres: params.kept, ioeuvre: 0 });
       }
     }
     // Méthode appelée, lorsqu'on choisit les oeuvres à investiguer,
@@ -1815,19 +1819,22 @@
     // possible).
     static onEndPickupOeuvres(params) {
       if (params.kept.length) {
-        this.chooseFinalOeuvre(params.kept);
+        this.chooseFinalOeuvre({ oeuvres: params.kept, ioeuvre: 0 });
       }
     }
     // Pour conserver l'oeuvre courante
     static onKeepOeuvreInfo(oeuvreInfos, params) {
       console.log("-> onKeepOeuvre avec", oeuvreInfos);
+      this.getAllInfos(oeuvreInfos);
       params.kept.push(oeuvreInfos);
       this.selectFiveOeuvresMax(params);
     }
     // Méthode appelée quand on choisit l'œuvre comme la bonne
     static onChooseOeuvreInfo(oeuvreInfo, params) {
-      const oeuvreData = this.getAllInfos(oeuvreInfo);
-      this.peupleFormWithOeuvre(oeuvreData);
+      if (void 0 === oeuvreInfo.auteurs) {
+        this.getAllInfos(oeuvreInfo);
+      }
+      this.peupleFormWithOeuvre(oeuvreInfo);
       return true;
     }
     /**
@@ -1840,40 +1847,51 @@
       this.form.setValueOf("titre_affiche", oeuvreData.titre);
       oeuvreData.auteurs && this.form.setValueOf("auteurs", oeuvreData.auteurs);
       this.form.setValueOf("resume", oeuvreData.resume);
+      oeuvreData.annee && this.form.setValueOf("annee", oeuvreData.annee);
       const infos = { langue: oeuvreData.langue, pays: oeuvreData.pays };
+      if (oeuvreData.director) {
+        Object.assign(infos, { director: oeuvreData.director });
+      }
       this.form.setValueOf("notes", JSON.stringify(infos));
     }
     // Fonction pour choisir l'œuvre finale parmi les œuvres trouvées,
     // quand il en reste plusieurs en lice.
-    static chooseFinalOeuvre(searchResults) {
-      const dataOeuvre = searchResults.pop();
-      if (dataOeuvre) {
-        this.peupleFormWithOeuvre(dataOeuvre);
-        const map = /* @__PURE__ */ new Map();
-        map.set("o", ["Prendre cette \u0153uvre", this.onChooseFinalOeuvre.bind(this)]);
-        map.set("n", ["Suivante", this.chooseFinalOeuvre.bind(this, searchResults)]);
-        this.form.panel.flashAction("Est-ce cette \u0153uvre-l\xE0 ?", map);
-      } else {
-        this.form.panel.flash("Il n\u2019y a pas d\u2019autres \u0153uvres, d\xE9sol\xE9\u2026", "error");
+    static chooseFinalOeuvre(params) {
+      if (params.ioeuvre >= params.oeuvres.length - 1) {
+        this.form.panel.flash("On reprend\u2026", "notice");
+        params.ioeuvre = 0;
       }
+      const dataOeuvre = params.oeuvres[params.ioeuvre];
+      ++params.ioeuvre;
+      this.peupleFormWithOeuvre(dataOeuvre);
+      const map = /* @__PURE__ */ new Map();
+      map.set("o", ["Prendre cette \u0153uvre", this.onChooseFinalOeuvre.bind(this)]);
+      map.set("n", ["Suivante", this.chooseFinalOeuvre.bind(this, params)]);
+      map.set("q", ["Finir", this.onStop.bind(this)]);
+      this.form.panel.flashAction("Est-ce cette \u0153uvre-l\xE0 ?", map);
+    }
+    // Pour s'arrêter sans rien faire
+    static onStop(ev) {
+      stopEvent(ev);
     }
     static onChooseFinalOeuvre() {
       this.form.panel.flash("\u0152uvre choisie, tu peux la compl\xE9ter avant de l'enregistrer", "notice");
     }
-    static getAllInfos(searchResults) {
-      return searchResults.map(async (result) => {
-        const movieId = result.id;
-        const details = await this.getMovieDetails(movieId);
-        console.log("details", details);
-        const credits = await this.getMovieDetails(movieId);
-        console.log("credits", credits);
-        return Object.assign(result, {
-          idmbId: details.imdb_id,
-          pays: details.origin_country.join(", "),
-          director: credits.director,
-          auteurs: [credits.director].push(...credits.writers.map((a) => `${a}[?]`))
-        });
-      }).filter((dFilm) => dFilm !== null);
+    static async getAllInfos(dOeuvre) {
+      const movieId = dOeuvre.id;
+      const details = await this.getMovieDetails(movieId);
+      console.log("details", details);
+      const credits = await this.getMovieCredits(movieId);
+      console.log("credits", credits);
+      let auteurs = credits.writers;
+      auteurs.unshift(credits.director);
+      auteurs = auteurs.map((a) => `${a}[HF?]`).join(", ");
+      return Object.assign(dOeuvre, {
+        idmbId: details.imdb_id,
+        pays: details.origin_country.join(", "),
+        director: `${credits.director}[HF?]`,
+        auteurs
+      });
     }
     static _TMDBSecrets;
     static get TMDB_READING_API_TOKEN() {

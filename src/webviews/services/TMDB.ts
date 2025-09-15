@@ -131,13 +131,16 @@ export class TMDB {
   // Pour conserver l'oeuvre courante
   public static onKeepOeuvreInfo(oeuvreInfos: {[x: string]: any}, params: any){
     console.log("-> onKeepOeuvre avec", oeuvreInfos);
+    this.getAllInfos(oeuvreInfos);
     params.kept.push(oeuvreInfos);
     this.selectFiveOeuvresMax(params);
   }
   // Méthode appelée quand on choisit l'œuvre comme la bonne
   public static onChooseOeuvreInfo(oeuvreInfo: any, params: any){
-    const oeuvreData = this.getAllInfos(oeuvreInfo);
-    this.peupleFormWithOeuvre(oeuvreData);
+    // Si les données complètes n'ont pas été ramassées avant, on les
+    // ramasse maintenant
+    if ( undefined === oeuvreInfo.auteurs) { this.getAllInfos(oeuvreInfo); }
+    this.peupleFormWithOeuvre(oeuvreInfo);
     return true; // on en a fini
   }
 
@@ -151,7 +154,9 @@ export class TMDB {
     this.form.setValueOf('titre_affiche', oeuvreData.titre);
     oeuvreData.auteurs && this.form.setValueOf('auteurs', oeuvreData.auteurs);
     this.form.setValueOf('resume', oeuvreData.resume);
+    oeuvreData.annee && this.form.setValueOf('annee', oeuvreData.annee);
     const infos = {langue: oeuvreData.langue, pays: oeuvreData.pays};
+    if (oeuvreData.director) { Object.assign(infos, {director: oeuvreData.director});}
     this.form.setValueOf('notes', JSON.stringify(infos));
   }
   
@@ -163,6 +168,7 @@ export class TMDB {
       params.ioeuvre = 0;
     }
     const dataOeuvre = params.oeuvres[params.ioeuvre];
+    ++ params.ioeuvre;
     this.peupleFormWithOeuvre(dataOeuvre);
     const map = new Map();
     map.set('o', ['Prendre cette œuvre', this.onChooseFinalOeuvre.bind(this)]);
@@ -182,21 +188,22 @@ export class TMDB {
     this.form.panel.flash("Œuvre choisie, tu peux la compléter avant de l'enregistrer", 'notice');
   }
 
-  static getAllInfos(searchResults: any[]){
-    return searchResults.map( async (result: any) => {
-      const movieId = result.id;
-      const details = await this.getMovieDetails(movieId);
-      console.log("details", details);
-      const credits = await this.getMovieDetails(movieId);
-      console.log("credits", credits);
-      return Object.assign(result, {
-        idmbId: details.imdb_id,
-        pays: details.origin_country.join(', '),
-        director: credits.director,
-        auteurs: [credits.director].push(...credits.writers.map((a: string) => `${a}[?]`))
-      });
-    }).filter( (dFilm: any) => dFilm !== null );
- }
+  private static async getAllInfos(dOeuvre: {[x: string]: any}): Promise<{[x: string]: any}> {
+    const movieId = dOeuvre.id;
+    const details = await this.getMovieDetails(movieId);
+    console.log("details", details);
+    const credits = await this.getMovieCredits(movieId);
+    console.log("credits", credits);
+    let auteurs = credits.writers;
+    auteurs.unshift(credits.director);
+    auteurs = auteurs.map((a: string) => `${a}[HF?]`).join(', ');
+    return Object.assign(dOeuvre, {
+      idmbId: details.imdb_id,
+      pays: details.origin_country.join(', '),
+      director: `${credits.director}[HF?]`,
+      auteurs: auteurs
+    });
+  }
 
 
   private static _TMDBSecrets: { [x: string]: string };
@@ -246,6 +253,8 @@ export class TMDB {
     });
     return await response.json();
   }
+
+
   // Informations techniques (cast & crew)
   private static async getMovieCredits(movieId: string) {
     const url = `https://api.themoviedb.org/3/movie/${movieId}/credits`;

@@ -45,8 +45,13 @@ export class VimLikeManager {
     }
     // Indiquer dans l'interface le mode
     this.root.dataset.mode = `mode-${mode}` ;
-    const spanName = this.root.querySelector('span#mode-name') as HTMLSpanElement;
-    spanName.innerHTML = mode.toLocaleUpperCase();
+    
+    if (this.root.querySelector('span#mode-name')){
+      const spanName = this.root.querySelector('span#mode-name') as HTMLSpanElement;
+      spanName.innerHTML = mode.toLocaleUpperCase();
+    } else {
+      console.warn("Bizarrement, le span #mode-name affichant le mode du panneau est introuvable.");
+    }
   }
 
   readonly searchInput: HTMLInputElement;
