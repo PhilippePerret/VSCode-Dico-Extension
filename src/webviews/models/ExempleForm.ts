@@ -10,6 +10,13 @@ export class ExempleForm extends FormManager<typeof Exemple, FExemple> {
   prefix = 'exemple';
   properties: FormProperty[] = [
   ];
+  // Table des raccourcis 'one key' propre au formulaire
+  tableKeys = {
+    // <touche>: <fonction bindée>, par exemple
+    // 'i': this.showInfo.bind(this)
+  };
+
+
 
   async checkItem(item: Exemple): Promise<string | undefined> {
     return 'Les données ne sont pas checkés';

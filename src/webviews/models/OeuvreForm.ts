@@ -23,6 +23,14 @@ export class OeuvreForm extends FormManager<typeof Oeuvre, FOeuvre> {
     {propName: 'resume', type: String, required: false, fieldType: 'textarea'},
     {propName: 'notes', type: String, required: false, fieldType: 'textarea'}
   ];
+  // Table des raccourcis 'one key' propre au formulaire 
+  tableKeys = {
+    i: this.getOeuvreExternInfo.bind(this)
+  };
+
+  getOeuvreExternInfo(){
+    this.flash('Je dois apprendre à charger les infos du film', 'error');
+  }
 
   static readonly REG_AUTEUR = /([^ ]+) ([^\[])\[(H|F)\]/;
 

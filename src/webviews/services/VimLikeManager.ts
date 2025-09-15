@@ -3,6 +3,7 @@ import { Exemple } from "../models/Exemple";
 import { Oeuvre } from "../models/Oeuvre";
 import { PanelClient } from "../PanelClient";
 import { stopEvent } from "./DomUtils";
+import { FormManager } from "./FormManager";
 
 type MODES = 'normal' | 'edit' | 'null' | 'form' ;
 
@@ -18,6 +19,7 @@ export class VimLikeManager {
   protected _keylistener: (ev: KeyboardEvent) => true | false | undefined | void;
   protected _mode: MODES = 'normal' ; 
   protected get mode() { return this._mode ; }
+  private form: FormManager<any, any>;
   public setMode(mode: MODES) { this.mode = mode; }
   protected set mode(mode: MODES) { // de l'extérieur, utiliser la méthode setMode 
     console.info("[VimLikeManager mode] Mise du mode à '%s')", mode);
@@ -60,6 +62,8 @@ export class VimLikeManager {
     // le mode est toujours remis au mode normal et edit
     // this.root.addEventListener('focusin', this.onFocusIn.bind(this));
     // this.root.addEventListener('focusout', this.onFocusOut.bind(this));
+
+    this.form = this.panel.form; // cached
 
     // Pour placer une capture "universelle", c'est-à-dire qui capture les keydown
     // quel que soit le mode courant
@@ -214,30 +218,37 @@ export class VimLikeManager {
   onKeyDownModeForm(ev: KeyboardEvent) {
     console.log("-> onKeyDownModeForm");
     // Pour empêcher toute action pendant la sauvegarde
-    if ( this.panel.form.saving === true ) { return; }
+    if ( this.form.saving === true ) { return; }
     if (ev.metaKey) { return this.onKeyDownWithMeta(ev); }
     switch (ev.key) {
       case 'a': // focusser dans premier champ
-        this.panel.form.focusField(1); return stopEvent(ev);
+        this.form.focusField(1); break;
       case 'b': // focusser dans le second champ
-        this.panel.form.focusField(2); return stopEvent(ev);
+        this.form.focusField(2); break;
       case 'c': // focusser dans le 3e champ
-        this.panel.form.focusField(3); return stopEvent(ev);
+        this.form.focusField(3); break;
       case 'd': // focusser dans le 4e champ
-        this.panel.form.focusField(4); return stopEvent(ev);
+        this.form.focusField(4); break;
       case 'e': // focusser dans le 5e champ
-        this.panel.form.focusField(5); return stopEvent(ev);
+        this.form.focusField(5); break;
        case 'f': // focusser dans le 6e champ
-        this.panel.form.focusField(6); return stopEvent(ev);
+        this.form.focusField(6); break;
+      case 'g':
+        this.form.focusField(7); break;
       case 'l': // Bloquer/débloquer le verrouillage de l'id
-        this.panel.form.toggleIdLock(); return stopEvent(ev);
+        this.form.toggleIdLock(); break;
       case 's': // Sauvegarder
-        this.panel.form.saveItem(false); return stopEvent(ev);
+        this.form.saveItem(false); break;
       case 'w': // 
-        this.panel.form.saveItem(true); return stopEvent(ev);
+        this.form.saveItem(true); break;
       case 'q': // Annuler
-        this.panel.form.cancelEdit(); return stopEvent(ev);
+        this.form.cancelEdit(); break;
+      default:
+        // Le formulaire peut définir une table `tableKeys' pour
+        // définir les fonctions à appeler par touche
+        if (this.form.tableKeys[ev.key]) {this.form.tableKeys[ev.key].call(null);}
     }
+    return stopEvent(ev);
   }
   
   onKeyDownModeNull(ev: KeyboardEvent) {

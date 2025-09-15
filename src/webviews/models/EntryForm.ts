@@ -21,6 +21,12 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
     {propName: 'categorie_id', type: String, required: false, fieldType: 'text'},
     {propName: 'definition', type: String, required: false, fieldType: 'textarea'}
   ];
+  // Table des raccourcis 'one key' propre au formulaire
+  tableKeys = {
+    // <touche>: <fonction bindée>, par exemple
+    // 'i': this.showInfo.bind(this)
+  };
+
   static readonly REG_SHORT_DEF = /\b(cf\.|voir|synonyme|contraire)\b/;
   static readonly REGEX_APPELS_ENTRIES = new RegExp(`(?:${Object.keys(Constants.MARK_ENTRIES).join('|')})\\(([^)]+)\\)`, "g");
   static readonly REG_OEUVRES = /\boeuvre\(([^)]+)\)/g;
