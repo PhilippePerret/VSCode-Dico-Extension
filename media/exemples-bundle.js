@@ -174,6 +174,7 @@
       this.panel = panel;
       this.klass = klass;
       this.mode = "null";
+      this.form = this.panel.form;
       this.root.addEventListener("keydown", this.universelKeyboardCapture.bind(this), true);
       this.root.addEventListener("keydown", this.onKeyDown.bind(this));
       this._keylistener = this.onKeyDownModeNull.bind(this);
@@ -197,6 +198,7 @@
     get mode() {
       return this._mode;
     }
+    form;
     setMode(mode) {
       this.mode = mode;
     }
@@ -357,7 +359,7 @@
     // Mode clavier pour le formulaire
     onKeyDownModeForm(ev) {
       console.log("-> onKeyDownModeForm");
-      if (this.panel.form.saving === true) {
+      if (this.form.saving === true) {
         return;
       }
       if (ev.metaKey) {
@@ -365,36 +367,44 @@
       }
       switch (ev.key) {
         case "a":
-          this.panel.form.focusField(1);
-          return stopEvent(ev);
+          this.form.focusField(1);
+          break;
         case "b":
-          this.panel.form.focusField(2);
-          return stopEvent(ev);
+          this.form.focusField(2);
+          break;
         case "c":
-          this.panel.form.focusField(3);
-          return stopEvent(ev);
+          this.form.focusField(3);
+          break;
         case "d":
-          this.panel.form.focusField(4);
-          return stopEvent(ev);
+          this.form.focusField(4);
+          break;
         case "e":
-          this.panel.form.focusField(5);
-          return stopEvent(ev);
+          this.form.focusField(5);
+          break;
         case "f":
-          this.panel.form.focusField(6);
-          return stopEvent(ev);
+          this.form.focusField(6);
+          break;
+        case "g":
+          this.form.focusField(7);
+          break;
         case "l":
-          this.panel.form.toggleIdLock();
-          return stopEvent(ev);
+          this.form.toggleIdLock();
+          break;
         case "s":
-          this.panel.form.saveItem(false);
-          return stopEvent(ev);
+          this.form.saveItem(false);
+          break;
         case "w":
-          this.panel.form.saveItem(true);
-          return stopEvent(ev);
+          this.form.saveItem(true);
+          break;
         case "q":
-          this.panel.form.cancelEdit();
-          return stopEvent(ev);
+          this.form.cancelEdit();
+          break;
+        default:
+          if (this.form.tableKeys[ev.key]) {
+            this.form.tableKeys[ev.key].call(null);
+          }
       }
+      return stopEvent(ev);
     }
     onKeyDownModeNull(ev) {
       console.error("Il faut activer un mode de clavier");
@@ -1241,6 +1251,7 @@
 
   // src/webviews/services/FormManager.ts
   var FormManager = class {
+    // table des raccourcis propres
     tablePropertiesByPropName;
     isNewItem;
     // Fonction pour sauver (appelée quand on sauve la donnée)
@@ -1509,6 +1520,11 @@
     }
     // Observation du formulaire
     __observeForm() {
+      this.obj.querySelectorAll('text[type="text"]').forEach((o) => {
+        o.addEventListener("focus", (ev) => {
+          o.select();
+        });
+      });
       this.panel.keyManager.discrimineFieldsForModeIn(this.obj, { edit: "edit", normal: "form" });
     }
     focusField(indice) {
@@ -1611,6 +1627,11 @@
     formId = "exemple-form";
     prefix = "exemple";
     properties = [];
+    // Table des raccourcis 'one key' propre au formulaire
+    tableKeys = {
+      // <touche>: <fonction bindée>, par exemple
+      // 'i': this.showInfo.bind(this)
+    };
     async checkItem(item) {
       return "Les donn\xE9es ne sont pas check\xE9s";
     }

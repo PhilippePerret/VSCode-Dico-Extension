@@ -322,6 +322,7 @@
       this.panel = panel;
       this.klass = klass;
       this.mode = "null";
+      this.form = this.panel.form;
       this.root.addEventListener("keydown", this.universelKeyboardCapture.bind(this), true);
       this.root.addEventListener("keydown", this.onKeyDown.bind(this));
       this._keylistener = this.onKeyDownModeNull.bind(this);
@@ -345,6 +346,7 @@
     get mode() {
       return this._mode;
     }
+    form;
     setMode(mode) {
       this.mode = mode;
     }
@@ -505,7 +507,7 @@
     // Mode clavier pour le formulaire
     onKeyDownModeForm(ev) {
       console.log("-> onKeyDownModeForm");
-      if (this.panel.form.saving === true) {
+      if (this.form.saving === true) {
         return;
       }
       if (ev.metaKey) {
@@ -513,36 +515,44 @@
       }
       switch (ev.key) {
         case "a":
-          this.panel.form.focusField(1);
-          return stopEvent(ev);
+          this.form.focusField(1);
+          break;
         case "b":
-          this.panel.form.focusField(2);
-          return stopEvent(ev);
+          this.form.focusField(2);
+          break;
         case "c":
-          this.panel.form.focusField(3);
-          return stopEvent(ev);
+          this.form.focusField(3);
+          break;
         case "d":
-          this.panel.form.focusField(4);
-          return stopEvent(ev);
+          this.form.focusField(4);
+          break;
         case "e":
-          this.panel.form.focusField(5);
-          return stopEvent(ev);
+          this.form.focusField(5);
+          break;
         case "f":
-          this.panel.form.focusField(6);
-          return stopEvent(ev);
+          this.form.focusField(6);
+          break;
+        case "g":
+          this.form.focusField(7);
+          break;
         case "l":
-          this.panel.form.toggleIdLock();
-          return stopEvent(ev);
+          this.form.toggleIdLock();
+          break;
         case "s":
-          this.panel.form.saveItem(false);
-          return stopEvent(ev);
+          this.form.saveItem(false);
+          break;
         case "w":
-          this.panel.form.saveItem(true);
-          return stopEvent(ev);
+          this.form.saveItem(true);
+          break;
         case "q":
-          this.panel.form.cancelEdit();
-          return stopEvent(ev);
+          this.form.cancelEdit();
+          break;
+        default:
+          if (this.form.tableKeys[ev.key]) {
+            this.form.tableKeys[ev.key].call(null);
+          }
       }
+      return stopEvent(ev);
     }
     onKeyDownModeNull(ev) {
       console.error("Il faut activer un mode de clavier");
@@ -1276,6 +1286,7 @@
 
   // src/webviews/services/FormManager.ts
   var FormManager = class {
+    // table des raccourcis propres
     tablePropertiesByPropName;
     isNewItem;
     // Fonction pour sauver (appelée quand on sauve la donnée)
@@ -1544,6 +1555,11 @@
     }
     // Observation du formulaire
     __observeForm() {
+      this.obj.querySelectorAll('text[type="text"]').forEach((o) => {
+        o.addEventListener("focus", (ev) => {
+          o.select();
+        });
+      });
       this.panel.keyManager.discrimineFieldsForModeIn(this.obj, { edit: "edit", normal: "form" });
     }
     focusField(indice) {
@@ -1645,32 +1661,63 @@
   var TMDB = class {
     /**
      * @api
-     * Récupère et retourne les informations du film de titre +titre+
+     * Récupère et retourne les informations des films de titre +titre+
      * 
      * @param titre Le titre du film dont il faut avoir les informations. Plus tard, on verra si on peut avoir plusieurs films d'un coup.
      * @returns 
      */
-    static async getInfoFilm(titre) {
-      const dataProv = await this.getMovieInfo(titre);
-      console.log("Infos de film r\xE9cup\xE9r\xE9es !", dataProv);
-      const dataFilm = {
-        tmdbId: null,
-        titre_original: null,
-        titre_francais: null,
-        annee: null
-      };
-      return dataFilm;
-    }
-    // Usage combiné : rechercher puis récupérer les détails
-    static async getMovieInfo(title) {
-      const searchResults = await this.searchMovie(title);
-      if (searchResults.length > 0) {
-        const movieId = searchResults[0].id;
-        const movieDetails = await this.getMovieDetails(movieId);
-        const movieCredits = await this.getMovieCredits(movieId);
-        return Object.assign(movieDetails, movieCredits);
+    static async getInfoFilm(titre, options = void 0) {
+      let searchResults = await this.searchMovie(titre);
+      searchResults = searchResults.map((result) => {
+        return {
+          id: result.id,
+          annee: Number(result.release_date.substring(0, 4)),
+          langue: result.original_language,
+          title_original: result.original_title,
+          resume: result.overview
+        };
+      });
+      if (searchResults.length > 5) {
+        if (options) {
+          if (void 0 !== options.annee) {
+            options.annee = Number(options.annee);
+            var oneMovieMatchsYear = false;
+            searchResults = searchResults.map((result) => {
+              if (oneMovieMatchsYear) {
+                return result;
+              }
+              if (options.annee && result.annee === options.annee) {
+                oneMovieMatchsYear = true;
+              }
+              return result;
+            }).filter((result) => {
+              if (oneMovieMatchsYear) {
+                return result.annee === options.annee;
+              } else {
+                return result.annee < options.annee + 5 && result.annee > options.annee - 5;
+              }
+            });
+          }
+          if (options.langue) {
+            searchResults = searchResults.filter((result) => result.langue === options.langue);
+          }
+        }
+        if (searchResults > 5) {
+          searchResults = searchResults.map((result) => {
+          });
+        }
       }
-      return null;
+      return searchResults.map(async (result) => {
+        const movieId = result.id;
+        const details = await this.getMovieDetails(movieId);
+        const credits = await this.getMovieDetails(movieId);
+        return Object.assign(result, {
+          idmbId: details.imdb_id,
+          pays: details.original_country.join(", "),
+          director: credits.director,
+          auteurs: [credits.director].push(...credits.writers.map((a) => `${a}[?]`))
+        });
+      }).filter((dFilm) => dFilm !== null);
     }
     static _TMDBSecrets;
     static get TMDB_READING_API_TOKEN() {
@@ -1750,6 +1797,13 @@
       { propName: "resume", type: String, required: false, fieldType: "textarea" },
       { propName: "notes", type: String, required: false, fieldType: "textarea" }
     ];
+    // Table des raccourcis 'one key' propre au formulaire 
+    tableKeys = {
+      i: this.getOeuvreExternInfo.bind(this)
+    };
+    getOeuvreExternInfo() {
+      this.flash("Je dois apprendre \xE0 charger les infos du film", "error");
+    }
     static REG_AUTEUR = /([^ ]+) ([^\[])\[(H|F)\]/;
     afterEdit() {
       const id = this.getValueOf("id");
@@ -1807,7 +1861,7 @@
       }
     }
     observeForm() {
-      const btnTMDB = this.obj.querySelector("button.btn-tmdb-get-infos");
+      const btnTMDB = this.obj.querySelector(".btn-get-infos");
       btnTMDB?.addEventListener("click", this.onClickGetTMDBInfos.bind(this));
     }
     async onClickGetTMDBInfos(ev) {

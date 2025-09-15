@@ -5,14 +5,22 @@ button.simple {
 	border: none;
 	background-color: inherit;
 }
+/* Pour styliser un raccourci clavier */
 shortcut {
 	font-family: Arial, Helvetica, sans-serif;
 	font-weight: bold;
-	font-size: 8pt;    
+	font-size: 8pt;
 	border: 1px solid;
 	padding: 0px 4px 2px;
 	border-radius: 3px;
-	}
+	max-width: 8px !important;
+	min-width: 8px !important;
+	max-height: 13px !important;
+	min-height: 13px !important;
+	text-align: center;
+	padding-top: 1px;
+	padding-bottom: 1.6px;
+}
 	/* Dans les formulaires (a, b, c, etc. */
 	form label shortcut {
 		float: right;

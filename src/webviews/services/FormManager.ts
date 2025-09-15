@@ -29,6 +29,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   abstract formId: string; // Identifiant unique du formulaire
   abstract prefix: string; // utilisé pour nommer les champs
   abstract properties: FormProperty[];
+  abstract tableKeys: {[x: string]: Function}; // table des raccourcis propres
   private tablePropertiesByPropName!: Map<string, FormProperty>;
   public isNewItem!: boolean; //
   abstract afterEdit(): void; // à faire après l'édition d'un élément
@@ -317,10 +318,11 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   }
   // Observation du formulaire
   __observeForm() { 
-    // De façon générale, quand on focus dans le formulaire, on
-    // active soit le mode FORM soit le mode EDIT
-    // @OBSOLETE Ça ramène toujours au mode form, quoi qu'on fasse
-    // this.obj.addEventListener('focusin', this.__onFocusOnForm.bind(this));
+    // On sélectionne toujours le contenu d'un champ (sauf textarea)
+    this.obj.querySelectorAll('text[type="text"]').forEach(o => {
+      o.addEventListener('focus', (ev) => { (o as HTMLInputElement).select(); });
+    });
+
     // On règle le changement de mode suivant qu'on focusse dans un
     // champ éditable ou qu'on en blure
     (this.panel as PanelClient<any, any>).keyManager.discrimineFieldsForModeIn(this.obj, {edit: 'edit', normal: 'form'});

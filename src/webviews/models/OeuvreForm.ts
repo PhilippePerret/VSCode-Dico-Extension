@@ -106,7 +106,7 @@ export class OeuvreForm extends FormManager<typeof Oeuvre, FOeuvre> {
   }
 
   observeForm(): void {
-    const btnTMDB = this.obj.querySelector('button.btn-tmdb-get-infos');
+    const btnTMDB = this.obj.querySelector('.btn-get-infos');
     btnTMDB?.addEventListener('click', this.onClickGetTMDBInfos.bind(this));
   }
 
