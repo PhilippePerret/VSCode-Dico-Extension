@@ -65,13 +65,13 @@ export abstract class FormManager<C, T extends ConcreteElement> {
    */
   public editItem(item: T): void {
     // console.log("Édition de l'item", item);
+    this.panel.context = item.data.id === '' ? 'create-element' : 'edit-element';
     this.originalData = item.data;
     this.isNewItem = !item.data.id;
     this.openForm();
     this.dispatchValues(item.data);
     if ( 'function' === typeof this.afterEdit ) { this.afterEdit.call(this); }
     this.setMode('form');
-    this.panel.context = item.data.id === '' ? 'create-element' : 'edit-element';
   }
 
   public async saveItem(andQuit: boolean): Promise<void> {

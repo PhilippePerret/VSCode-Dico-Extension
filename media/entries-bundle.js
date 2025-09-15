@@ -674,14 +674,40 @@
       **e**: (comme "\xE9diter") pour modifier l'\xE9l\xE9ment s\xE9lectionn\xE9.
       
       \xC0 tout moment, taper **?** pour afficher l'aide contextuelle.`,
+        // Crétation d'un élément
         "create-element": `
       ## Cr\xE9ation d'un \xE9l\xE9ment
       
       Vous pouvez vous d\xE9placer de champ en champ avec les touches <shortcut>a</shortcut>, <shortcut>b</shortcut>, etc. ou la touche tabulation.`,
+        // Création d'une œuvre
+        "create-oeuvre": `
+      ## Cr\xE9ation d'une \u0153uvre
+
+      Jouer la touche <shortcut>n</shortcut> pour cr\xE9er le nouvel \xE9l\xE9ment.
+
+      Une fois le titre rentr\xE9, gr\xE2ce \xE0 la touche <shortcut>i</shortcut>, vous pouvez obtenir les infos qu'on peut trouver sur le net. En pr\xE9cisant l'ann\xE9e (approximative), la langue et/ou le pays, vous pouvez \xEAtre presque certain de trouver l'\u0153uvre du premier coup.
+
+      L'ann\xE9e (approximative \xE0 10 ans pr\xE8s) se met dans le champs d\xE9die, la langue et le pays peuvent s'indiquer dans le champs 'notes' sous la forme JSON. Par exemple <code>{"langue": "en", "pays": "us"}</code>.
+
+      Ensuite, TMDB renvoie la liste de toutes les \u0153uvres correspondantes qu'il a trouv\xE9 et les passe en revue pour choisir laquelle garder. \xC7a se fait en deux temps\xA0:
+
+      - rel\xE8ve de toutes les \u0153uvres, d'un coup, avec infos minimales,
+      - on fait un tri par rapport \xE0 celles-ci,
+      - TMDB rel\xE8ve les informations compl\xE8tes (principalement les cr\xE9dits),
+      - On choisit celle qui correspond vraiment.
+
+      `,
+        // ÉDITION d'un élément
         "edit-element": `
       ## \xC9dition d'un \xE9l\xE9ment
       
-      Vous pouvez aller de champ en champ avec les touches etc.`
+      Vous pouvez aller de champ en champ avec les touches etc.`,
+        // ÉDITION D'UNE OEUVRE
+        "edit-oeuve": `
+      ## \xC9dition d'une \u0153uvre
+
+      D\xE9placez-vous de champ en champ avec la touche tabulation ou en jouant les lettres en regard des champs.
+      `
       };
     }
     /**
@@ -1384,6 +1410,7 @@
      * @param item Objet Entry, Oeuvre ou Exemple à éditer/créer
      */
     editItem(item) {
+      this.panel.context = item.data.id === "" ? "create-element" : "edit-element";
       this.originalData = item.data;
       this.isNewItem = !item.data.id;
       this.openForm();
@@ -1392,7 +1419,6 @@
         this.afterEdit.call(this);
       }
       this.setMode("form");
-      this.panel.context = item.data.id === "" ? "create-element" : "edit-element";
     }
     async saveItem(andQuit) {
       const res = await this.itemIsNotSavable();

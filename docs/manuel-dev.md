@@ -89,7 +89,9 @@ RpcEntry.on('check-oeuvre-resultat', (params) => {
 
 Une aide contextuelle permet d'afficher des messages d'aide au milieu du panneau. Ils sont activités en appelant la méthode `Help.activateContextualHelp()` qui se sert de la propriété `context` du panneau pour savoir quelle aide afficher.
 
-Toutes les aides sont définies dans le module `HelpManager`.
+Toutes les aides sont définies dans le module `webviews/services/HelpManager`.
+
+Par exemple, si l’on est dans le formulaire, on peut faire `this.panel.context='mon-context-particulier'`.  La propriété `Help.CHELPS` devra alors définir une clé 'mon-context-particulier' définissant l'aide particulière.
 
 Chaque fois que le panneau passe dans un état, il définit son `context`, permettant à l'aide de savoir ce qu'il faut afficher en cas de demande d'aide. Cette aide est affichée à l'ouverture du premier panneau, pour afficher l'aide du contexte `start`.
 

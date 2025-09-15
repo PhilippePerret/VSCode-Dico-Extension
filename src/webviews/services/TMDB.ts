@@ -5,6 +5,7 @@
  */
 
 import { RpcOeuvre } from "../models/Oeuvre";
+import { stopEvent } from "./DomUtils";
 import { FormManager } from "./FormManager";
 
 export interface FilmType {
@@ -88,7 +89,7 @@ export class TMDB {
     if (searchResults.length === 1) {
       this.peupleFormWithOeuvre(searchResults[0]);
     } else {
-      this.chooseFinalOeuvre(searchResults);
+      this.chooseFinalOeuvre({oeuvres: searchResults, ioeuvre: 0});
     }
   }
 
@@ -114,7 +115,7 @@ export class TMDB {
       this.form.panel.flashAction("Que dois-je faire de cette œuvre ?", map);
     } else {
       // Quand il n'y a plus d'œuvres
-      this.chooseFinalOeuvre(params.kept);
+      this.chooseFinalOeuvre({oeuvres: params.kept, ioeuvre: 0});
     }
   }
 
@@ -123,7 +124,7 @@ export class TMDB {
   // possible).
   public static onEndPickupOeuvres(params: any) {
     if (params.kept.length /* <= si des œuvres ont été gardées */) {
-      this.chooseFinalOeuvre(params.kept);
+      this.chooseFinalOeuvre({oeuvres: params.kept, ioeuvre: 0});
     }
   }
 
@@ -156,19 +157,23 @@ export class TMDB {
   
   // Fonction pour choisir l'œuvre finale parmi les œuvres trouvées,
   // quand il en reste plusieurs en lice.
-  static chooseFinalOeuvre(searchResults: any[]){
-    const dataOeuvre = searchResults.pop();
-    if ( dataOeuvre) {
-      // il en reste
-      this.peupleFormWithOeuvre(dataOeuvre);
-      const map = new Map();
-      map.set('o', ['Prendre cette œuvre', this.onChooseFinalOeuvre.bind(this)]);
-      map.set('n', ['Suivante', this.chooseFinalOeuvre.bind(this, searchResults)]);
-      this.form.panel.flashAction("Est-ce cette œuvre-là ?", map);
-    } else {
-      // Il ne reste plus d'œuvre
-      this.form.panel.flash('Il n’y a pas d’autres œuvres, désolé…', 'error');
+  static chooseFinalOeuvre(params: { oeuvres: any[], ioeuvre: number }) {
+    if (params.ioeuvre >= params.oeuvres.length - 1) {
+      this.form.panel.flash('On reprend…', 'notice');
+      params.ioeuvre = 0;
     }
+    const dataOeuvre = params.oeuvres[params.ioeuvre];
+    this.peupleFormWithOeuvre(dataOeuvre);
+    const map = new Map();
+    map.set('o', ['Prendre cette œuvre', this.onChooseFinalOeuvre.bind(this)]);
+    map.set('n', ['Suivante', this.chooseFinalOeuvre.bind(this, params)]);
+    map.set('q', ['Finir', this.onStop.bind(this)]);
+    this.form.panel.flashAction("Est-ce cette œuvre-là ?", map);
+  }
+
+  // Pour s'arrêter sans rien faire
+  public static onStop(ev: Event){
+    stopEvent(ev);
   }
   
   public static onChooseFinalOeuvre(){

@@ -34,6 +34,7 @@ export class OeuvreForm extends FormManager<typeof Oeuvre, FOeuvre> {
     const id = this.getValueOf('id');
     const isNew = id === '';
     this.setIdLock(!isNew);
+    this.panel.context = isNew ? 'create-oeuvre' : 'edit-oeuvre';
   }
 
   async checkItem(item: FOeuvre): Promise<string | undefined> {

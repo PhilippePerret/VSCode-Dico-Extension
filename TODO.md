@@ -6,6 +6,8 @@
 * POURSUIVRE AVEC : 
 
   - Implémentation du formulaire pour les oeuvres
+    - ajouter "{director: "xxxx"} dans les infos/notes de l'œuvre
+    - vérifier que les autres infos (une fois toutes les infos rassemblées) soient bien affichées
     - vérifier que le type d'œuvre soit bien enregistrée
     - Implémenter la recherche dans wikipédia aussi, quand le film n'est pas trouvé
     - recherche des informations sur TMDB
