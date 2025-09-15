@@ -62,8 +62,11 @@ export class PanelClient<T extends Tplus, C> {
         realButtons.set(lettre, fonction);
       });
       console.log("outils", outils);
-      // On écrit dans le pied de page
-      this.footer.innerHTML = outils.join('&nbsp;&nbsp;');
+      // On écrit les raccourcis dans le pied de page
+      const o = document.createElement('div');
+      o.id = 'shortcuts';
+      o.innerHTML = outils.join('&nbsp;&nbsp;');
+      this.footer.appendChild(o); 
     } 
     // On donne les boutons au manager de clavier
     this.keyManager.keyboardBypass = realButtons;
@@ -92,8 +95,8 @@ export class PanelClient<T extends Tplus, C> {
     msgbox.innerHTML = '';
     msgbox.style.zIndex = '-1';
   }
-  public cleanFooter(){
-    this.footer.innerHTML = '';
+  public cleanFooterShortcuts(){
+    (this.footer.querySelector('div.shortcuts') as HTMLElement).innerHTML = '';
   }
 
   public activateContextualHelp() {

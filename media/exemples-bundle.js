@@ -264,7 +264,7 @@
           const methodBypass = this.keyboardBypass.get(ev.key);
           delete this.keyboardBypass;
           this.panel.cleanFlash();
-          this.panel.cleanFooter();
+          this.panel.cleanFooterShortcuts();
           methodBypass();
         }
         return stopEvent(ev);
@@ -1097,7 +1097,10 @@
           realButtons.set(lettre, fonction);
         });
         console.log("outils", outils);
-        this.footer.innerHTML = outils.join("&nbsp;&nbsp;");
+        const o = document.createElement("div");
+        o.id = "shortcuts";
+        o.innerHTML = outils.join("&nbsp;&nbsp;");
+        this.footer.appendChild(o);
       }
       this.keyManager.keyboardBypass = realButtons;
     }
@@ -1123,8 +1126,8 @@
       msgbox.innerHTML = "";
       msgbox.style.zIndex = "-1";
     }
-    cleanFooter() {
-      this.footer.innerHTML = "";
+    cleanFooterShortcuts() {
+      this.footer.querySelector("div.shortcuts").innerHTML = "";
     }
     activateContextualHelp() {
       this.help.activateContextualHelp();

@@ -84,12 +84,12 @@ export class TMDB {
     }
 
     console.log("Il y a moins de 5 résultats, je prends toutes les infos", searchResults);
-    searchResults = this.getAllInfos(searchResults);
-    console.log("Toutes les informations", searchResults);
-    if (searchResults.length === 1) {
-      this.peupleFormWithOeuvre(searchResults[0]);
+    // On récupère toutes les informations
+    const oeuvres = searchResults.map((dataOeuvre: {[x: string]: any}) => this.getAllInfos(dataOeuvre));
+    if (oeuvres.length === 1) {
+      this.peupleFormWithOeuvre(oeuvres[0]);
     } else {
-      this.chooseFinalOeuvre({oeuvres: searchResults, ioeuvre: 0});
+      this.chooseFinalOeuvre({oeuvres: oeuvres, ioeuvre: 0});
     }
   }
 
@@ -185,7 +185,7 @@ export class TMDB {
   public static onChooseFinalOeuvre(){
     // En fait, il n'y a rien à faire puisqu'elle est déjà affichée dans le
     // formulaire
-    this.form.panel.flash("Œuvre choisie, tu peux la compléter avant de l'enregistrer", 'notice');
+    this.form.panel.flash("Œuvre choisie, tu peux la compléter avant de l'enregistrer.", 'notice');
   }
 
   private static async getAllInfos(dOeuvre: {[x: string]: any}): Promise<{[x: string]: any}> {

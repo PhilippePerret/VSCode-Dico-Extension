@@ -132,7 +132,7 @@ export class VimLikeManager {
         // faut effacer avant. Vérifier si dans d'autres cas, c'est
         // le contraire et voir comment on peut faire.
         this.panel.cleanFlash();
-        this.panel.cleanFooter(); // Les raccourcis ont pu y être affichés
+        this.panel.cleanFooterShortcuts(); // Les raccourcis ont pu y être affichés
         methodBypass(); 
       }
       // Dans tous les cas on bloque la touche et on supprime le

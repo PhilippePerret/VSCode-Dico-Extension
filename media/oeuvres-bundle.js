@@ -438,7 +438,7 @@
           const methodBypass = this.keyboardBypass.get(ev.key);
           delete this.keyboardBypass;
           this.panel.cleanFlash();
-          this.panel.cleanFooter();
+          this.panel.cleanFooterShortcuts();
           methodBypass();
         }
         return stopEvent(ev);
@@ -650,7 +650,10 @@
           realButtons.set(lettre, fonction);
         });
         console.log("outils", outils);
-        this.footer.innerHTML = outils.join("&nbsp;&nbsp;");
+        const o = document.createElement("div");
+        o.id = "shortcuts";
+        o.innerHTML = outils.join("&nbsp;&nbsp;");
+        this.footer.appendChild(o);
       }
       this.keyManager.keyboardBypass = realButtons;
     }
@@ -676,8 +679,8 @@
       msgbox.innerHTML = "";
       msgbox.style.zIndex = "-1";
     }
-    cleanFooter() {
-      this.footer.innerHTML = "";
+    cleanFooterShortcuts() {
+      this.footer.querySelector("div.shortcuts").innerHTML = "";
     }
     activateContextualHelp() {
       this.help.activateContextualHelp();
@@ -1782,12 +1785,11 @@
         }
       }
       console.log("Il y a moins de 5 r\xE9sultats, je prends toutes les infos", searchResults);
-      searchResults = this.getAllInfos(searchResults);
-      console.log("Toutes les informations", searchResults);
-      if (searchResults.length === 1) {
-        this.peupleFormWithOeuvre(searchResults[0]);
+      const oeuvres = searchResults.map((dataOeuvre) => this.getAllInfos(dataOeuvre));
+      if (oeuvres.length === 1) {
+        this.peupleFormWithOeuvre(oeuvres[0]);
       } else {
-        this.chooseFinalOeuvre({ oeuvres: searchResults, ioeuvre: 0 });
+        this.chooseFinalOeuvre({ oeuvres, ioeuvre: 0 });
       }
     }
     /**
@@ -1875,7 +1877,7 @@
       stopEvent(ev);
     }
     static onChooseFinalOeuvre() {
-      this.form.panel.flash("\u0152uvre choisie, tu peux la compl\xE9ter avant de l'enregistrer", "notice");
+      this.form.panel.flash("\u0152uvre choisie, tu peux la compl\xE9ter avant de l'enregistrer.", "notice");
     }
     static async getAllInfos(dOeuvre) {
       const movieId = dOeuvre.id;
