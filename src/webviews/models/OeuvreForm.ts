@@ -28,10 +28,6 @@ export class OeuvreForm extends FormManager<typeof Oeuvre, FOeuvre> {
     i: this.getOeuvreExternInfo.bind(this)
   };
 
-  getOeuvreExternInfo(){
-    this.flash('Je dois apprendre à charger les infos du film', 'error');
-  }
-
   static readonly REG_AUTEUR = /([^ ]+) ([^\[])\[(H|F)\]/;
 
   afterEdit(): void {
@@ -107,19 +103,22 @@ export class OeuvreForm extends FormManager<typeof Oeuvre, FOeuvre> {
 
   observeForm(): void {
     const btnTMDB = this.obj.querySelector('.btn-get-infos');
-    btnTMDB?.addEventListener('click', this.onClickGetTMDBInfos.bind(this));
+    btnTMDB?.addEventListener('click', this.getOeuvreExternInfo.bind(this));
   }
 
-  async onClickGetTMDBInfos(ev: Event){
+  async getOeuvreExternInfo(ev: Event){
     const titre = ((this.getValueOf('titre_original') || this.getValueOf('titre_affiche')) as string).trim();
     if (titre === '') {
-      this.flash('Il faut indiquer le titre !', 'error');
+      this.flash('Il faut indiquer le titre de l’œuvre !', 'error');
     } else {
       this.flash('Je récupère les informations du film ' + titre + '…');
-      const infos = await TMDB.getInfoFilm(titre);
+      const options = {langue: undefined, annee: undefined};
+      if ( this.getValueOf('annee') !== '') { Object.assign(options, {annee: Number(this.getValueOf('annee'))});}
+      const infos = await TMDB.getInfoFilm(titre, options, this);
     }
+    ev && stopEvent(ev);
   }
-  
+ 
   onChangeAuteurs(ev: Event | undefined = undefined) {
     let auteurs: string | string[] = (this.getValueOf('auteurs') as string).trim();
     if ( auteurs !== '') {

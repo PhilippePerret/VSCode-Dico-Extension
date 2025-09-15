@@ -1,5 +1,8 @@
 # Manuel développement
 
+[TOC]
+
+
 
 ## Communication RPC inter-panneau
 
@@ -100,20 +103,22 @@ Pour afficher un message, utiliser `<PanelClient>.flash(<message>, type)`.
 
 Les types sont `notice`, `warn`, `error`ou le type spécial [`action`](#message-action).
 
+Il existe, normalement, dans les panneaux, un raccourci pour utiliser directement `this.flash`.
+
 <a name="message-action"></a>
 
-### Messagegie avec action demandée
+### Messagerie avec action demandée
 
 ~~~javascript
 // Map Court-circuit
 const mapCC = new Map();
 mapCC.set('n', this.annulation.bind(this));
 mapCC.set('y', this.continue.bind(this));
+const message = '<shortcut>n<shortcut> pour annuler et \
+	<shortcut>y</shortcut> pour continuer';
 this.panel.flashAction(message, mapCourtCircuit);
 ~~~
 
-Le système de "message avec action demandée" est un système qui affiche un message et demande d'activer une touche pour choisir l'opération à affectuer (ou confirmer une action à faire).
+Le système de « message avec action demandée » est un système qui affiche un message et demande d'activer une touche pour choisir l'opération à affectuer (ou confirmer une action à faire).
 
 Ce système utilise la capacité de `VimLikeManager.unverselKeyboardCapture` à capturer toutes les touches clavier avant tous les autres éléments. Quand un coupe-circuit est défini (`VimLikeManager.keyboardBypass`), cette méthode interrompt toute autre touche que celles attendues (p.e. 'n' et 'y' dans l'exemple ci-dessus).
-
-Les méthodes `flash` sont quant à elles définies dans le `PanelClient`.

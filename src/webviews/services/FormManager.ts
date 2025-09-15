@@ -38,7 +38,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   onCancel?(): void; // Fonction appelée en cas d'annulation
   abstract observeForm(): void; // fonction d'observation propre du formulaire
   onFocusForm?(ev: FocusEvent): any;
-  private panel!: PanelClient<any, any>; // le panneau contenant le formulaire
+  public panel!: PanelClient<any, any>; // le panneau contenant le formulaire
   private originalData!: {[x: string]: any};
   public saving: boolean = false;
 
@@ -75,9 +75,9 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   }
 
   public async saveItem(andQuit: boolean): Promise<void> {
-    const map = new Map();
     const res = await this.itemIsNotSavable();
     if (res) { return ;}
+    const map = new Map();
     map.set('o', this.onConfirmSave.bind(this, andQuit));
     map.set('n', this.cancelEdit.bind(this));
     this.panel.flashAction(

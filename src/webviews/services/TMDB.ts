@@ -6,6 +6,7 @@
 
 import { resourceLimits } from "worker_threads";
 import { RpcOeuvre } from "../models/Oeuvre";
+import { FormManager } from "./FormManager";
 
 export interface FilmType {
   tmdbId: string;
@@ -16,6 +17,8 @@ export interface FilmType {
 
 export class TMDB {
 
+  private static form: FormManager<any, any>;
+
   /**
    * @api
    * Récupère et retourne les informations des films de titre +titre+
@@ -25,8 +28,10 @@ export class TMDB {
    */
   public static async getInfoFilm(
     titre: string,
-    options: { annee: number | undefined, langue: string | undefined, [x: string]: any } | undefined = undefined
-  ): Promise<FilmType[]> {
+    options: { annee: number | undefined, langue: string | undefined, [x: string]: any } | undefined = undefined,
+    form: FormManager<any, any>
+  ): Promise<void> {
+    this.form = form;
     let searchResults = await this.searchMovie(titre);
     // On prépare les données (surtout dans le cas d'un filtrage
     // nécessaire)
@@ -41,10 +46,6 @@ export class TMDB {
     });
 
     if (searchResults.length > 5) {
-      // TODO Demander quels films garder (5 au maximum)
-      // original_language ("en", "fr", "co", "ja" etc.)
-      // release_date.substring(0,4) => année
-      // overview (résumé)
       if (options) {
         if (undefined !== options.annee) { 
           options.annee = Number(options.annee); 
@@ -73,16 +74,67 @@ export class TMDB {
         }
       }
       if (searchResults > 5) {
-      // On passe en revue chaque film en demandant s'il faut le
-        // conserver.
-        // TODO On affiche un message "Je vais te présenter les films
-        // les uns après les autres, et tu vas choisir ceux ou celui
-        // qui est susceptible d'être celui que tu cherches"
-        searchResults = searchResults.map( (result: any) => {
-
-        });
+        return this.selectFiveOeuvresMax({results: searchResults, kept: [], choosed: null});
       }
     }
+    searchResults = this.getAllInfos(searchResults);
+    if (searchResults.length === 1) {
+      this.peupleFormWithOeuvre(searchResults[0]);
+    } else {
+      this.chooseFinalOeuvre(searchResults);
+    }
+  }
+
+  /**
+   * Fonction permettant de choisir, parmi un (trop) grand nombre 
+   * d'œuvres préselectionnées celles dont il faut réellement relever
+   * les informations complètes pour choisir la bonne.
+   */
+  private static selectFiveOeuvresMax(params:{results: any[], kept: any[], choosed: any}) {
+    const oeuvreInfos = params.results.shift();
+    this.peupleFormWithOeuvre(oeuvreInfos);
+    const map = new Map();
+    map.set('o', this.onKeepOeuvreInfo.bind(this, oeuvreInfos, params));
+    map.set('n', this.selectFiveOeuvresMax.bind(this, params));
+    map.set('y', this.onChooseOeuvreInfo.bind(this, oeuvreInfos, params));
+  }
+  static onKeepOeuvreInfo(oeuvreInfos: {[x: string]: any}, params: any){
+    params.kept.push(oeuvreInfos);
+    this.selectFiveOeuvresMax(params);
+  }
+  // Méthode appelée quand on choisit l'œuvre comme la bonne
+  static onChooseOeuvreInfo(oeuvreInfo: any, params: any){
+    const oeuvreData = this.getAllInfos(oeuvreInfo);
+    this.peupleFormWithOeuvre(oeuvreData);
+    return true;
+  }
+
+  /**
+   * Affiche les données de l'œuvre dans le formulaire du panneau Oeuvres
+   * 
+   * @param oeuvreData Données complètes de l'œuvre
+   */
+  private static peupleFormWithOeuvre(oeuvreData: {[x: string]: any}) {
+    this.form.setValueOf('titre_original', oeuvreData.titre_original);
+    this.form.setValueOf('titre_affiche', oeuvreData.titre);
+    this.form.setValueOf('auteurs', oeuvreData.auteurs);
+    this.form.setValueOf('resume', oeuvreData.resume);
+    const infos = {langue: oeuvreData.langue, pays: oeuvreData.pays};
+    this.form.setValueOf('notes', JSON.stringify(infos));
+  }
+  
+  // Fonction pour choisir l'œuvre finale parmi les œuvres trouvées,
+  // forcément plusieur
+  static chooseFinalOeuvre(searchResults: any[]){
+    const dataOeuvre = searchResults.pop();
+    if ( dataOeuvre) {
+      // il en reste une
+    } else {
+      // Il ne reste plus d'œuvre
+      this.form.panel.flash('Il n’y a pas d’autres œuvres, désolé…', 'error');
+    }
+  }
+  static getAllInfos(searchResults: any[]){
     return searchResults.map( async (result: any) => {
       const movieId = result.id;
       const details = await this.getMovieDetails(movieId);
