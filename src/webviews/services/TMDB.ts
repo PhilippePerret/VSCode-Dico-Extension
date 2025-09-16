@@ -4,6 +4,7 @@
  *
  */
 
+import { stringify } from "querystring";
 import { RpcOeuvre } from "../models/Oeuvre";
 import { FlashMessageType } from "../PanelClient";
 import { stopEvent } from "./DomUtils";
@@ -296,14 +297,11 @@ export class TMDB {
     console.log("details", details);
     const credits = await this.getMovieCredits(movieId);
     console.log("credits", credits);
-    let auteurs = credits.writers;
-    auteurs.unshift(credits.director);
-    auteurs = auteurs.map((a: string) => `${a}[HF?]`).join(', ');
     return Object.assign(dOeuvre, {
       idmbId: details.imdb_id,
       pays: details.origin_country.join(', '),
-      director: `${credits.director}[HF?]`,
-      auteurs: auteurs
+      director: credits.director, 
+      auteurs: credits.auteurs 
     });
   }
 
@@ -364,15 +362,42 @@ export class TMDB {
     });
     const data = await response.json();
 
+
+    console.log("Information crédits complètes", data);
+
     // Filtrer les rôles qui t'intéressent
-    const director = data.crew.find((person: {[x: string]: any}) => person.job === 'Director');
-    const writers = data.crew.filter((person: {[x: string]: any}) => {
-      person.job === 'Writer' || person.job === 'Screenplay' || person.job === 'Story';
+    type CreditsType = {directors: string[], writers: string[], director: string | undefined, auteurs: string | undefined}
+    const credits: CreditsType = {
+      directors: [],
+      writers: [],
+      director: undefined,
+      auteurs: undefined
+    };
+    data.crew.forEach((person: {job: string, name: string, [x: string]: any}) => {
+      switch(person.job){
+        case 'Director':
+          credits.directors.push(person.name + MARK_UNKNOWN_GENRE); break;
+        case 'Writer':
+        case 'Co-Writer':
+        case 'Author':
+        case 'Adaptation':
+        case 'Screenplay':
+        case 'Story':
+        case 'Screenstory':
+        case 'Book':
+        case 'Novel':
+          credits.writers.push(person.name+MARK_UNKNOWN_GENRE); break;
+      }
     });
 
-    return {
-      director: director?.name,
-      writers: writers.map((w: {[x: string]: any}) => w.name)
-    };
+    const allauteurs = [];
+    allauteurs.push(...credits.directors);
+    allauteurs.push(...credits.writers);
+
+    credits.director = credits.directors.join(', ');
+    credits.auteurs = allauteurs.join(', '); 
+    return credits;
   }
 } // TMDB
+
+const MARK_UNKNOWN_GENRE = '[HF?]';

@@ -5,20 +5,10 @@
 
 * POURSUIVRE AVEC : 
 
-  * [BUG] Pourquoi diable les infos du film ne s'affichent pas, quand on passe par l'édition
-  * [BUG] Pourquoi on a beau faire 'n' (pour œuvre suivante) et c'est toujours la même qui s'affiche
-  * [BUG] Pourquoi n'y a-t-il pas Ariaga dans la liste des auteurs ?
-  * [BUG] Pourquoi n'y a-t-il que le réalisateur dans la liste des auteurs
-  * [BUG] Pourquoi n'y a-t-il pas d'infos ("{}" dans le champ notes)
-  * [BUG] Quand les infos sont vides (possible ?), ne rien mettre dans notes
   - Implémentation du formulaire pour les oeuvres
-    - ajouter "{director: "xxxx"} dans les infos/notes de l'œuvre
     - vérifier que les autres infos (une fois toutes les infos rassemblées) soient bien affichées
-    - vérifier que le type d'œuvre soit bien enregistrée
     - Implémenter la recherche dans wikipédia aussi, quand le film n'est pas trouvé
-    - recherche des informations sur TMDB
     - procédure d'actualisation dans accessTable 
-    - bouton pour forcer la recherche des informations sur TMDB
   - Enregistrement des entrées
     - [si update]
       - actualisation de l'affichage

@@ -1970,14 +1970,11 @@
       console.log("details", details);
       const credits = await this.getMovieCredits(movieId);
       console.log("credits", credits);
-      let auteurs = credits.writers;
-      auteurs.unshift(credits.director);
-      auteurs = auteurs.map((a) => `${a}[HF?]`).join(", ");
       return Object.assign(dOeuvre, {
         idmbId: details.imdb_id,
         pays: details.origin_country.join(", "),
-        director: `${credits.director}[HF?]`,
-        auteurs
+        director: credits.director,
+        auteurs: credits.auteurs
       });
     }
     static _TMDBSecrets;
@@ -2028,16 +2025,40 @@
         }
       });
       const data = await response.json();
-      const director = data.crew.find((person) => person.job === "Director");
-      const writers = data.crew.filter((person) => {
-        person.job === "Writer" || person.job === "Screenplay" || person.job === "Story";
-      });
-      return {
-        director: director?.name,
-        writers: writers.map((w) => w.name)
+      console.log("Information cr\xE9dits compl\xE8tes", data);
+      const credits = {
+        directors: [],
+        writers: [],
+        director: void 0,
+        auteurs: void 0
       };
+      data.crew.forEach((person) => {
+        switch (person.job) {
+          case "Director":
+            credits.directors.push(person.name + MARK_UNKNOWN_GENRE);
+            break;
+          case "Writer":
+          case "Co-Writer":
+          case "Author":
+          case "Adaptation":
+          case "Screenplay":
+          case "Story":
+          case "Screenstory":
+          case "Book":
+          case "Novel":
+            credits.writers.push(person.name + MARK_UNKNOWN_GENRE);
+            break;
+        }
+      });
+      const allauteurs = [];
+      allauteurs.push(...credits.directors);
+      allauteurs.push(...credits.writers);
+      credits.director = credits.directors.join(", ");
+      credits.auteurs = allauteurs.join(", ");
+      return credits;
     }
   };
+  var MARK_UNKNOWN_GENRE = "[HF?]";
 
   // src/webviews/models/OeuvreForm.ts
   var OeuvreForm = class extends FormManager {
