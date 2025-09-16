@@ -1,13 +1,10 @@
 # Todo list
 
 * J'EN SUIS À :
-  - FILTRAGE DES FILMS RELEVÉS
+  - Voir si l'enregistrement des oeuvres fonctionne (faire tout pour La Unidad)
 
 * POURSUIVRE AVEC : 
-
   - Implémentation du formulaire pour les oeuvres
-    - vérifier que les autres infos (une fois toutes les infos rassemblées) soient bien affichées
-    - Implémenter la recherche dans wikipédia aussi, quand le film n'est pas trouvé
     - procédure d'actualisation dans accessTable 
   - Enregistrement des entrées
     - [si update]

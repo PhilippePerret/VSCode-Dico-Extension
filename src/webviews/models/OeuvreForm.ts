@@ -19,7 +19,7 @@ export class OeuvreForm extends FormManager<typeof Oeuvre, FOeuvre> {
     {propName: 'titre_original', type: String, required: true, fieldType: 'text', onChange: this.onChangeTitreOriginal.bind(this)},
     {propName: 'titre_francais', type: String, required: false, fieldType: 'text'},
     {propName: 'auteurs', type: String, required: true, fieldType: 'text', onChange: this.onChangeAuteurs.bind(this)},
-    {propName: 'type', type: String, required: true, fieldType: 'select', values: [['film', 'Film'], ['roman', 'Roman'], ['pièce', 'Pièce'], ['livre', 'Livre'], ['bd', 'BD']]},
+    {propName: 'type', type: String, required: true, fieldType: 'select', values: [['film', 'Film'], ['série', 'Série'], ['roman', 'Roman'], ['pièce', 'Pièce'], ['livre', 'Livre'], ['bd', 'BD']]},
     {propName: 'annee', type: String, required: true, fieldType: 'text'},
     {propName: 'resume', type: String, required: false, fieldType: 'textarea'},
     {propName: 'notes', type: String, required: false, fieldType: 'textarea'}

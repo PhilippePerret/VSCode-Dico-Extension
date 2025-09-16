@@ -1877,10 +1877,13 @@
       oeuvre.auteurs && this.form.setValueOf("auteurs", oeuvre.auteurs);
       this.form.setValueOf("resume", oeuvre.resume);
       oeuvre.annee && this.form.setValueOf("annee", oeuvre.annee);
-      const infos = { langue: oeuvre.langue, pays: oeuvre.pays };
-      if (oeuvre.director) {
-        Object.assign(infos, { director: oeuvre.director });
-      }
+      const infos = {
+        langue: oeuvre.langue || void 0,
+        pays: oeuvre.pays || void 0,
+        editeur: oeuvre.editeur || void 0,
+        isbn: oeuvre.isbn || void 0,
+        director: oeuvre.director || void 0
+      };
       this.form.setValueOf("notes", JSON.stringify(infos));
     }
     /**
@@ -1962,9 +1965,7 @@
     static async getAllInfos(dOeuvre) {
       const movieId = dOeuvre.id;
       const details = await this.getMovieDetails(movieId);
-      console.log("details", details);
       const credits = await this.getMovieCredits(movieId);
-      console.log("credits", credits);
       return Object.assign(dOeuvre, {
         idmbId: details.imdb_id,
         pays: details.origin_country.join(", "),

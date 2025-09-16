@@ -4,7 +4,6 @@
  *
  */
 
-import { stringify } from "querystring";
 import { RpcOeuvre } from "../models/Oeuvre";
 import { FlashMessageType } from "../PanelClient";
 import { stopEvent } from "./DomUtils";
@@ -21,8 +20,10 @@ interface OeuvreType {
   annee: string;
   director?: string;
   auteurs?: string;
-  langue: string;
-  pays: string;
+  langue: string | undefined;
+  pays: string | undefined;
+  editeur?: string | undefined,
+  isbn?: string | undefined,
 }
 
 export interface OptionsOeuvre {
@@ -68,7 +69,7 @@ export class OeuvrePicker {
     let oeuvres: OeuvreType[] = [];
     
     // Recherche d'un film
-    if ( options.type === undefined || options.type === 'film') {
+    if ( options.type === undefined || options.type === 'film' || options.type === 'série') {
       oeuvres = await TMDB.getSimpleInformations(titre, options);
     }
 
@@ -196,9 +197,16 @@ export class OeuvrePicker {
     oeuvre.auteurs && this.form.setValueOf('auteurs', oeuvre.auteurs);
     this.form.setValueOf('resume', oeuvre.resume);
     oeuvre.annee && this.form.setValueOf('annee', oeuvre.annee);
-    const infos = { langue: oeuvre.langue, pays: oeuvre.pays };
-    if (oeuvre.director) { Object.assign(infos, { director: oeuvre.director }); }
-    this.form.setValueOf('notes', JSON.stringify(infos));
+    const infos = { 
+      langue: oeuvre.langue || undefined, 
+      pays: oeuvre.pays || undefined, 
+      editeur: oeuvre.editeur || undefined,
+      isbn: oeuvre.isbn || undefined,
+      director: oeuvre.director || undefined,
+    };
+    let infosStr = JSON.stringify(infos);
+    if (infosStr === '{}') { infosStr = ''; }
+    this.form.setValueOf('notes', infosStr);
   }
 
 
@@ -300,9 +308,9 @@ export class TMDB {
   private static async getAllInfos(dOeuvre: OeuvreType): Promise<OeuvreType> {
     const movieId = dOeuvre.id;
     const details = await this.getMovieDetails(movieId);
-    console.log("details", details);
+    // console.log("details", details);
     const credits = await this.getMovieCredits(movieId);
-    console.log("credits", credits);
+    // console.log("credits", credits);
     return Object.assign(dOeuvre, {
       idmbId: details.imdb_id,
       pays: details.origin_country.join(', '),
