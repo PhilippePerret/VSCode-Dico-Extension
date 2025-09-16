@@ -3,7 +3,7 @@ import { IOeuvre } from "../../extension/models/Oeuvre";
 import { ComplexRpc } from "../services/ComplexRpc";
 import { stopEvent } from "../services/DomUtils";
 import { FormManager, FormProperty } from "../services/FormManager";
-import { TMDB } from "../services/TMDB";
+import { OeuvrePicker, OptionsOeuvre, TMDB } from "../services/TMDB";
 import { Oeuvre } from "./Oeuvre";
 
 class FOeuvre extends Oeuvre {
@@ -19,6 +19,7 @@ export class OeuvreForm extends FormManager<typeof Oeuvre, FOeuvre> {
     {propName: 'titre_original', type: String, required: true, fieldType: 'text', onChange: this.onChangeTitreOriginal.bind(this)},
     {propName: 'titre_francais', type: String, required: false, fieldType: 'text'},
     {propName: 'auteurs', type: String, required: true, fieldType: 'text', onChange: this.onChangeAuteurs.bind(this)},
+    {propName: 'type', type: String, required: true, fieldType: 'select', values: [['film', 'Film'], ['roman', 'Roman'], ['pièce', 'Pièce'], ['livre', 'Livre'], ['bd', 'BD']]},
     {propName: 'annee', type: String, required: true, fieldType: 'text'},
     {propName: 'resume', type: String, required: false, fieldType: 'textarea'},
     {propName: 'notes', type: String, required: false, fieldType: 'textarea'}
@@ -113,9 +114,13 @@ export class OeuvreForm extends FormManager<typeof Oeuvre, FOeuvre> {
       this.flash('Il faut indiquer le titre de l’œuvre !', 'error');
     } else {
       this.flash('Je récupère les informations du film ' + titre + '…');
-      const options = {langue: undefined, annee: undefined};
+      const options = {
+        langue: undefined, 
+        annee: this.getValueOf('annee'),
+        type: this.getValueOf('type'),
+      } as OptionsOeuvre;
       if ( this.getValueOf('annee') !== '') { Object.assign(options, {annee: Number(this.getValueOf('annee'))});}
-      const infos = await TMDB.getInfoFilm(titre, options, this);
+      const infos = await OeuvrePicker.findWithTitle(titre, options, this);
     }
     ev && stopEvent(ev);
   }

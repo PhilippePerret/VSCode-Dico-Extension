@@ -1733,8 +1733,207 @@
   };
 
   // src/webviews/services/TMDB.ts
-  var TMDB = class {
+  var OeuvrePicker = class {
+    // Le formulaire (transmis par la fenêtre principale)
     static form;
+    /**
+     * @api
+     * 
+     * Entrée pour pouvoir trouver les informations d'un oeuvre.
+     * 
+     * Fonctionnement
+     * --------------
+     *  - On relève tous les titres possibles (sur TMDB (films) ou WikiPedia)
+     *  - S'ils sont plus de 5, on les filtres par les options
+     *  - S'ils sont toujours plus de 5, on demande de faire un premier choix,
+     *    avec les données simples.
+     *  - On relève les informations complètes des oeuvres restantes
+     *  - On les affiche en boucle pour pouvoir en choisir une.
+     * 
+     * @param titre Le titre à trouver
+     * @param options Options pour faciliter la recherche
+     * @param form Formulaire dans lequle mettre les résultats
+     */
+    static async findWithTitle(titre, options, form) {
+      this.form = form;
+      let oeuvres;
+      if (options.type === void 0 || options.type === "film") {
+        oeuvres = await TMDB.getSimpleInformations(titre, options);
+      } else {
+        oeuvres = await WikiPedia.findOeuvreFromTitle(titre, options);
+      }
+      if (oeuvres.length === 0) {
+        this.flash("Aucune \u0153uvre trouv\xE9e avec ce titre\u2026", "error");
+        return void 0;
+      }
+      if (oeuvres.length > 5) {
+        oeuvres = this.filterPerOptions(oeuvres, options);
+      }
+      if (oeuvres.length === 1) {
+        this.peupleForm(oeuvres[0]);
+        return;
+      }
+      if (oeuvres.length > 5) {
+        oeuvres = await this.chooseFiveMax(oeuvres);
+        if (oeuvres.length === 1) {
+          this.peupleForm(oeuvres[0]);
+          return;
+        }
+      }
+      if (options.type === void 0 || options.type === "film") {
+        oeuvres = await TMDB.getFullInformations(oeuvres);
+      } else {
+      }
+      this.choose(oeuvres, 0);
+    }
+    /**
+     * Reçoit une liste d'oeuvres et les affiche en boucle pour en 
+     * choisir une.
+     * 
+     * @param oeuvres Les oeuvres parmi lesquelles choisir
+     * @param ioeuvre Le "pointeur" de liste qui permet de savoir quelle oeuvre affichée
+     */
+    static choose(oeuvres, ioeuvre) {
+      if (ioeuvre >= oeuvres.length - 1) {
+        this.flash("On reprend\u2026", "notice");
+        ioeuvre = 0;
+      }
+      const dataOeuvre = oeuvres[ioeuvre];
+      ++ioeuvre;
+      this.peupleForm(dataOeuvre);
+      const map = /* @__PURE__ */ new Map();
+      map.set("o", ["Prendre cette \u0153uvre", this.onChoose.bind(this)]);
+      map.set("n", ["Suivante", this.choose.bind(this, oeuvres, ioeuvre)]);
+      map.set("q", ["Finir", this.onCancel.bind(this)]);
+      this.form.panel.flashAction("Est-ce cette \u0153uvre-l\xE0 ?", map);
+    }
+    /**
+     * Permet de choisir, parmi un trop grand nombre d'œuvres, les cinq dont on va
+     * relever toutes les informations pour pouvoir choisir la bonne.
+     * 
+     * @param oeuvres Les oeuvres initiales (20 maximum, avec TMDB)
+     * @returns 
+     */
+    static async chooseFiveMax(oeuvres) {
+      const result = {
+        oeuvres,
+        // Les oeuvres, mais qu'on shiftera
+        kept: [],
+        // Les oeuvres qui seront gardées
+        choosed: [],
+        // C'est une liste par commodité, mais il n'y aura que l'oeuvre choisie (if any) 
+        max: 5
+        // Le nombre maximum d'œuvres à conserver
+      };
+      return new Promise((resolve, reject) => {
+        Object.assign(result, { resolve, reject });
+        this.chooseMaxIn(result);
+      });
+    }
+    static chooseMaxIn(result) {
+      const oeuvre = result.oeuvres.shift();
+      if (oeuvre && result.kept.length < result.max && result.choosed.length === 0) {
+        this.peupleForm(oeuvre);
+        const map = /* @__PURE__ */ new Map();
+        map.set("o", ["Mettre de c\xF4t\xE9", () => {
+          result.kept.push(oeuvre);
+          this.chooseMaxIn(result);
+        }]);
+        map.set("n", ["Rejeter", () => this.chooseMaxIn(result)]);
+        map.set("y", ["C\u2019est celle l\xE0\xA0!", () => {
+          result.choosed = [oeuvre];
+          result.kept = [];
+          this.chooseMaxIn(result);
+        }]);
+        map.set("q", ["Finir", () => {
+          result.max = 0;
+          this.chooseMaxIn(result);
+        }]);
+        this.form.panel.flashAction("Que dois-je faire de cette \u0153uvre\xA0?", map);
+      } else {
+        result.resolve(result.kept.push(...result.choosed));
+      }
+    }
+    // Juste pour avoir un point de sortie
+    static onCancel(ev) {
+      ev && stopEvent(ev);
+    }
+    static onChoose(ev) {
+      ev && stopEvent(ev);
+    }
+    static flash(message, type) {
+      this.form.panel.flash(message, type);
+    }
+    // Affiche les données de l'œuvre dans le formulaire, pour pouvoir 
+    // les garder.
+    static peupleForm(oeuvre) {
+      this.form.setValueOf("titre_affiche", oeuvre.titre);
+      this.form.setValueOf("titre_original", oeuvre.titre_original);
+      oeuvre.auteurs && this.form.setValueOf("auteurs", oeuvre.auteurs);
+      this.form.setValueOf("resume", oeuvre.resume);
+      oeuvre.annee && this.form.setValueOf("annee", oeuvre.annee);
+      const infos = { langue: oeuvre.langue, pays: oeuvre.pays };
+      if (oeuvre.director) {
+        Object.assign(infos, { director: oeuvre.director });
+      }
+      this.form.setValueOf("notes", JSON.stringify(infos));
+    }
+    /**
+     * @api
+     * 
+     * Méthode permettant de filtrer les oeuvres par années
+     */
+    static filterPerOptions(oeuvres, options) {
+      oeuvres = this.filterPerYear(oeuvres, options);
+      oeuvres = this.filterPerCountry(oeuvres, options);
+      oeuvres = this.filterPerLanguage(oeuvres, options);
+      return oeuvres;
+    }
+    // Filtrage par année
+    static filterPerYear(oeuvres, options) {
+      options.annee = Number(options.annee);
+      var onlyOneMatches = false;
+      oeuvres = oeuvres.map((result) => {
+        if (onlyOneMatches) {
+          return result;
+        }
+        if (options.annee && result.annee === options.annee) {
+          onlyOneMatches = true;
+        }
+        return result;
+      }).filter((result) => {
+        if (onlyOneMatches) {
+          return result.annee === options.annee;
+        } else {
+          return result.annee < options.annee + 5 && result.annee > options.annee - 5;
+        }
+      });
+      return oeuvres;
+    }
+    static filterPerCountry(oeuvres, options) {
+      if (void 0 === options.pays) {
+        return oeuvres;
+      }
+      return oeuvres.filter((oeuvre) => oeuvre.pays === options.pays);
+    }
+    static filterPerLanguage(oeuvres, options) {
+      if (void 0 === options.langue) {
+        return oeuvres;
+      }
+      return oeuvres.filter((oeuvre) => oeuvre.langue === options.langue);
+    }
+  };
+  var WikiPedia = class {
+    /**
+     * @api
+     * Recherche les oeuvres de même nom sur Wikipédia et les envoie
+     * pour l'affichage et le choix.
+     */
+    static async findOeuvreFromTitle(titre, options) {
+      return [];
+    }
+  };
+  var TMDB = class {
     /**
      * @api
      * Récupère et retourne les informations des films de titre +titre+
@@ -1742,8 +1941,7 @@
      * @param titre Le titre du film dont il faut avoir les informations. Plus tard, on verra si on peut avoir plusieurs films d'un coup.
      * @returns 
      */
-    static async getInfoFilm(titre, options = void 0, form) {
-      this.form = form;
+    static async getSimpleInformations(titre, options) {
       let searchResults = await this.searchMovie(titre);
       searchResults = searchResults.map((result) => {
         return {
@@ -1756,132 +1954,16 @@
         };
       });
       console.log("Premiers r\xE9sultats pr\xE9par\xE9s (%i)", searchResults.length, structuredClone(searchResults));
-      if (searchResults.length > 5) {
-        console.log("R\xE9sultat > 5 (premier filtre)");
-        if (options) {
-          if (void 0 !== options.annee) {
-            options.annee = Number(options.annee);
-            var oneMovieMatchsYear = false;
-            searchResults = searchResults.map((result) => {
-              if (oneMovieMatchsYear) {
-                return result;
-              }
-              if (options.annee && result.annee === options.annee) {
-                oneMovieMatchsYear = true;
-              }
-              return result;
-            }).filter((result) => {
-              if (oneMovieMatchsYear) {
-                return result.annee === options.annee;
-              } else {
-                return result.annee < options.annee + 5 && result.annee > options.annee - 5;
-              }
-            });
-          }
-          if (options.langue) {
-            searchResults = searchResults.filter((result) => result.langue === options.langue);
-          }
-        }
-        if (searchResults.length > 5) {
-          return this.selectFiveOeuvresMax({ results: searchResults, kept: [], choosed: null });
-        }
-      }
-      console.log("Il y a moins de 5 r\xE9sultats, je prends toutes les infos", searchResults);
-      const oeuvres = await Promise.all(searchResults.map(async (dataOeuvre) => this.getAllInfos(dataOeuvre)));
-      console.log("Oeuvres une fois charg\xE9es enti\xE8rement", oeuvres);
-      if (oeuvres.length === 1) {
-        this.peupleFormWithOeuvre(oeuvres[0]);
-      } else {
-        this.chooseFinalOeuvre({ oeuvres, ioeuvre: 0 });
-      }
+      return searchResults;
     }
     /**
-     * Fonction permettant de choisir, parmi un (trop) grand nombre 
-     * d'œuvres préselectionnées celles dont il faut réellement relever
-     * les informations complètes pour choisir la bonne.
-     * 
-     * Malgré le titre, on peut choisir ici plus de 5 oeuvres. Mais ce
-     * sera alors en tout connaissance de cause.
+     * Retourne les informations complètes pour les films +oeuvres+
      * 
      */
-    static selectFiveOeuvresMax(params) {
-      console.log("Dans selectFive... il reste %i oeuvres", params.results.length);
-      const oeuvreInfos = params.results.shift();
-      if (oeuvreInfos) {
-        this.peupleFormWithOeuvre(oeuvreInfos);
-        const map = /* @__PURE__ */ new Map();
-        map.set("o", ["Mettre de c\xF4t\xE9", this.onKeepOeuvreInfo.bind(this, oeuvreInfos, params)]);
-        map.set("n", ["Rejeter", this.selectFiveOeuvresMax.bind(this, params)]);
-        map.set("y", ["C\u2019est celle-ci\xA0!", this.onChooseOeuvreInfo.bind(this, oeuvreInfos, params)]);
-        map.set("q", ["Finir", this.onEndPickupOeuvres.bind(this, params)]);
-        this.form.panel.flashAction("Que dois-je faire de cette \u0153uvre\xA0?", map);
-      } else {
-        this.chooseFinalOeuvre({ oeuvres: params.kept, ioeuvre: 0 });
-      }
+    static async getFullInformations(oeuvres) {
+      return await Promise.all(oeuvres.map(async (oeuvre) => this.getAllInfos(oeuvre)));
     }
-    // Méthode appelée, lorsqu'on choisit les oeuvres à investiguer,
-    // quand on veut arrêter le défilement (on a trouvé les candidates
-    // possible).
-    static onEndPickupOeuvres(params) {
-      if (params.kept.length) {
-        this.chooseFinalOeuvre({ oeuvres: params.kept, ioeuvre: 0 });
-      }
-    }
-    // Pour conserver l'oeuvre courante
-    static onKeepOeuvreInfo(oeuvreInfos, params) {
-      console.log("-> onKeepOeuvre avec", oeuvreInfos);
-      this.getAllInfos(oeuvreInfos);
-      params.kept.push(oeuvreInfos);
-      this.selectFiveOeuvresMax(params);
-    }
-    // Méthode appelée quand on choisit l'œuvre comme la bonne
-    static onChooseOeuvreInfo(oeuvreInfo, params) {
-      if (void 0 === oeuvreInfo.auteurs) {
-        this.getAllInfos(oeuvreInfo);
-      }
-      this.peupleFormWithOeuvre(oeuvreInfo);
-      return true;
-    }
-    /**
-     * Affiche les données de l'œuvre dans le formulaire du panneau Oeuvres
-     * 
-     * @param oeuvreData Données complètes de l'œuvre
-     */
-    static peupleFormWithOeuvre(oeuvreData) {
-      this.form.setValueOf("titre_original", oeuvreData.titre_original);
-      this.form.setValueOf("titre_affiche", oeuvreData.titre);
-      oeuvreData.auteurs && this.form.setValueOf("auteurs", oeuvreData.auteurs);
-      this.form.setValueOf("resume", oeuvreData.resume);
-      oeuvreData.annee && this.form.setValueOf("annee", oeuvreData.annee);
-      const infos = { langue: oeuvreData.langue, pays: oeuvreData.pays };
-      if (oeuvreData.director) {
-        Object.assign(infos, { director: oeuvreData.director });
-      }
-      this.form.setValueOf("notes", JSON.stringify(infos));
-    }
-    // Fonction pour choisir l'œuvre finale parmi les œuvres trouvées,
-    // quand il en reste plusieurs en lice.
-    static chooseFinalOeuvre(params) {
-      if (params.ioeuvre >= params.oeuvres.length - 1) {
-        this.form.panel.flash("On reprend\u2026", "notice");
-        params.ioeuvre = 0;
-      }
-      const dataOeuvre = params.oeuvres[params.ioeuvre];
-      ++params.ioeuvre;
-      this.peupleFormWithOeuvre(dataOeuvre);
-      const map = /* @__PURE__ */ new Map();
-      map.set("o", ["Prendre cette \u0153uvre", this.onChooseFinalOeuvre.bind(this)]);
-      map.set("n", ["Suivante", this.chooseFinalOeuvre.bind(this, params)]);
-      map.set("q", ["Finir", this.onStop.bind(this)]);
-      this.form.panel.flashAction("Est-ce cette \u0153uvre-l\xE0 ?", map);
-    }
-    // Pour s'arrêter sans rien faire
-    static onStop(ev) {
-      ev && stopEvent(ev);
-    }
-    static onChooseFinalOeuvre() {
-      this.form.panel.flash("\u0152uvre choisie, tu peux la compl\xE9ter avant de l'enregistrer.", "notice");
-    }
+    // @return Toutes les informations sur le film +dOeuvre+
     static async getAllInfos(dOeuvre) {
       const movieId = dOeuvre.id;
       const details = await this.getMovieDetails(movieId);
@@ -1902,12 +1984,8 @@
     static get TMDB_READING_API_TOKEN() {
       return this._TMDBSecrets.reading_api_token;
     }
-    static get TMDB_API_KEY() {
-      return this._TMDBSecrets.api_key;
-    }
     static async getTMDBSecrets() {
       return RpcOeuvre.ask("tmdb-secrets").then((retour) => {
-        console.log("Retour des secrets : ", retour);
         this._TMDBSecrets = retour;
         return retour;
       }).catch((error) => {
@@ -1971,6 +2049,7 @@
       { propName: "titre_original", type: String, required: true, fieldType: "text", onChange: this.onChangeTitreOriginal.bind(this) },
       { propName: "titre_francais", type: String, required: false, fieldType: "text" },
       { propName: "auteurs", type: String, required: true, fieldType: "text", onChange: this.onChangeAuteurs.bind(this) },
+      { propName: "type", type: String, required: true, fieldType: "select", values: [["film", "Film"], ["roman", "Roman"], ["pi\xE8ce", "Pi\xE8ce"], ["livre", "Livre"], ["bd", "BD"]] },
       { propName: "annee", type: String, required: true, fieldType: "text" },
       { propName: "resume", type: String, required: false, fieldType: "textarea" },
       { propName: "notes", type: String, required: false, fieldType: "textarea" }
@@ -2046,11 +2125,15 @@
         this.flash("Il faut indiquer le titre de l\u2019\u0153uvre\xA0!", "error");
       } else {
         this.flash("Je r\xE9cup\xE8re les informations du film " + titre + "\u2026");
-        const options = { langue: void 0, annee: void 0 };
+        const options = {
+          langue: void 0,
+          annee: this.getValueOf("annee"),
+          type: this.getValueOf("type")
+        };
         if (this.getValueOf("annee") !== "") {
           Object.assign(options, { annee: Number(this.getValueOf("annee")) });
         }
-        const infos = await TMDB.getInfoFilm(titre, options, this);
+        const infos = await OeuvrePicker.findWithTitle(titre, options, this);
       }
       ev && stopEvent(ev);
     }
