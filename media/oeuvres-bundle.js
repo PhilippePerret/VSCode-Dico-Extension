@@ -1732,7 +1732,7 @@
     }
   };
 
-  // src/webviews/services/TMDB.ts
+  // src/webviews/services/OeuvreFinder.ts
   var OeuvrePicker = class {
     // Le formulaire (transmis par la fenêtre principale)
     static form;
@@ -1756,18 +1756,23 @@
      */
     static async findWithTitle(titre, options, form) {
       this.form = form;
-      let oeuvres;
+      let oeuvres = [];
       if (options.type === void 0 || options.type === "film") {
         oeuvres = await TMDB.getSimpleInformations(titre, options);
-      } else {
-        oeuvres = await WikiPedia.findOeuvreFromTitle(titre, options);
+      }
+      if (oeuvres.length === 0) {
+        oeuvres = await new WikiPedia("fr").findOeuvreFromTitle(titre, options);
+        console.log("Oeuvres remont\xE9es pas wikip\xE9dia:", oeuvres);
       }
       if (oeuvres.length === 0) {
         this.flash("Aucune \u0153uvre trouv\xE9e avec ce titre\u2026", "error");
         return void 0;
       }
       if (oeuvres.length > 5) {
-        oeuvres = this.filterPerOptions(oeuvres, options);
+        const oeuvresFiltred = this.filterPerOptions(oeuvres, options);
+        if (oeuvresFiltred.length > 0) {
+          oeuvres = oeuvresFiltred;
+        }
       }
       if (oeuvres.length === 1) {
         this.peupleForm(oeuvres[0]);
@@ -1782,7 +1787,6 @@
       }
       if (options.type === void 0 || options.type === "film") {
         oeuvres = await TMDB.getFullInformations(oeuvres);
-      } else {
       }
       this.choose(oeuvres, 0);
     }
@@ -1867,6 +1871,7 @@
     // Affiche les données de l'œuvre dans le formulaire, pour pouvoir 
     // les garder.
     static peupleForm(oeuvre) {
+      console.log("Peupler le formulaire avec : ", oeuvre);
       this.form.setValueOf("titre_affiche", oeuvre.titre);
       this.form.setValueOf("titre_original", oeuvre.titre_original);
       oeuvre.auteurs && this.form.setValueOf("auteurs", oeuvre.auteurs);
@@ -1921,16 +1926,6 @@
         return oeuvres;
       }
       return oeuvres.filter((oeuvre) => oeuvre.langue === options.langue);
-    }
-  };
-  var WikiPedia = class {
-    /**
-     * @api
-     * Recherche les oeuvres de même nom sur Wikipédia et les envoie
-     * pour l'affichage et le choix.
-     */
-    static async findOeuvreFromTitle(titre, options) {
-      return [];
     }
   };
   var TMDB = class {
@@ -2059,6 +2054,203 @@
     }
   };
   var MARK_UNKNOWN_GENRE = "[HF?]";
+  var WikiPedia = class {
+    baseUrl;
+    wikiApiUrl;
+    constructor(lang = "fr") {
+      this.baseUrl = "https://fr.wikipedia.org/api/rest_v1/page/summary/";
+      this.wikiApiUrl = `https://${lang}.wikipedia.org/w/api.php`;
+    }
+    /**
+     * @api
+     * 
+     * Trouve sur Wikipédia toutes les oeuvres correspondant au titre +titre+ et
+     * en reetourne les informations dans un format standard (OeuvreType).
+     * 
+     * @param titre Le titre donné
+     * @param options Les options pour filtrer (peut-être)
+     * @returns La liste des oeuvres potentielles
+     */
+    async findOeuvreFromTitle(titre, options) {
+      try {
+        let searchResults = await this.searchPage(titre);
+        if (!searchResults || searchResults.length === 0) {
+          return [];
+        }
+        searchResults = searchResults.filter((data) => {
+          return data.title.match(titre);
+        });
+        const resultsProv = searchResults.filter((data) => {
+          return data.title.match(options.type);
+        });
+        if (resultsProv.length > 0) {
+          searchResults = resultsProv;
+        }
+        searchResults = await this.getPageSummary(searchResults);
+        searchResults = await this.getPageContent(searchResults);
+        searchResults = await this.getInfobox(searchResults);
+        searchResults = this.structureInfosFromSources(searchResults);
+        return searchResults.map((result) => {
+          return {
+            titre: result.titre,
+            titre_original: result.titre_original || result.titre,
+            titre_francais: result.titre_francais,
+            auteur: result.auteur,
+            annee: result.annee,
+            isbn: result.isbn,
+            pays: result.pays,
+            langue: result.langue,
+            type: options.type,
+            resume: result.resume
+          };
+        });
+      } catch (error) {
+        console.error("Erreur lors de la r\xE9cup\xE9ration des informations:", error);
+        throw error;
+      }
+    }
+    // Rechercher jusqu'à 10 pages Wikipedia par l'API correspondant au titre
+    async searchPage(titre) {
+      const searchUrl = `${this.wikiApiUrl}?action=query&format=json&list=search&srsearch=${encodeURIComponent(titre)}&srlimit=10&origin=*`;
+      const response = await fetch(searchUrl);
+      const data = await response.json();
+      return data.query?.search || [];
+    }
+    // Récupérer le résumé de la page
+    async getPageSummary(searchResults) {
+      return await Promise.all(
+        searchResults.map(async (result) => {
+          const summaryUrl = `${this.baseUrl}${encodeURIComponent(result.title)}`;
+          const response = await fetch(summaryUrl);
+          if (response.ok) {
+            Object.assign(result, { summary: response.json() });
+          }
+          return result;
+        })
+      );
+    }
+    // Récupérer le contenu complet de la page
+    async getPageContent(searchResults) {
+      return Promise.all(
+        searchResults.map(async (result) => {
+          const contentUrl = `${this.wikiApiUrl}?action=query&format=json&titles=${encodeURIComponent(result.title)}&prop=extracts&exintro=false&explaintext=true&origin=*`;
+          const response = await fetch(contentUrl);
+          const data = await response.json();
+          const pages = data.query.pages;
+          const pageId = Object.keys(pages)[0];
+          Object.assign(result, { pageContent: pages[pageId]?.extract || "" });
+          return result;
+        })
+      );
+    }
+    // Récupérer l'infobox de la page
+    async getInfobox(searchResults) {
+      return Promise.all(
+        searchResults.map(async (result) => {
+          const infoboxUrl = `${this.wikiApiUrl}?action=query&format=json&titles=${encodeURIComponent(result.title)}&prop=revisions&rvprop=content&origin=*`;
+          const response = await fetch(infoboxUrl);
+          const data = await response.json();
+          const pages = data.query.pages;
+          const pageId = Object.keys(pages)[0];
+          const content = pages[pageId]?.revisions?.[0]?.["*"] || "";
+          const infobox = this.parseInfobox(content);
+          Object.assign(result, {
+            infoBox: infobox,
+            annee: infobox.annee,
+            auteur: infobox.auteur,
+            isbn: infobox.isbn,
+            pays: infobox.pays
+          });
+          return result;
+        })
+      );
+    }
+    // Parser l'infobox depuis le wikicode
+    parseInfobox(wikicode) {
+      const infobox = {};
+      const patterns = {
+        titre: /\|\s*titre\s*=\s*(.+)/i,
+        titre_original: /\|\s*titre[_\s]*orig(?:inal)?\s*=\s*(.+)/i,
+        titre_francais: /\|\s*titre[_\s]*français?\s*=\s*(.+)/i,
+        auteur: /\|\s*auteurs?\s*=\s*(.+)/i,
+        annee: /\|\s*(?:année|date)[_\s]*(?:publication|parution)?\s*=\s*(.+)/i,
+        pays: /\|\s*pays\s*=\s*(.+)/i,
+        langue: /\|\s*langue[_\s]*originale?\s*=\s*(.+)/i,
+        isbn: /\|\s*isbn\s*=\s*(.+)/i,
+        editeur: /\|\s*éditeurs?\s*=\s*(.+)/i
+      };
+      for (const [key, pattern] of Object.entries(patterns)) {
+        const match = wikicode.match(pattern);
+        if (match) {
+          let value = match[1].trim();
+          value = value.replace(/\[\[([^\]|]+)(\|[^\]]+)?\]\]/g, "$1");
+          value = value.replace(/{{[^}]+}}/g, "");
+          value = value.replace(/<[^>]+>/g, "");
+          infobox[key] = value.trim();
+        }
+      }
+      if (infobox.annee) {
+        infobox.annee = Number(infobox.annee.substring(0, 4));
+      }
+      if (infobox.isbn) {
+        infobox.isbn = infobox.isbn.split(" ")[0];
+      }
+      return infobox;
+    }
+    structureInfosFromSources(searchResults) {
+      return searchResults.map(
+        (result) => this.extractBookInfo(result.summary, result.pageContent, result.infoBox, result.title)
+      );
+    }
+    // Extraire les informations du livre depuis toutes les sources
+    extractBookInfo(summary, content, infobox, pageTitle) {
+      const bookInfo = {
+        titre: null,
+        titre_original: null,
+        titre_francais: null,
+        auteurs: null,
+        annee: null,
+        pays: null,
+        langue: null,
+        isbn: null,
+        editeur: null,
+        resume: null
+      };
+      try {
+        bookInfo.titre = infobox.titre || pageTitle;
+        bookInfo.titre_original = infobox.titre_original || this.extractFromText(content, /titre original[:\s]+([^\n.]+)/i);
+        bookInfo.titre_francais = infobox.titre_francais || this.extractFromText(content, /titre français[:\s]+([^\n.]+)/i);
+        bookInfo.auteurs = infobox.auteur || this.extractFromText(content, /(?:écrit par|auteur[:\s]+|de\s+)([A-Z][^\n.]+)/);
+        const getAnnee = () => {
+          const anneeMatch = this.extractFromText(content, /(?:publié en|paru en|écrit en)\s+(\d{4})/i);
+          if (anneeMatch) {
+            return Number(anneeMatch.match(/\d{4}/)?.[0]);
+          }
+        };
+        bookInfo.annee = infobox.annee || getAnnee();
+        bookInfo.pays = infobox.pays || this.extractFromText(content, /(?:pays d'origine|publié en|originaire de)\s+([A-Z][^\n.,]+)/i);
+        bookInfo.langue = infobox.langue || this.extractFromText(content, /langue originale[:\s]+([^\n.,]+)/i);
+        const isbnMatch = infobox.isbn || this.extractFromText(content, /ISBN[:\s]+([\d-]+)/i);
+        bookInfo.isbn = isbnMatch;
+        bookInfo.editeur = infobox.editeur || this.extractFromText(content, /(?:éditions|éditeur)[:\s]+([^\n.,]+)/i);
+        bookInfo.resume = summary.extract || content.substring(0, 500) + "[\u2026]";
+        Object.keys(bookInfo).forEach((key) => {
+          if (!bookInfo[key] || typeof bookInfo[key] === "string" && bookInfo[key].trim() === "") {
+            bookInfo[key] = null;
+          }
+        });
+      } catch (erreur) {
+        console.error("Erreur lors de l'extraction des donn\xE9es : ", erreur);
+        bookInfo.error = erreur.message;
+      }
+      return bookInfo;
+    }
+    // Fonction utilitaire pour extraire du texte avec regex
+    extractFromText(text, pattern) {
+      const match = text.match(pattern);
+      return match ? match[1].trim() : null;
+    }
+  };
 
   // src/webviews/models/OeuvreForm.ts
   var OeuvreForm = class extends FormManager {

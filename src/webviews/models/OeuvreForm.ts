@@ -3,7 +3,7 @@ import { IOeuvre } from "../../extension/models/Oeuvre";
 import { ComplexRpc } from "../services/ComplexRpc";
 import { stopEvent } from "../services/DomUtils";
 import { FormManager, FormProperty } from "../services/FormManager";
-import { OeuvrePicker, OptionsOeuvre, TMDB } from "../services/TMDB";
+import { OeuvrePicker, OptionsOeuvre, TMDB } from "../services/OeuvreFinder";
 import { Oeuvre } from "./Oeuvre";
 
 class FOeuvre extends Oeuvre {

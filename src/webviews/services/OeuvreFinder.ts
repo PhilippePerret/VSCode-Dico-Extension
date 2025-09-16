@@ -65,12 +65,20 @@ export class OeuvrePicker {
   ) {
     this.form = form;
     // On cherche les candidats à partir du titre
-    let oeuvres: OeuvreType[];
+    let oeuvres: OeuvreType[] = [];
+    
+    // Recherche d'un film
     if ( options.type === undefined || options.type === 'film') {
       oeuvres = await TMDB.getSimpleInformations(titre, options);
-    } else {
-      oeuvres = await WikiPedia.findOeuvreFromTitle(titre, options);
     }
+
+    if (oeuvres.length === 0) {
+      // <= pas un film ou aucun film trouvé sur TMDB
+      // => On cherche avec Wikipédia
+      oeuvres = await new WikiPedia('fr').findOeuvreFromTitle(titre, options);
+      console.log("Oeuvres remontées pas wikipédia:", oeuvres);
+    }
+    
 
     if (oeuvres.length === 0){
       this.flash('Aucune œuvre trouvée avec ce titre…', 'error');
@@ -79,7 +87,9 @@ export class OeuvrePicker {
 
     // Première tentative de filtrage par les options
     if ( oeuvres.length > 5 ) {
-      oeuvres = this.filterPerOptions(oeuvres, options);
+      const oeuvresFiltred = this.filterPerOptions(oeuvres, options);
+      // On ne prend les oeuvres filtrées que s'il y en a
+      if (oeuvresFiltred.length > 0) { oeuvres = oeuvresFiltred; }
     }
 
     if (oeuvres.length === 1){ this.peupleForm(oeuvres[0]); return; }
@@ -94,12 +104,11 @@ export class OeuvrePicker {
 
     // On peut récupérer les informations complètes des oeuvres
     // restantes (pour le moment seulement si ce sont des films)
+    // Pour une œuvre récupérée sur Wikipédia, tout a déjà été
+    // récupéré.
     if (options.type === undefined || options.type === 'film') {
       oeuvres = await TMDB.getFullInformations(oeuvres);
-    } else {
-      // Pour le moment, on ne fait rien pour un oeuvre récupérée
-      // sur wikipédia
-    }
+    } 
     
     // Et enfin, on peut choisir parmi les oeuvres restantes
     this.choose(oeuvres, 0);
@@ -181,6 +190,7 @@ export class OeuvrePicker {
   // Affiche les données de l'œuvre dans le formulaire, pour pouvoir 
   // les garder.
   public static peupleForm(oeuvre: OeuvreType) {
+    console.log("Peupler le formulaire avec : ", oeuvre);
     this.form.setValueOf('titre_affiche', oeuvre.titre);
     this.form.setValueOf('titre_original', oeuvre.titre_original);
     oeuvre.auteurs && this.form.setValueOf('auteurs', oeuvre.auteurs);
@@ -238,19 +248,15 @@ export class OeuvrePicker {
 
 } // OeuvrePicker
 
-class WikiPedia {
-
-  /**
-   * @api
-   * Recherche les oeuvres de même nom sur Wikipédia et les envoie
-   * pour l'affichage et le choix.
-   */
-  public static async findOeuvreFromTitle(titre: string, options: OptionsOeuvre): Promise<OeuvreType[]> {
-
-    return [];  // pour le moment
-  }
-}
-
+/**
+ * 
+ * 
+ * 
+ * ==================== TMDB ======================
+ * 
+ * 
+ * 
+ */
 export class TMDB {
 
   /**
@@ -401,3 +407,265 @@ export class TMDB {
 } // TMDB
 
 const MARK_UNKNOWN_GENRE = '[HF?]';
+
+/**
+ * 
+ * 
+ * =============== WIKIPEDIA ==================
+ * 
+ *
+ */
+class WikiPedia {
+  private baseUrl: string;
+  private wikiApiUrl: string;
+
+  constructor(lang: string = 'fr') {
+    this.baseUrl = 'https://fr.wikipedia.org/api/rest_v1/page/summary/';
+    this.wikiApiUrl = `https://${lang}.wikipedia.org/w/api.php`;
+  }
+
+  /**
+   * @api
+   * 
+   * Trouve sur Wikipédia toutes les oeuvres correspondant au titre +titre+ et
+   * en reetourne les informations dans un format standard (OeuvreType).
+   * 
+   * @param titre Le titre donné
+   * @param options Les options pour filtrer (peut-être)
+   * @returns La liste des oeuvres potentielles
+   */
+  async findOeuvreFromTitle(titre: string, options: OptionsOeuvre): Promise<OeuvreType[]> {
+    try {
+      // Étape 1: Rechercher la page
+      let searchResults = await this.searchPage(titre);
+      // console.log("Premiers résultats", searchResults);
+      if (!searchResults || searchResults.length === 0) { return []; }
+
+      // On exclut les titres qui ne contiennent pas le titre fourni
+      searchResults = searchResults.filter((data: { [x: string]: any }) => {
+        return data.title.match(titre);
+      });
+      // console.log("Pages filtrées (doivent contenir le titre)", searchResults);
+
+      // On cherche particulièrement un titre contenant le type
+      const resultsProv = searchResults.filter((data: { [x: string]: any }) => {
+        return data.title.match(options.type);
+      });
+      if (resultsProv.length > 0) {
+        searchResults = resultsProv;
+        // console.log("Filtrage plus précis par le type", searchResults);
+      }
+
+      // Récupération des informations de base (bof…)
+      searchResults = await this.getPageSummary(searchResults);
+      // console.log("Après summary", searchResults);
+
+      // Récupération du contenu détaillé des pages
+      searchResults = await this.getPageContent(searchResults);
+      // console.log("Après récupération du contenu des pages", searchResults);
+
+      // Récupération des infobox si disponible
+      searchResults = await this.getInfobox(searchResults);
+      // console.log("Après récupération des infobox", searchResults);
+
+      searchResults = this.structureInfosFromSources(searchResults);
+      // console.log("Infos après restructuration", searchResults);
+
+      // On ne retourne que les informations intéressantes
+      return searchResults.map((result: { [x: string]: any }) => {
+        return {
+          titre: result.titre,
+          titre_original: result.titre_original || result.titre,
+          titre_francais: result.titre_francais,
+          auteur: result.auteur,
+          annee: result.annee,
+          isbn: result.isbn,
+          pays: result.pays,
+          langue: result.langue,
+          type: options.type,
+          resume: result.resume
+        };
+      });
+    } catch (error) {
+      console.error('Erreur lors de la récupération des informations:', error);
+      throw error;
+    }
+  }
+
+  // Rechercher jusqu'à 10 pages Wikipedia par l'API correspondant au titre
+  async searchPage(titre: string) {
+    const searchUrl = `${this.wikiApiUrl}?action=query&format=json&list=search&srsearch=${encodeURIComponent(titre)}&srlimit=10&origin=*`;
+    const response = await fetch(searchUrl);
+    const data = await response.json();
+    return data.query?.search || [];
+  }
+
+    // Récupérer le résumé de la page
+  async getPageSummary(searchResults: any[]) {
+    return await Promise.all(
+      searchResults.map(async (result: { [x: string]: any }) => {
+        const summaryUrl = `${this.baseUrl}${encodeURIComponent(result.title)}`;
+        const response = await fetch(summaryUrl);
+        if (response.ok) { Object.assign(result, {summary: response.json()}); }
+        return result;
+      })
+    );
+  }
+
+  // Récupérer le contenu complet de la page
+  async getPageContent(searchResults: any[]) {
+    return Promise.all(
+      searchResults.map(async (result: { [x: string]: any }) => {
+        const contentUrl = `${this.wikiApiUrl}?action=query&format=json&titles=${encodeURIComponent(result.title)}&prop=extracts&exintro=false&explaintext=true&origin=*`;
+        const response = await fetch(contentUrl);
+        const data = await response.json();
+        const pages = data.query.pages;
+        const pageId = Object.keys(pages)[0];
+        Object.assign(result, {pageContent: pages[pageId]?.extract || ''});
+        return result;
+      })
+    );
+  }
+
+  // Récupérer l'infobox de la page
+  async getInfobox(searchResults: any[]) {
+    return Promise.all(
+      searchResults.map(async (result: {[x: string]: any}) => {
+        const infoboxUrl = `${this.wikiApiUrl}?action=query&format=json&titles=${encodeURIComponent(result.title)}&prop=revisions&rvprop=content&origin=*`;
+        const response = await fetch(infoboxUrl);
+        const data = await response.json();
+        const pages = data.query.pages;
+        const pageId = Object.keys(pages)[0];
+        const content = pages[pageId]?.revisions?.[0]?.['*'] || '';
+        const infobox = this.parseInfobox(content);
+        Object.assign(result, {
+          infoBox: infobox,
+          annee: infobox.annee,
+          auteur: infobox.auteur,
+          isbn: infobox.isbn,
+          pays: infobox.pays,
+        });
+        return result;
+      })
+    );
+
+ }
+
+  // Parser l'infobox depuis le wikicode
+  parseInfobox(wikicode: string) {
+    const infobox: {[x: string]: any} = {};
+
+    // console.log("Recherche d'infos dans le wikicode:", wikicode);
+
+    // Rechercher les patterns d'infobox communes pour les livres
+    const patterns = {
+      titre: /\|\s*titre\s*=\s*(.+)/i,
+      titre_original: /\|\s*titre[_\s]*orig(?:inal)?\s*=\s*(.+)/i,
+      titre_francais: /\|\s*titre[_\s]*français?\s*=\s*(.+)/i,
+      auteur: /\|\s*auteurs?\s*=\s*(.+)/i,
+      annee: /\|\s*(?:année|date)[_\s]*(?:publication|parution)?\s*=\s*(.+)/i,
+      pays: /\|\s*pays\s*=\s*(.+)/i,
+      langue: /\|\s*langue[_\s]*originale?\s*=\s*(.+)/i,
+      isbn: /\|\s*isbn\s*=\s*(.+)/i,
+      editeur: /\|\s*éditeurs?\s*=\s*(.+)/i
+    };
+
+    for (const [key, pattern] of Object.entries(patterns)) {
+      const match = wikicode.match(pattern);
+      if (match) {
+        // Nettoyer la valeur extraite
+        let value = match[1].trim();
+        value = value.replace(/\[\[([^\]|]+)(\|[^\]]+)?\]\]/g, '$1'); // Liens wiki
+        value = value.replace(/{{[^}]+}}/g, ''); // Templates
+        value = value.replace(/<[^>]+>/g, ''); // Balises HTML
+        infobox[key] = value.trim();
+      }
+    }
+    // Quelques rectifications
+    if (infobox.annee) { infobox.annee = Number(infobox.annee.substring(0,4));}
+    if (infobox.isbn) { infobox.isbn = infobox.isbn.split(' ')[0];}
+
+    return infobox;
+  }
+
+  structureInfosFromSources(searchResults: any[]) {
+    return searchResults.map((result: { [x: string]: any }) =>
+      this.extractBookInfo(result.summary, result.pageContent, result.infoBox, result.title)
+    );
+  }
+
+  // Extraire les informations du livre depuis toutes les sources
+  extractBookInfo(summary: any, content: string, infobox: {[x: string]: any}, pageTitle: string) {
+
+    const bookInfo: { [x: string]: any } = {
+      titre: null,
+      titre_original: null,
+      titre_francais: null,
+      auteurs: null,
+      annee: null,
+      pays: null,
+      langue: null,
+      isbn: null,
+      editeur: null,
+      resume: null
+    };
+
+    try {
+      // Titre
+      bookInfo.titre = infobox.titre || pageTitle;
+
+      // Titre original
+      bookInfo.titre_original = infobox.titre_original || this.extractFromText(content, /titre original[:\s]+([^\n.]+)/i);
+
+      // Titre français
+      bookInfo.titre_francais = infobox.titre_francais || this.extractFromText(content, /titre français[:\s]+([^\n.]+)/i);
+
+      // Auteurs
+      bookInfo.auteurs = infobox.auteur || this.extractFromText(content, /(?:écrit par|auteur[:\s]+|de\s+)([A-Z][^\n.]+)/);
+
+      const getAnnee = () => {
+        const anneeMatch = this.extractFromText(content, /(?:publié en|paru en|écrit en)\s+(\d{4})/i);
+        if (anneeMatch) {
+          return Number(anneeMatch.match(/\d{4}/)?.[0]);
+        }
+      };
+      // Année
+      bookInfo.annee = infobox.annee || getAnnee();
+
+      // Pays
+      bookInfo.pays = infobox.pays || this.extractFromText(content, /(?:pays d'origine|publié en|originaire de)\s+([A-Z][^\n.,]+)/i);
+
+      // Langue originale
+      bookInfo.langue = infobox.langue || this.extractFromText(content, /langue originale[:\s]+([^\n.,]+)/i);
+
+      // ISBN
+      const isbnMatch = infobox.isbn || this.extractFromText(content, /ISBN[:\s]+([\d-]+)/i);
+      bookInfo.isbn = isbnMatch;
+
+      // Éditeur
+      bookInfo.editeur = infobox.editeur || this.extractFromText(content, /(?:éditions|éditeur)[:\s]+([^\n.,]+)/i);
+
+      // Résumé (utiliser l'extrait de Wikipedia)
+      bookInfo.resume = summary.extract || content.substring(0, 500) + '[…]';
+
+      // Nettoyer les valeurs nulles ou vides
+      Object.keys(bookInfo).forEach(key => {
+        if (!bookInfo[key] || (typeof bookInfo[key] === 'string' && bookInfo[key].trim() === '')) {
+          bookInfo[key] = null;
+        }
+      });
+
+    } catch(erreur) {
+      console.error("Erreur lors de l'extraction des données : ", erreur);
+      bookInfo.error = (erreur as Error).message;
+    }
+
+    return bookInfo;
+  }
+
+    // Fonction utilitaire pour extraire du texte avec regex
+    extractFromText(text: string, pattern: RegExp) {
+        const match = text.match(pattern);
+        return match ? match[1].trim() : null;
+    }
+}
