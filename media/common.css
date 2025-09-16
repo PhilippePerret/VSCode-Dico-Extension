@@ -259,7 +259,8 @@ form.item-form > div {
 	padding-top: 2px;
 	vertical-align: top;
 }
-form.item-form > div > label {
+form.item-form > div > label,
+.container > label {
 	width: 90px;
 	flex: 0 0 auto;
 	display:inline-block; /* pour que le short-cut reste pas trop loin (cf. definition d'entrée */

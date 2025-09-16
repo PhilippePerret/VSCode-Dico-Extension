@@ -32,3 +32,11 @@ form textarea#oeuvre-resume {
 form textarea#oeuvre-notes {
   height: 80px;
 }
+
+form div#oeuvre-annee-container {
+  display: block;
+}
+form input#oeuvre-annee {
+  max-width: 80px;
+}
+form select#oeuvre-type { width: 100px; }
