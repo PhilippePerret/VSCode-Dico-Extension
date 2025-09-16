@@ -1757,7 +1757,7 @@
     static async findWithTitle(titre, options, form) {
       this.form = form;
       let oeuvres = [];
-      if (options.type === void 0 || options.type === "film") {
+      if (options.type === void 0 || options.type === "film" || options.type === "s\xE9rie") {
         oeuvres = await TMDB.getSimpleInformations(titre, options);
       }
       if (oeuvres.length === 0) {
@@ -1884,7 +1884,11 @@
         isbn: oeuvre.isbn || void 0,
         director: oeuvre.director || void 0
       };
-      this.form.setValueOf("notes", JSON.stringify(infos));
+      let infosStr = JSON.stringify(infos);
+      if (infosStr === "{}") {
+        infosStr = "";
+      }
+      this.form.setValueOf("notes", infosStr);
     }
     /**
      * @api
@@ -2263,7 +2267,7 @@
       { propName: "titre_original", type: String, required: true, fieldType: "text", onChange: this.onChangeTitreOriginal.bind(this) },
       { propName: "titre_francais", type: String, required: false, fieldType: "text" },
       { propName: "auteurs", type: String, required: true, fieldType: "text", onChange: this.onChangeAuteurs.bind(this) },
-      { propName: "type", type: String, required: true, fieldType: "select", values: [["film", "Film"], ["roman", "Roman"], ["pi\xE8ce", "Pi\xE8ce"], ["livre", "Livre"], ["bd", "BD"]] },
+      { propName: "type", type: String, required: true, fieldType: "select", values: [["film", "Film"], ["s\xE9rie", "S\xE9rie"], ["roman", "Roman"], ["pi\xE8ce", "Pi\xE8ce"], ["livre", "Livre"], ["bd", "BD"]] },
       { propName: "annee", type: String, required: true, fieldType: "text" },
       { propName: "resume", type: String, required: false, fieldType: "textarea" },
       { propName: "notes", type: String, required: false, fieldType: "textarea" }

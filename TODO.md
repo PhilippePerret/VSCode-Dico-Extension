@@ -1,7 +1,8 @@
 # Todo list
 
 * J'EN SUIS À :
-  - Voir si l'enregistrement des oeuvres fonctionne (faire tout pour La Unidad)
+  - Mettre en place le script de sortie des données (DB => FICHIERS)
+    Cette mise en place est impératif maintenant car des nouvelles données ont été ajoutées et il ne faut plus utiliser les anciens fichiers pour charger les données.
 
 * POURSUIVRE AVEC : 
   - Implémentation du formulaire pour les oeuvres

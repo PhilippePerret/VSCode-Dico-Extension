@@ -1,12 +1,14 @@
 .DS_Store
 
-node_modules/
+src/data/files/
 
 entrees.txt
 entrees.yaml
 entrees.xml
 exemples.yaml
 exemples.xml
+
+out/
 
 .vscode-test/
 
