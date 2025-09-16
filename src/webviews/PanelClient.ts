@@ -9,6 +9,9 @@ import { Help } from "./services/HelpManager";
 import { VimLikeManager } from "./services/VimLikeManager";
 import "../bothside/class_extensions";
 
+
+export type FlashMessageType = 'notice' | 'warn' | 'error' | 'action';
+
 interface PanelConstructorData {
   minName: string;
   titName: string;
@@ -73,8 +76,7 @@ export class PanelClient<T extends Tplus, C> {
   }
 
 
-
-  public flash(msg:string, type: 'notice' | 'warn' | 'error' | 'action') {
+  public flash(msg:string, type: FlashMessageType) {
     const o = document.createElement('div');
     o.className = type;
     o.innerHTML = msg;

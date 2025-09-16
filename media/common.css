@@ -197,6 +197,11 @@ footer {
 	align-items: center;
 }
 
+#footer-shortcuts {
+	background-color: darkorange;
+	padding: 0.5em;
+}
+
 #panel-console {
 	display: block;
 	width: calc(100% - 16px);

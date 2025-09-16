@@ -1787,7 +1787,8 @@
         }
       }
       console.log("Il y a moins de 5 r\xE9sultats, je prends toutes les infos", searchResults);
-      const oeuvres = searchResults.map(async (dataOeuvre) => await this.getAllInfos(dataOeuvre));
+      const oeuvres = await Promise.all(searchResults.map(async (dataOeuvre) => this.getAllInfos(dataOeuvre)));
+      console.log("Oeuvres une fois charg\xE9es enti\xE8rement", oeuvres);
       if (oeuvres.length === 1) {
         this.peupleFormWithOeuvre(oeuvres[0]);
       } else {
