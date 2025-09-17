@@ -37,6 +37,7 @@ exports.App = void 0;
 const vscode = __importStar(require("vscode"));
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
+const os = __importStar(require("os"));
 const PanelManager_1 = require("./panels/PanelManager");
 const DatabaseService_1 = require("./db/DatabaseService");
 const Entry_1 = require("../models/Entry");
@@ -58,6 +59,28 @@ class App {
         await PanelManager_1.PanelManager.observePanels();
         PanelManager_1.PanelManager.activatePanelEntries();
     }
+    static get configFilePath() {
+        return this._conffilepath || (this._conffilepath = path.join(this._context.extensionPath, 'config/config.json'));
+    }
+    static _conffilepath;
+    static get supportFolder() {
+        if (undefined === this._supportfolder) {
+            let dos;
+            if (fs.existsSync(this.configFilePath)) {
+                const config = JSON.parse(fs.readFileSync(this.configFilePath, 'utf-8'));
+                // console.log("Configuration", config);
+                if (config.support_dir) {
+                    dos = path.join(os.homedir(), config.support_dir);
+                }
+            }
+            dos || (dos = this._context.globalStorageUri?.fsPath || this._context.extensionPath);
+            // console.log("Dossier support final : %s", dos);
+            this._supportfolder = dos;
+        }
+        ;
+        return this._supportfolder;
+    }
+    static _supportfolder;
     /**
      * La mise en place de fonctions simples pour des boucles d'attente
      * incrémentiel.

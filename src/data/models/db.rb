@@ -5,6 +5,42 @@ INT = 'int'
 
 class DB
   class << self
+
+    # Pour exporter les données 
+    #
+    # @param :name Nom de la table des données
+    # @param :formats Liste des formats. Peut contenir [:json, :yaml, :text]
+    def export_data(name:, formats:)
+      begin
+        @json_file = formats.include?(:json) ? File.open(json_path(name:), 'w') : nil
+        @yaml_file = formats.include?(:yaml) ? File.open(yaml_path(name:), 'w') : nil
+        @text_file = formats.include?(:text) ? File.open(text_path(name:), 'w') : nil
+
+        db.execute("SELECT * FROM #{name}") do |row|
+          puts row.inspect
+        end
+
+      rescue Exception => e
+        puts "Une erreur s'est produite : #{e.message}"
+      ensure
+        @json_file && @json_file.close
+        @yaml_file && @yaml_file.close
+        @text_file && @text_file.close
+      end
+    end
+    
+    def expath(name:, extension:) 
+      File.join(db_folder, 'exports', "#{name}-#{}.#{extension}")
+    end
+    def json_path(name:)
+      expath(name: :name, extension: 'json')
+    end
+    def yaml_path(name:)
+      expath(name: :name, extension: 'yaml')
+    end
+    def text_path(name:)
+      expath(name: :name, extension: 'txt')
+    end
     
     # Pour mettre des données dans la base
     # 
@@ -35,8 +71,6 @@ class DB
 
 
     def prepare
-      puts "Je dois apprendre à préparer la base de données"
-      puts "Path: #{db_path}"
       if File.exist?(db_path)
         File.delete(db_path)
       else
@@ -114,7 +148,7 @@ class DB
       @db_path ||= File.join(db_folder, 'dico.db')
     end
     def db_folder
-      @db_folder ||= File.join(Dir.home, 'Library', "Application\ Support", 'Code - Insiders', 'User', 'globalStorage', 'undefined_publisher.dico-cnario')
+      @db_folder ||= File.join(Dir.home, 'Library', "Application\ Support", 'Code - Insiders', 'User', 'globalStorage', 'dico-cnario')
     end
   end #/<< self
 end

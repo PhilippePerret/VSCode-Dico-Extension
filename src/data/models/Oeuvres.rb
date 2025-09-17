@@ -2,6 +2,13 @@ require 'yaml'
 
 class Oeuvre 
   class << self
+
+    def export_all
+      formats = [:json, :yaml]
+      DB.export_data(name: 'oeuvres', formats: formats)
+      puts "Oeuvre exportées avec succès au format #{formats.join(', ')}"
+    end
+
     def import_all
       inject_data_in_db
       DB.check_data_count(name: 'oeuvres', count: @oeuvres_count)

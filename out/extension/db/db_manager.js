@@ -66,7 +66,7 @@ class DBManager {
     }
     async createBackup() {
         const context = App_1.App._context;
-        const backupDir = path_1.default.join(context.globalStorageUri?.fsPath || context.extensionPath, 'backups');
+        const backupDir = path_1.default.join(App_1.App.supportFolder, 'backups');
         if (!fs.existsSync(backupDir)) {
             fs.mkdirSync(backupDir, { recursive: true });
         }

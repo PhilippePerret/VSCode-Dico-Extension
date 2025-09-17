@@ -3,6 +3,9 @@
 * J'EN SUIS À :
   - Mettre en place le script de sortie des données (DB => FICHIERS)
     Cette mise en place est impératif maintenant car des nouvelles données ont été ajoutées et il ne faut plus utiliser les anciens fichiers pour charger les données.
+    - ruby exportant de la table aux fichiers
+    - lien-bouton depuis le mode d'emploi pour déclencher l'export
+    - un lien-bouton aussi pour ouvrir le dossier
 
 * POURSUIVRE AVEC : 
   - Implémentation du formulaire pour les oeuvres
@@ -19,20 +22,15 @@
   - quand je filtre et que je fais "f", ça ne sélectionne pas un des éléments affichés (avec la console, obtenir la valeur de l'item sélectionné)
   - quand je clique sur l'erreur, elle ne se ferme pas
 
-* Mettre le champ de définition plus grand, dans le formulaire
 * Traiter l'affichage de la définition
   - dim(…)
   - toutes les marques d'appel/index de définition (cf MARK_ENTRIES)
   - les marques oeuvres
   - les marques d'exemple
   - des liens pour rejoindre les éléments (les exemples, en l'occurence, et les définitions)
-* Travailler l'édition
-  - check de toutes les données
-  - enregistrement dans la base de données
-* Outils pour faciliter la création des oeuvres
-  - relève des données sur TMDB
 * Outils pour faciliter la création des exemples
 * Quand on clique sur un élément : ça le sélectionne
+* Un export pour Antidote (juste du texte)
 * Bien activer le premier panneau au lancement, pour pouvoir utiliser les raccourcis tout de suite
 * Script Donnée DB -> Fichier YAML/XML
   - avec tous les contrôles possibes pour ne rien perdre

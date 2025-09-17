@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 
 import { PanelManager } from './panels/PanelManager';
 import { DatabaseService } from './db/DatabaseService';
@@ -8,7 +9,8 @@ import { Entry } from '../models/Entry';
 import { Oeuvre } from '../models/Oeuvre';
 import { Exemple } from '../models/Exemple';
 import { AnyElementClass } from '../models/AnyElement';
-import { CanalOeuvre } from './Rpc';
+
+
 
 export class App {
   public static _context: vscode.ExtensionContext;
@@ -27,6 +29,29 @@ export class App {
     await PanelManager.observePanels();
     PanelManager.activatePanelEntries();
   }
+  
+
+  private static get configFilePath(){
+    return this._conffilepath || (this._conffilepath = path.join(this._context.extensionPath, 'config/config.json'));
+  }
+  private static _conffilepath?: string;
+
+  public static get supportFolder() {
+    if (undefined === this._supportfolder) {
+      let dos: string | undefined;
+      if (fs.existsSync(this.configFilePath)) {
+        const config = JSON.parse(fs.readFileSync(this.configFilePath, 'utf-8'));
+        // console.log("Configuration", config);
+        if (config.support_dir) {
+          dos = path.join(os.homedir(), config.support_dir);
+        }
+      }
+      dos || (dos = this._context.globalStorageUri?.fsPath || this._context.extensionPath);
+      // console.log("Dossier support final : %s", dos);
+      this._supportfolder = dos;
+    }; return this._supportfolder;
+  }
+  private static _supportfolder?: string;
  
   /**
    * La mise en place de fonctions simples pour des boucles d'attente

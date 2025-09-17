@@ -4,6 +4,8 @@ node_modules/
 
 src/data/files/
 
+config/
+
 entrees.txt
 entrees.yaml
 entrees.xml

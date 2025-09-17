@@ -1,10 +1,8 @@
 import * as fs from 'fs';
 import path from 'path';
 import { DatabaseService } from "../services/db/DatabaseService";
-import { IEntry } from '../models/Entry';
-import { IOeuvre } from '../models/Oeuvre';
-import { IExemple } from '../models/Exemple';
 import { App } from '../services/App';
+import { ExtensionContext } from 'vscode';
 
 class SaveError extends Error {
   public severity: number | undefined;
@@ -37,7 +35,7 @@ export class DBManager {
 
   async createBackup(): Promise<string> {
     const context = App._context;
-     const backupDir = path.join(context.globalStorageUri?.fsPath || context.extensionPath, 'backups');
+     const backupDir = path.join(App.supportFolder, 'backups');
     if (!fs.existsSync(backupDir)) { fs.mkdirSync(backupDir, { recursive: true }); }
 
     // Backup complet de la DB

@@ -37,6 +37,7 @@ exports.DatabaseService = void 0;
 const sqlite3 = __importStar(require("sqlite3"));
 const path = __importStar(require("path"));
 const fs = __importStar(require("fs"));
+const App_1 = require("../App");
 class DatabaseService {
     static instance = null;
     db = null;
@@ -48,7 +49,14 @@ class DatabaseService {
             this.dbPath = path.join(context.extensionPath, 'test-data', dbName);
         }
         else {
-            this.dbPath = path.join(context.globalStorageUri?.fsPath || context.extensionPath, dbName);
+            this.dbPath = path.join(App_1.App.supportFolder, dbName).replace(/ /g, '\ ');
+            console.log("DB Path : %s", this.dbPath);
+            if (fs.existsSync(this.dbPath)) {
+                console.log('DB Existe.');
+            }
+            else {
+                throw new Error(`Impossible de trouver la base de données à l'adresse : ${this.dbPath}`);
+            }
         }
         // Ensure directory exists
         const dir = path.dirname(this.dbPath);

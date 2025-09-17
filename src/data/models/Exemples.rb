@@ -2,6 +2,13 @@ require 'json'
 
 class Exemple 
   class << self
+    
+    def export_all
+      formats = [:json, :yaml]
+      # DB.export_data(name: 'exemples', formats: formats)
+      puts "Je n'exporte pas encore les exemples"
+    end
+    
     def import_all
       inject_data_in_db
       DB.check_data_count(name: 'exemples', count: @exemples_count)

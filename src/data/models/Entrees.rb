@@ -5,6 +5,12 @@ class Entry
       DB.check_data_count(name: 'entrees', count: @table_entree_to_id.keys.count)
     end
 
+    def export_all
+      formats = [:json, :yaml, :text]
+      # DB.export_data(name: 'entrees', formats: formats)
+      puts "Je n'exporte pas encore les entrées"
+    end
+
     # Reçoit l'entrée (humaine, textuelle) et retourne l'id correspondant
     def get_id_from_entree(entree)
       @table_entree_to_id[entree.downcase]
