@@ -33,124 +33,6 @@
     }
   };
 
-  // src/webviews/services/App.ts
-  var App = class {
-    /**
-     * 
-     * Les méthodes suivantes peuvent s'appeler en tapant simplement leur
-     * nom en console (bas des panneaux — 'c' pour rejoindre la console)
-     */
-    static openSupport() {
-      console.log("je dois apprendre \xE0 ouvrir le dossier support");
-      return "Ouverture du dossier Support";
-    }
-    static exportAllData() {
-      console.log("Je dois apprendre \xE0 backuper les donn\xE9es dans les fichiers.");
-      return "Exportation des donn\xE9es demand\xE9e.";
-    }
-    /**
-     * 
-     * Méthode fonctionnelles
-     * 
-     * @param code Code à évaluer
-     * @returns True si tout s'est bien passé (le code à pu être évalué), False sinon
-     * 
-     */
-    static eval(code) {
-      const ok = this.tryEval(code) || this.tryEval("this." + code) || this.tryEval(code + "()") || this.tryEval("this." + code + "()") || console.warn("Code non \xE9valuable dans App : %s", code);
-      if (ok) {
-        return true;
-      } else {
-        return false;
-      }
-    }
-    static tryEval(code) {
-      try {
-        const result = new Function("return " + code).call(this);
-        if (void 0 === result) {
-          throw new Error("Code qui ne renvoie rien");
-        }
-        if ("function" === typeof result) {
-          result();
-        }
-        return true;
-      } catch (erreur) {
-        return false;
-      }
-    }
-  };
-
-  // src/webviews/ClientItem.ts
-  var ClientItem = class {
-    static klass;
-    static get accessTable() {
-      return this._accessTable;
-    }
-    static panel;
-    static _accessTable;
-    static _selector;
-    static get Selector() {
-      return this._selector || (this._selector = new SelectionManager(this.klass));
-    }
-    static get app() {
-      return App;
-    }
-    // Raccourcis vers l'accessTable, pour obtenir des informations
-    // sur les items ou les items eux-même
-    static get(itemId) {
-      return this.accessTable.getById(itemId);
-    }
-    static getObj(itemId) {
-      return this.accessTable.getObj(itemId);
-    }
-    static each(method) {
-      this.accessTable.each(method);
-    }
-    static isVisible(id) {
-      return this.accessTable.isVisible(id);
-    }
-    static setVisible(id) {
-      this.accessTable.setVisibility(id, true);
-    }
-    static setInvisible(id) {
-      this.accessTable.setVisibility(id, false);
-    }
-    static selectFirstItem() {
-      this.panel.select(this.accessTable.firstItem);
-    }
-    static editItem(itemId) {
-      this.panel.form.editItem(this.get(itemId));
-    }
-    static createNewItem() {
-      this.panel.form.editItem(new this.klass({ id: "" }));
-    }
-    toRow() {
-      return {};
-    }
-    /**
-     * Méthode qui reçoit les items sérialisés depuis l'extension et va les
-     * consigner dans le panneau, dans une AccessTable qui permettra de 
-     * parcourrir les éléments. 
-     */
-    static deserializeItems(items, klass) {
-      const allItems = items.map((item) => new this.klass(JSON.parse(item)));
-      this.klass.setAccessTable(allItems);
-    }
-    data;
-    constructor(itemData) {
-      this.data = itemData;
-    }
-    // Pour obtenir l'AccKey (ak) de l'item
-    static getAccKey(id) {
-      return this.accessTable.getAccKeyById(id);
-    }
-    // public get obj(){ return this._obj ;}
-    // protected get isNotVisible(){ return this._visible === false;}
-    // protected get isVisible(){ return this._visible === true ;}
-    // private _obj!: HTMLDivElement;
-    // private _visible: boolean = true;
-  };
-
   // src/bothside/RpcChannel.ts
   var RpcChannel = class {
     constructor(sender, receiver) {
@@ -209,266 +91,6 @@
       (cb) => window.addEventListener("message", (event) => cb(event.data))
     );
   }
-
-  // src/webviews/services/DomUtils.ts
-  var stopEvent = function(ev) {
-    ev.preventDefault();
-    ev.stopImmediatePropagation();
-    return false;
-  };
-
-  // src/webviews/services/VimLikeManager.ts
-  var VimLikeManager = class {
-    constructor(root, panel, klass) {
-      this.root = root;
-      this.panel = panel;
-      this.klass = klass;
-      this.mode = "null";
-      this.form = this.panel.form;
-      this.root.addEventListener("keydown", this.universelKeyboardCapture.bind(this), true);
-      this.root.addEventListener("keydown", this.onKeyDown.bind(this));
-      this._keylistener = this.onKeyDownModeNull.bind(this);
-      this.searchInput = this.root.querySelector("input#search-input");
-      this.consoleInput = this.root.querySelector("input#panel-console");
-      this.searchInput.addEventListener("focus", this.onFocusEditField.bind(this, this.searchInput));
-      this.searchInput.addEventListener("blur", this.onBlurEditField.bind(this, this.searchInput));
-      this.consoleInput.addEventListener("focus", this.onFocusEditField.bind(this, this.consoleInput));
-      this.consoleInput.addEventListener("blur", this.onBlurEditField.bind(this, this.consoleInput));
-    }
-    // 
-    /**
-     * MODE DU PANNEAU
-     * 
-     * Pour le moment, le panneau peut être dans deux états, en
-     * fonction du fait que le curseur se trouve dans un champ
-     * éditable ou non.
-     */
-    _keylistener;
-    _mode = "normal";
-    get mode() {
-      return this._mode;
-    }
-    form;
-    setMode(mode) {
-      this.mode = mode;
-    }
-    set mode(mode) {
-      console.info("[VimLikeManager mode] Mise du mode \xE0 '%s')", mode);
-      this._mode = mode;
-      switch (mode) {
-        case "edit":
-          console.log("[VimLikeManager.mode] Passage du mode clavier au mode edit");
-          this._keylistener = this.onKeyDownModeEdit.bind(this);
-          break;
-        case "normal":
-          console.log("[VimLikeManager.mode] Passage du mode clavier au mode normal");
-          this._keylistener = this.onKeyDownModeNormal.bind(this);
-          break;
-        case "null":
-          console.log("Le panneau est en mode NULL (sans action");
-          this._keylistener = this.onKeyDownModeNull.bind(this);
-          break;
-        case "form":
-          console.log("Panneau en mode FORMulaire");
-          this._keylistener = this.onKeyDownModeForm.bind(this);
-          break;
-      }
-      this.root.dataset.mode = `mode-${mode}`;
-      if (this.root.querySelector("span#mode-name")) {
-        const spanName = this.root.querySelector("span#mode-name");
-        spanName.innerHTML = mode.toLocaleUpperCase();
-      } else {
-        console.warn("Bizarrement, le span #mode-name affichant le mode du panneau est introuvable.");
-      }
-    }
-    searchInput;
-    consoleInput;
-    onFocusEditField(field, ev) {
-      this.setMode("edit");
-    }
-    onBlurEditField(field, ev) {
-      this.setMode("normal");
-    }
-    keyboardBypass;
-    // La méthode qui choppe normalement toutes les touches, quel que soit le mode
-    /**
-       * Capteur Universel de Touche clavier
-       * 
-       * Quel que soit le mode, cette méthode reçoit les touches clavier
-       * avant tout le monde.
-    
-       * Cela permet : 
-       *    - d'implémenter un système de "coupe-circuit" qui est
-       *      utilisé par exemple pour les messages de type "action 
-       *      demandée". (voir le manuel pour le détail). 
-       *    - d'implémenter la gestion de touche "?" qui permet, quelle
-       *      que soit la situation, d'obtenir de l'aide.
-       */
-    universelKeyboardCapture(ev) {
-      if (ev.key === "?") {
-        this.panel.activateContextualHelp();
-        return stopEvent(ev);
-      } else if (this.keyboardBypass) {
-        if (this.keyboardBypass.has(ev.key)) {
-          const methodBypass = this.keyboardBypass.get(ev.key);
-          delete this.keyboardBypass;
-          this.panel.cleanFlash();
-          this.panel.cleanFooterShortcuts();
-          methodBypass();
-        }
-        return ev && stopEvent(ev);
-      }
-      return true;
-    }
-    /**
-     * API
-     * Méthode de discrimination dans l'objet +obj+. Tous les champs qu'il contient
-     * qui sont des champs d'édition textuels vont faire basculer dans le mode :editMode
-     * quand ils sont focusser et le mode :normalMode (souvent 'normal') quand on va
-     * les blurer 
-     * 
-     * @param obj {HTMLElement} Bloc contenant les champs d'édition
-     * @param modes {Hash} Table définisssant :edit et :normal pour savoir le nom des
-     * modes à utiliser en édition (dans un champ éditable) et hors édition.
-     */
-    discrimineFieldsForModeIn(obj, modes) {
-      const selectors = 'input[type="text"], input[type="email"], input[type="password"], textarea, [contenteditable]';
-      obj.querySelectorAll(selectors).forEach((field) => {
-        console.log("Discrimination du champ ", field);
-        field.addEventListener("focus", this.setMode.bind(this, modes.edit));
-        field.addEventListener("blur", this.setMode.bind(this, modes.normal));
-      });
-    }
-    // Sera remplacé par la bonne méthode suivant le mode.
-    onKeyDown(ev) {
-      return this._keylistener(ev);
-    }
-    /**
-     * ============ TOUS LES MODES DE CLAVIER ================
-     */
-    // Quand la touche meta est pressée, on passe toujours par là
-    onKeyDownWithMeta(ev) {
-      switch (ev.key) {
-        case "q":
-        case "Q":
-          stopEvent(ev);
-          console.log("On ne peut pas quitter comme \xE7a\u2026");
-          break;
-        case "s":
-        case "S":
-          stopEvent(ev);
-          console.log("Demande de sauvegarde forc\xE9e.");
-          break;
-      }
-    }
-    onKeyDownModeNormal(ev) {
-      console.log("-> VimLikeManager.onKeyDownModeNormal", ev.key, ev);
-      if (ev.metaKey) {
-        return this.onKeyDownWithMeta(ev);
-      }
-      stopEvent(ev);
-      switch (ev.key) {
-        case "j":
-          this.klass.accessTable.selectNextItem(this.panel);
-          break;
-        case "k":
-          this.klass.accessTable.selectPrevItem(this.panel);
-          break;
-        case "s":
-          this.searchInput.focus();
-          break;
-        case "c":
-          this.consoleInput.focus();
-          break;
-        case "e":
-          if (this.panel.getSelection()) {
-            this.klass.editItem(this.panel.getSelection());
-          } else {
-            console.log("Pas de s\xE9lection \xE0 \xE9diter");
-          }
-          break;
-        case "n":
-          this.klass.createNewItem();
-          break;
-        default:
-          console.log("Pour le moment, je ne fais rien de '%s'", ev.key);
-      }
-      return false;
-    }
-    /**
-     * Gestionnaire des touches de clavier en mode EDIT (dans un
-     * champ d'édition) 
-     */
-    onKeyDownModeEdit(ev) {
-      if (ev.metaKey) {
-        return this.onKeyDownWithMeta(ev);
-      }
-      switch (ev.key) {
-        case "Tab":
-          ev.target.blur();
-          return stopEvent(ev);
-      }
-      return true;
-    }
-    // Mode clavier pour le formulaire
-    onKeyDownModeForm(ev) {
-      console.log("-> onKeyDownModeForm");
-      if (this.form.saving === true) {
-        return;
-      }
-      if (ev.metaKey) {
-        return this.onKeyDownWithMeta(ev);
-      }
-      switch (ev.key) {
-        case "a":
-          this.form.focusField(1);
-          break;
-        case "b":
-          this.form.focusField(2);
-          break;
-        case "c":
-          this.form.focusField(3);
-          break;
-        case "d":
-          this.form.focusField(4);
-          break;
-        case "e":
-          this.form.focusField(5);
-          break;
-        case "f":
-          this.form.focusField(6);
-          break;
-        case "g":
-          this.form.focusField(7);
-          break;
-        case "l":
-          this.form.toggleIdLock();
-          break;
-        case "s":
-          this.form.saveItem(false);
-          break;
-        case "w":
-          this.form.saveItem(true);
-          break;
-        case "q":
-          this.form.cancelEdit();
-          break;
-        default:
-          if (this.form.tableKeys[ev.key]) {
-            this.form.tableKeys[ev.key].call(null);
-          }
-      }
-      return stopEvent(ev);
-    }
-    onKeyDownModeNull(ev) {
-      console.error("Il faut activer un mode de clavier");
-      return stopEvent(ev);
-    }
-    // @return true si la cible de l'évènement +ev+ est un champ éditable
-    targetEventIsEditable(ev) {
-      return ev.target.matches("input, textarea, [contenteditable]");
-    }
-  };
 
   // src/webviews/services/AccessTable.ts
   var AccessTable = class {
@@ -1109,6 +731,263 @@
     }
   };
 
+  // src/webviews/services/DomUtils.ts
+  var stopEvent = function(ev) {
+    ev.preventDefault();
+    ev.stopImmediatePropagation();
+    return false;
+  };
+
+  // src/webviews/services/VimLikeManager.ts
+  var VimLikeManager = class {
+    constructor(root, panel, klass) {
+      this.root = root;
+      this.panel = panel;
+      this.klass = klass;
+      this.mode = "null";
+      this.form = this.panel.form;
+      this.root.addEventListener("keydown", this.universelKeyboardCapture.bind(this), true);
+      this.root.addEventListener("keydown", this.onKeyDown.bind(this));
+      this._keylistener = this.onKeyDownModeNull.bind(this);
+      this.searchInput = this.root.querySelector("input#search-input");
+      this.consoleInput = this.root.querySelector("input#panel-console");
+      this.searchInput.addEventListener("focus", this.onFocusEditField.bind(this, this.searchInput));
+      this.searchInput.addEventListener("blur", this.onBlurEditField.bind(this, this.searchInput));
+      this.consoleInput.addEventListener("focus", this.onFocusEditField.bind(this, this.consoleInput));
+      this.consoleInput.addEventListener("blur", this.onBlurEditField.bind(this, this.consoleInput));
+    }
+    // 
+    /**
+     * MODE DU PANNEAU
+     * 
+     * Pour le moment, le panneau peut être dans deux états, en
+     * fonction du fait que le curseur se trouve dans un champ
+     * éditable ou non.
+     */
+    _keylistener;
+    _mode = "normal";
+    get mode() {
+      return this._mode;
+    }
+    form;
+    setMode(mode) {
+      this.mode = mode;
+    }
+    set mode(mode) {
+      this._mode = mode;
+      switch (mode) {
+        case "edit":
+          this._keylistener = this.onKeyDownModeEdit.bind(this);
+          break;
+        case "normal":
+          this._keylistener = this.onKeyDownModeNormal.bind(this);
+          break;
+        case "null":
+          console.log("Le panneau est en mode NULL (sans action");
+          this._keylistener = this.onKeyDownModeNull.bind(this);
+          break;
+        case "form":
+          console.log("Panneau en mode FORMulaire");
+          this._keylistener = this.onKeyDownModeForm.bind(this);
+          break;
+      }
+      this.root.dataset.mode = `mode-${mode}`;
+      if (this.root.querySelector("span#mode-name")) {
+        const spanName = this.root.querySelector("span#mode-name");
+        spanName.innerHTML = mode.toLocaleUpperCase();
+      } else {
+        console.warn("Bizarrement, le span #mode-name affichant le mode du panneau est introuvable.");
+      }
+    }
+    searchInput;
+    consoleInput;
+    onFocusEditField(field, ev) {
+      this.setMode("edit");
+    }
+    onBlurEditField(field, ev) {
+      this.setMode("normal");
+    }
+    keyboardBypass;
+    // La méthode qui choppe normalement toutes les touches, quel que soit le mode
+    /**
+       * Capteur Universel de Touche clavier
+       * 
+       * Quel que soit le mode, cette méthode reçoit les touches clavier
+       * avant tout le monde.
+    
+       * Cela permet : 
+       *    - d'implémenter un système de "coupe-circuit" qui est
+       *      utilisé par exemple pour les messages de type "action 
+       *      demandée". (voir le manuel pour le détail). 
+       *    - d'implémenter la gestion de touche "?" qui permet, quelle
+       *      que soit la situation, d'obtenir de l'aide.
+       */
+    universelKeyboardCapture(ev) {
+      if (ev.key === "?") {
+        this.panel.activateContextualHelp();
+        return stopEvent(ev);
+      } else if (this.keyboardBypass) {
+        if (this.keyboardBypass.has(ev.key)) {
+          const methodBypass = this.keyboardBypass.get(ev.key);
+          delete this.keyboardBypass;
+          this.panel.cleanFlash();
+          this.panel.cleanFooterShortcuts();
+          methodBypass();
+        }
+        return ev && stopEvent(ev);
+      }
+      return true;
+    }
+    /**
+     * API
+     * Méthode de discrimination dans l'objet +obj+. Tous les champs qu'il contient
+     * qui sont des champs d'édition textuels vont faire basculer dans le mode :editMode
+     * quand ils sont focusser et le mode :normalMode (souvent 'normal') quand on va
+     * les blurer 
+     * 
+     * @param obj {HTMLElement} Bloc contenant les champs d'édition
+     * @param modes {Hash} Table définisssant :edit et :normal pour savoir le nom des
+     * modes à utiliser en édition (dans un champ éditable) et hors édition.
+     */
+    discrimineFieldsForModeIn(obj, modes) {
+      const selectors = 'input[type="text"], input[type="email"], input[type="password"], textarea, [contenteditable]';
+      obj.querySelectorAll(selectors).forEach((field) => {
+        console.log("Discrimination du champ ", field);
+        field.addEventListener("focus", this.setMode.bind(this, modes.edit));
+        field.addEventListener("blur", this.setMode.bind(this, modes.normal));
+      });
+    }
+    // Sera remplacé par la bonne méthode suivant le mode.
+    onKeyDown(ev) {
+      return this._keylistener(ev);
+    }
+    /**
+     * ============ TOUS LES MODES DE CLAVIER ================
+     */
+    // Quand la touche meta est pressée, on passe toujours par là
+    onKeyDownWithMeta(ev) {
+      switch (ev.key) {
+        case "q":
+        case "Q":
+          stopEvent(ev);
+          console.log("On ne peut pas quitter comme \xE7a\u2026");
+          break;
+        case "s":
+        case "S":
+          stopEvent(ev);
+          console.log("Demande de sauvegarde forc\xE9e.");
+          break;
+      }
+    }
+    onKeyDownModeNormal(ev) {
+      console.log("-> VimLikeManager.onKeyDownModeNormal", ev.key, ev);
+      if (ev.metaKey) {
+        return this.onKeyDownWithMeta(ev);
+      }
+      stopEvent(ev);
+      switch (ev.key) {
+        case "j":
+          this.klass.accessTable.selectNextItem(this.panel);
+          break;
+        case "k":
+          this.klass.accessTable.selectPrevItem(this.panel);
+          break;
+        case "s":
+          this.searchInput.focus();
+          break;
+        case "c":
+          this.consoleInput.focus();
+          break;
+        case "e":
+          if (this.panel.getSelection()) {
+            this.klass.editItem(this.panel.getSelection());
+          } else {
+            console.log("Pas de s\xE9lection \xE0 \xE9diter");
+          }
+          break;
+        case "n":
+          this.klass.createNewItem();
+          break;
+        default:
+          console.log("Pour le moment, je ne fais rien de '%s'", ev.key);
+      }
+      return false;
+    }
+    /**
+     * Gestionnaire des touches de clavier en mode EDIT (dans un
+     * champ d'édition) 
+     */
+    onKeyDownModeEdit(ev) {
+      if (ev.metaKey) {
+        return this.onKeyDownWithMeta(ev);
+      }
+      switch (ev.key) {
+        case "Tab":
+          ev.target.blur();
+          return stopEvent(ev);
+      }
+      return true;
+    }
+    // Mode clavier pour le formulaire
+    onKeyDownModeForm(ev) {
+      console.log("-> onKeyDownModeForm");
+      if (this.form.saving === true) {
+        return;
+      }
+      if (ev.metaKey) {
+        return this.onKeyDownWithMeta(ev);
+      }
+      switch (ev.key) {
+        case "a":
+          this.form.focusField(1);
+          break;
+        case "b":
+          this.form.focusField(2);
+          break;
+        case "c":
+          this.form.focusField(3);
+          break;
+        case "d":
+          this.form.focusField(4);
+          break;
+        case "e":
+          this.form.focusField(5);
+          break;
+        case "f":
+          this.form.focusField(6);
+          break;
+        case "g":
+          this.form.focusField(7);
+          break;
+        case "l":
+          this.form.toggleIdLock();
+          break;
+        case "s":
+          this.form.saveItem(false);
+          break;
+        case "w":
+          this.form.saveItem(true);
+          break;
+        case "q":
+          this.form.cancelEdit();
+          break;
+        default:
+          if (this.form.tableKeys[ev.key]) {
+            this.form.tableKeys[ev.key].call(null);
+          }
+      }
+      return stopEvent(ev);
+    }
+    onKeyDownModeNull(ev) {
+      console.error("Il faut activer un mode de clavier");
+      return stopEvent(ev);
+    }
+    // @return true si la cible de l'évènement +ev+ est un champ éditable
+    targetEventIsEditable(ev) {
+      return ev.target.matches("input, textarea, [contenteditable]");
+    }
+  };
+
   // src/bothside/class_extensions.ts
   Map.prototype.firstValue = function() {
     for (var v of this.values()) {
@@ -1374,7 +1253,6 @@
       this.form = data.form;
     }
     setPanelFocus(actif) {
-      console.log("[setPanelFocus] Focus mis sur le panneau %s", this.titName);
       document.body.classList[actif ? "add" : "remove"]("actif");
       this._actif = actif;
       this.keyManager.setMode("normal");
@@ -1391,6 +1269,68 @@
       } else if (ev.key === "ArrowUp") {
         this.consoleManager.backHistory();
       }
+    }
+  };
+
+  // src/bothside/UConstants.ts
+  var Constants = class {
+    static ENTRIES_GENRES = {
+      "nm": "n.m.",
+      "nmp": "n.m.pl.",
+      "nf": "n.f.",
+      "np": "n.pl.",
+      "vb": "verbe",
+      "adj": "adj.",
+      "adv": "adv."
+    };
+    /**
+     * Les préfixes/marques qui introduisent des index dans les définitions
+     * principalement. Permet, par exemple dans le check des valeurs des
+     * définitions, de vérifier l'existence des mots référencés.
+     * 
+     * Leur forme canonique est :
+     * 
+     *  <mark>(<id entrée>) ou <mark>(<texte écrit>|<id entrée>)
+     */
+    static MARK_ENTRIES = {
+      "->": { name: "Envoi simple" },
+      "index": { name: "Simple indexation" },
+      "tt": { name: "simple terme technique (sans page)" }
+    };
+  };
+
+  // src/webviews/services/ComplexRpc.ts
+  var ComplexRpc = class _ComplexRpc {
+    static requestTable = /* @__PURE__ */ new Map();
+    static addRequest(req) {
+      this.requestTable.set(req.id, req);
+    }
+    // À appeler à la fin, pour résoudre
+    static resolveRequest(requestId, params) {
+      this.requestTable.get(requestId).resolve(params);
+    }
+    id;
+    call;
+    // Fonction qui va lancer l'appel (reçoit en DERNIER argument l'identifiant de cette instance — pour le transmettre)
+    ok;
+    // le 'resolve' de new Promise((resolve, reject) => {})
+    ko;
+    // le reject de new Promise((resolve,reject) => {})
+    constructor(param) {
+      this.id = crypto.randomUUID();
+      this.call = param.call;
+      _ComplexRpc.addRequest(this);
+    }
+    run() {
+      return new Promise((ok, ko) => {
+        this.ok = ok;
+        this.ko = ko;
+        setTimeout(this.ko.bind(this, "timeout-20"), 10 * 1e4);
+        this.call(this.id);
+      });
+    }
+    resolve(params) {
+      this.ok(params);
     }
   };
 
@@ -1765,6 +1705,479 @@
       });
       return ok;
     }
+  };
+
+  // src/webviews/models/EntryForm.ts
+  var allg = Constants.ENTRIES_GENRES;
+  var genres = Object.keys(allg).map((key) => [key, allg[key]]);
+  var EntryForm = class _EntryForm extends FormManager {
+    formId = "entry-form";
+    prefix = "entry";
+    properties = [
+      { propName: "entree", type: String, required: true, fieldType: "text", onChange: this.onChangeEntree.bind(this) },
+      { propName: "id", type: String, required: true, fieldType: "text" },
+      { propName: "genre", type: String, required: true, fieldType: "select", values: genres },
+      { propName: "categorie_id", type: String, required: false, fieldType: "text" },
+      { propName: "definition", type: String, required: false, fieldType: "textarea" }
+    ];
+    // Table des raccourcis 'one key' propre au formulaire
+    tableKeys = {
+      // <touche>: <fonction bindée>, par exemple
+      // 'i': this.showInfo.bind(this)
+    };
+    static REG_SHORT_DEF = /\b(cf\.|voir|synonyme|contraire)\b/;
+    static REGEX_APPELS_ENTRIES = new RegExp(`(?:${Object.keys(Constants.MARK_ENTRIES).join("|")})\\(([^)]+)\\)`, "g");
+    static REG_OEUVRES = /\boeuvre\(([^)]+)\)/g;
+    onChangeEntree() {
+      const itemIsNew = this.getValueOf("id") === "";
+      if (itemIsNew) {
+        console.log("C'est un nouvel item, il faut calculer son ID d'apr\xE8s son entr\xE9e.");
+      }
+    }
+    // À faire après l'édition d'une Entrée
+    afterEdit() {
+      const id = this.field("id").value;
+      const isNewItem = id === "";
+      if (isNewItem) {
+        this.setIdLock(false);
+      }
+    }
+    /**
+     * Grand méthode de check de la validité de l'item. On ne l'envoie
+     * en enregistrement que s'il est parfaitement conforme. 
+     */
+    async checkItem(item) {
+      const isNew = item.isNew;
+      const errors = [];
+      this.diverseChecks(item, errors);
+      const unknownOeuvres = await this.checkExistenceOeuvres(item);
+      if (unknownOeuvres.length) {
+        errors.push(`des \u0153uvres sont introuvables : ${unknownOeuvres.map((t) => `"${t}"`).join(", ")}`);
+      }
+      const unknownEx = await this.checkExistenceExemples(item);
+      if (unknownEx.length) {
+        errors.push(`des exemples sont introuvables: ${unknownEx.join(", ")}`);
+      }
+      if (errors.length) {
+        console.error("Donn\xE9es invalides", errors);
+        return errors.join(", ").toLowerCase();
+      }
+    }
+    async checkExistenceOeuvres(item) {
+      const checkerOeuvres = new ComplexRpc({
+        call: this.searchUnknownOeuvresIn.bind(this, item.definition)
+      });
+      let resultat = await checkerOeuvres.run();
+      const res = resultat;
+      console.log("Retour apr\xE8s checkerOeuvres", resultat);
+      return res.unknown;
+    }
+    diverseChecks(item, errors) {
+      if (item.entree === "") {
+        errors.push("L'entr\xE9e doit \xEAtre d\xE9finie");
+      }
+      if (item.changeset.has("entree")) {
+        const newEntree = item.changeset.get("entree");
+        console.log("L'entr\xE9e a chang\xE9 (%s/%s)", item.original.entree, newEntree);
+        if (Entry.doesEntreeExist(newEntree)) {
+          errors.push(`L'entr\xE9e "${newEntree}" existe d\xE9j\xE0\u2026`);
+        }
+      }
+      if (item.id === "") {
+        errors.push("L'identifiant doit absoluement \xEAtre d\xE9fini");
+      } else if (item.changeset.has("id")) {
+        if (Entry.doesIdExist(item.id)) {
+          errors.push(`L'identifiant "${item.id}" existe d\xE9j\xE0. Je ne peux le r\xE9attribuer`);
+        }
+      }
+      if (item.definition === "") {
+        errors.push("La d\xE9finition du mot doit \xEAtre donn\xE9e");
+      } else if (item.changeset.has("definition")) {
+        if (item.definition.length < 50 && null === item.definition.match(_EntryForm.REG_SHORT_DEF)) {
+          errors.push("La d\xE9finition est courte, sans justification\u2026");
+        }
+        const unknownEntries = this.searchUnknownEntriesIn(item.definition);
+        if (unknownEntries.length > 0) {
+          errors.push(`entr\xE9es inconnues dans la d\xE9fintion (${unknownEntries.join(", ")})`);
+        }
+      } else {
+        console.log("La d\xE9finition n'a pas \xE9t\xE9 modifi\xE9e.");
+      }
+      if (item.genre === "") {
+        errors.push("Le genre de l'entr\xE9e doit \xEAtre donn\xE9");
+      } else if (item.changeset.has("genre") && Object.keys(Constants.ENTRIES_GENRES).includes(item.genre)) {
+        errors.push(`bizarrement, le genre "${item.genre} est inconnu\u2026`);
+      }
+      if (item.categorie_id !== "" && item.changeset.has("categorie_id")) {
+        const unknownCategorie = this.checkUnknownCategoriesIn(item.categorie_id);
+        if (unknownCategorie.length) {
+          errors.push(`des cat\xE9gories sont inconnues : ${unknownCategorie.join(", ")}`);
+        }
+      }
+      return errors;
+    }
+    // Pour chercher les entrées mentionnées dans la définition
+    searchUnknownEntriesIn(str) {
+      const founds = [];
+      const matches = str.matchAll(_EntryForm.REGEX_APPELS_ENTRIES);
+      for (const match of matches) {
+        const foo = match[1];
+        let [entry, entryId] = foo.split("|");
+        entryId = (entryId || entry).trim();
+        if (Entry.doesIdExist(entryId)) {
+          console.log("Id d'entr\xE9e existante", entryId);
+        } else if (Entry.doesEntreeExist(entryId)) {
+          console.log("Entr\xE9e existante (par son nom)", entryId);
+        } else if (entryId.endsWith("s")) {
+          const entryIdSing = entryId.substring(0, entryId.length - 1);
+          if (Entry.doesEntreeExist(entryIdSing)) {
+            console.log("Entr\xE9e existante (pas son nom singulier)", entryId);
+          } else if (Entry.doesIdExist(entryIdSing)) {
+            console.log("Id entr\xE9e existante (dans sa forme singuli\xE8re)", entryId);
+          }
+        } else {
+          founds.push(entryId);
+        }
+      }
+      return founds;
+    }
+    /**
+     * Vérifie que les œuvres désignées dans les balises oeuvre(...) existent
+     * bel et bien.
+     *
+     * Cette fonction s'intègre dans une requête Rpc complexe (ComplexRpc)
+     * 
+     * Pour ce faire, on a besoin de passer par l'extension car on n'a pas 
+     * accès aux oeuvres depuis ici.
+     * 
+     * @param str Dans la phase 1, La définition, dans la phase 2, le json revenant du check
+     * @param phase Pour savoir si on remonte de la vérifiation (phase 2)
+     * @returns La liste des œuvres qui n'ont pas été trouvées
+     */
+    searchUnknownOeuvresIn(str, CRId) {
+      const matches = str.matchAll(_EntryForm.REG_OEUVRES);
+      const oeuvres = [];
+      for (let match of matches) {
+        oeuvres.push(match[1]);
+      }
+      console.log("Oeuvres \xE0 checker", oeuvres);
+      RpcEntry.notify("check-oeuvres", { CRId, oeuvres });
+    }
+    /**
+     * Fonction principale pour checker les exemples dans la définition
+     * C'est elle qui initie la requête Rpc complexe. 
+     */
+    async checkExistenceExemples(item) {
+      const comp = new ComplexRpc({
+        call: this.searchUnknownExemplesIn.bind(this, item.definition)
+      });
+      const resultat = await comp.run();
+      const res = resultat;
+      return res.unknown;
+    }
+    /**
+     * Fonction vérifiant l'existence des exemples
+     * 
+     * Elle s'intègre dans la requête Rpc complexe inaugurée par la
+     * fonction checkExistenceExemples.
+     * 
+     * Rappel : les exemples, dans les définitions, sont définis par
+     * EXEMPLES[<ID oeuvre>:<indice exemple>, <ID oeuvre>:<indice>, etc.]
+     * Il peut y en avoir plusieurs par définition, comme pour la définition des genres.
+     *  
+     * @param str Le texte de la définition
+     * @param CRId L'identifiant de la ComplexRpc qui gère toute la communication
+     * 
+     * @return Rien, c'est la méthode message en bout de chaine qui résolvera 
+     * la requête Rpc complexe pour poursuivre.
+     */
+    searchUnknownExemplesIn(str, CRId) {
+      let matches = str.matchAll(/EXEMPLES\[([^\]]+)\]/g);
+      const exemples = [];
+      for (var match of matches) {
+        match[1].split(",").map((s) => s.trim()).forEach((paire) => {
+          const [oeuvreId, exIndice] = paire.split(":");
+          exemples.push([oeuvreId, exIndice]);
+        });
+      }
+      RpcEntry.notify("check-exemples", { CRId, exemples });
+    }
+    // @return la liste des catégories inconnues
+    checkUnknownCategoriesIn(str) {
+      const cats = str.split(",").map((s) => s.trim());
+      return cats.filter((cat) => false === Entry.doesIdExist(cat));
+    }
+    /**
+     * ENREGISTREMENT DE L'ENTRÉE
+     * -------------------------- 
+     * Procédure complexe (ComplexRpc)
+     */
+    async onSave(item) {
+      const itemSaver = new ComplexRpc({
+        call: Entry.saveItem.bind(Entry, item)
+      });
+      const res = await itemSaver.run();
+      console.log("res dans onSave", res);
+      if (res.ok) {
+        console.log("Apr\xE8s l'enregistrement de l'item, je dois apprendre \xE0 updater l'item (plut\xF4t en m\xE9thode g\xE9n\xE9rale ?)");
+        Entry.panel.flash("Item enregistr\xE9 avec succ\xE8s.", "notice");
+      } else {
+        console.error("ERREURS LORS DE L'ENREGISTREMENT DE L'ITEM", res.errors);
+        Entry.panel.flash("Erreur (enregistrement de l\u2019entr\xE9e (voir la console", "error");
+      }
+      return true;
+    }
+    /**
+     * Observation propre du formulaire des Entrées
+     * 
+     */
+    observeForm() {
+      this.btnLockId.addEventListener("click", this.onLockId.bind(this));
+    }
+    get btnLockId() {
+      return this.obj.querySelector("button.btn-lock-id");
+    }
+    onLockId() {
+      this.toggleIdLock();
+    }
+  };
+
+  // src/webviews/models/Entry.ts
+  var Entry = class _Entry extends ClientItem {
+    type = "entry";
+    static minName = "entry";
+    static klass = _Entry;
+    static currentItem;
+    static setAccessTable(items) {
+      this._accessTable = new AccessTable(_Entry, items);
+    }
+    // retourn le premier item visible après l'item +item+
+    static getFirstVisibleAfter(refItem) {
+      const aT = this.accessTable;
+      return aT.findAfter(
+        (item) => {
+          return aT.getAccKeyById(item.data.id).visible === true;
+        },
+        refItem.data.id
+      );
+    }
+    /*
+        === MÉTHODES DE CHECK ===
+     */
+    // @return true si l'entrée +entree+ existe déjà
+    static doesEntreeExist(entree) {
+      entree = entree.toLowerCase();
+      return this.accessTable.find((item) => item.data.entree.toLowerCase() === entree) !== void 0;
+    }
+    // @return true si l'identifiant +id+ existe déjà
+    static doesIdExist(id) {
+      if (this.accessTable.existsById(id)) {
+        return true;
+      }
+      return false;
+    }
+    /**
+     * Méthode pour enregistrer l'item dans la table
+     * 
+     * 
+     */
+    static saveItem(item, compRpcId) {
+      RpcEntry.notify("save-item", { CRId: compRpcId, item });
+    }
+    static onSavedItem(params) {
+      ComplexRpc.resolveRequest(params.CRId, params);
+    }
+  };
+  var EntryPanelClass = class extends PanelClient {
+    get accessTable() {
+      return Entry.accessTable;
+    }
+    /**
+     * Méthode de filtrage propre aux Entrées (Entry)
+     * 
+     * @param searched Texte à trouver
+     * @returns Liste des items trouvés
+     */
+    // Méthode de filtrage des entrées
+    // Retourne celles qui commencent par +searched+
+    searchMatchingItems(searched) {
+      const prefixLower = StringNormalizer.toLower(searched);
+      const prefixRa = StringNormalizer.rationalize(searched);
+      return this.filter(Entry.accessTable, (entry) => {
+        entry = entry;
+        return entry.data.entree_min.startsWith(prefixLower) || entry.data.entree_min_ra.startsWith(prefixRa);
+      });
+    }
+    // initKeyManager() {
+    //   this._keyManager = new VimLikeManager(document.body, this, Entry);
+    // }
+  };
+  var EntryPanel = new EntryPanelClass({
+    minName: "entry",
+    titName: "Entries",
+    klass: Entry,
+    form: new EntryForm()
+  });
+  EntryPanel.form.setPanel(EntryPanel);
+  Entry.panel = EntryPanel;
+  var RpcEntry = createRpcClient();
+  RpcEntry.on("flash", (params) => {
+    EntryPanel.flash(params.message, params.type || "notice");
+  });
+  RpcEntry.on("start", () => {
+    setTimeout(EntryPanel.activateContextualHelp.bind(EntryPanel), 1e3);
+  });
+  RpcEntry.on("activate", () => {
+    if (EntryPanel.isActif) {
+      return;
+    }
+    EntryPanel.activate();
+  });
+  RpcEntry.on("desactivate", () => {
+    if (EntryPanel.isInactif) {
+      return;
+    }
+    EntryPanel.desactivate();
+  });
+  RpcEntry.on("populate", (params) => {
+    const items = Entry.deserializeItems(params.data, Entry);
+    EntryPanel.populate(Entry.accessTable);
+    EntryPanel.initKeyManager();
+  });
+  RpcEntry.on("display-entry", (params) => {
+    console.log("[CLIENT] Je dois afficher l'entr\xE9e '%s'", params.entry_id);
+    EntryPanel.scrollToAndSelect(params.entry_id);
+  });
+  RpcEntry.on("check-oeuvres-resultat", (params) => {
+    ComplexRpc.resolveRequest(params.CRId, params.resultat);
+  });
+  RpcEntry.on("check-exemples-resultat", (params) => {
+    ComplexRpc.resolveRequest(params.CRId, params.resultat);
+  });
+  RpcEntry.on("after-saved-item", (params) => {
+    console.log("[CLIENT Entry] R\xE9ception du after-saved-item", params);
+    Entry.onSavedItem(params);
+  });
+  window.Entry = Entry;
+
+  // src/webviews/services/App.ts
+  var App = class {
+    /**
+     * 
+     * Les méthodes suivantes peuvent s'appeler en tapant simplement leur
+     * nom en console (bas des panneaux — 'c' pour rejoindre la console)
+     */
+    static async openSupport() {
+      console.log("je dois apprendre \xE0 ouvrir le dossier support");
+      RpcEntry.notify("open-support-folder");
+      return "Ouverture du dossier Support";
+    }
+    static async exportAllData() {
+      console.log("Je dois apprendre \xE0 backuper les donn\xE9es dans les fichiers.");
+      RpcEntry.notify("export-all-data");
+      return "Exportation des donn\xE9es demand\xE9e.";
+    }
+    /**
+     * 
+     * Méthode fonctionnelles
+     * 
+     * @param code Code à évaluer
+     * @returns True si tout s'est bien passé (le code à pu être évalué), False sinon
+     * 
+     */
+    static eval(code) {
+      const ok = this.tryEval(code) || this.tryEval("this." + code) || this.tryEval(code + "()") || this.tryEval("this." + code + "()") || console.warn("Code non \xE9valuable dans App : %s", code);
+      if (ok) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+    static tryEval(code) {
+      try {
+        const result = new Function("return " + code).call(this);
+        if (void 0 === result) {
+          throw new Error("Code qui ne renvoie rien");
+        }
+        if ("function" === typeof result) {
+          result();
+        }
+        return true;
+      } catch (erreur) {
+        return false;
+      }
+    }
+  };
+
+  // src/webviews/ClientItem.ts
+  var ClientItem = class {
+    static klass;
+    static get accessTable() {
+      return this._accessTable;
+    }
+    static panel;
+    static _accessTable;
+    static _selector;
+    static get Selector() {
+      return this._selector || (this._selector = new SelectionManager(this.klass));
+    }
+    static get app() {
+      return App;
+    }
+    // Raccourcis vers l'accessTable, pour obtenir des informations
+    // sur les items ou les items eux-même
+    static get(itemId) {
+      return this.accessTable.getById(itemId);
+    }
+    static getObj(itemId) {
+      return this.accessTable.getObj(itemId);
+    }
+    static each(method) {
+      this.accessTable.each(method);
+    }
+    static isVisible(id) {
+      return this.accessTable.isVisible(id);
+    }
+    static setVisible(id) {
+      this.accessTable.setVisibility(id, true);
+    }
+    static setInvisible(id) {
+      this.accessTable.setVisibility(id, false);
+    }
+    static selectFirstItem() {
+      this.panel.select(this.accessTable.firstItem);
+    }
+    static editItem(itemId) {
+      this.panel.form.editItem(this.get(itemId));
+    }
+    static createNewItem() {
+      this.panel.form.editItem(new this.klass({ id: "" }));
+    }
+    toRow() {
+      return {};
+    }
+    /**
+     * Méthode qui reçoit les items sérialisés depuis l'extension et va les
+     * consigner dans le panneau, dans une AccessTable qui permettra de 
+     * parcourrir les éléments. 
+     */
+    static deserializeItems(items, klass) {
+      const allItems = items.map((item) => new this.klass(JSON.parse(item)));
+      this.klass.setAccessTable(allItems);
+    }
+    data;
+    constructor(itemData) {
+      this.data = itemData;
+    }
+    // Pour obtenir l'AccKey (ak) de l'item
+    static getAccKey(id) {
+      return this.accessTable.getAccKeyById(id);
+    }
+    // public get obj(){ return this._obj ;}
+    // protected get isNotVisible(){ return this._visible === false;}
+    // protected get isVisible(){ return this._visible === true ;}
+    // private _obj!: HTMLDivElement;
+    // private _visible: boolean = true;
   };
 
   // src/webviews/models/ExempleForm.ts

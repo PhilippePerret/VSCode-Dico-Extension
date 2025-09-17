@@ -1,3 +1,5 @@
+import { RpcEntry } from "../models/Entry";
+
 export class App {
   /**
    * 
@@ -5,13 +7,15 @@ export class App {
    * nom en console (bas des panneaux — 'c' pour rejoindre la console)
    */
 
-  private static openSupport() {
+  private static async openSupport() {
     console.log("je dois apprendre à ouvrir le dossier support");
+    RpcEntry.notify('open-support-folder');
     return "Ouverture du dossier Support";
   }
 
-  private static exportAllData(){
+  private static async exportAllData(){
     console.log("Je dois apprendre à backuper les données dans les fichiers.");
+    RpcEntry.notify('export-all-data');
     return "Exportation des données demandée.";
   }
 

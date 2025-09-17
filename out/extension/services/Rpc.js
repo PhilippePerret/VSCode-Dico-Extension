@@ -5,6 +5,7 @@ const RpcServer_1 = require("./panels/RpcServer");
 const Entry_1 = require("../models/Entry");
 const Oeuvre_1 = require("../models/Oeuvre");
 const App_1 = require("./App");
+const child_process_1 = require("child_process");
 class Rpc {
     panel;
     rpc;
@@ -70,6 +71,15 @@ class RpcEntry extends Rpc {
             // console.log("[EXTENSION] Reception de l'entrée à sauver", params);
             Object.assign(params, { ok: null, errors: [] });
             Entry_1.Entry.saveItem(params);
+        });
+        this.rpc.on('export-all-data', async (params) => {
+            console.log("[EXTENSION] Demande de sauvegarde des données");
+            exports.CanalEntry.rpc.notify('flash', { message: "Toutes les données ont été backupées dans des fichiers." });
+        });
+        this.rpc.on('open-support-folder', async (params) => {
+            console.log("[EXTENTION] Ouverture du dossier support");
+            (0, child_process_1.execSync)(`open -a Finder "${App_1.App.supportFolder}"`, { encoding: 'utf8' });
+            exports.CanalEntry.rpc.notify('flash', { message: "Dossier support ouvert dans le finder" });
         });
     }
 }

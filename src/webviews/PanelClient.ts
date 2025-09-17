@@ -271,7 +271,7 @@ export class PanelClient<T extends Tplus, C> {
   }
 
   private setPanelFocus(actif: boolean) {
-    console.log("[setPanelFocus] Focus mis sur le panneau %s", this.titName);
+    // console.log("[setPanelFocus] Focus mis sur le panneau %s", this.titName);
     document.body.classList[actif ?'add':'remove']('actif');
     this._actif = actif ;
     this.keyManager.setMode('normal');

@@ -40,12 +40,14 @@
      * Les méthodes suivantes peuvent s'appeler en tapant simplement leur
      * nom en console (bas des panneaux — 'c' pour rejoindre la console)
      */
-    static openSupport() {
+    static async openSupport() {
       console.log("je dois apprendre \xE0 ouvrir le dossier support");
+      RpcEntry.notify("open-support-folder");
       return "Ouverture du dossier Support";
     }
-    static exportAllData() {
+    static async exportAllData() {
       console.log("Je dois apprendre \xE0 backuper les donn\xE9es dans les fichiers.");
+      RpcEntry.notify("export-all-data");
       return "Exportation des donn\xE9es demand\xE9e.";
     }
     /**
@@ -892,15 +894,12 @@
       this.mode = mode;
     }
     set mode(mode) {
-      console.info("[VimLikeManager mode] Mise du mode \xE0 '%s')", mode);
       this._mode = mode;
       switch (mode) {
         case "edit":
-          console.log("[VimLikeManager.mode] Passage du mode clavier au mode edit");
           this._keylistener = this.onKeyDownModeEdit.bind(this);
           break;
         case "normal":
-          console.log("[VimLikeManager.mode] Passage du mode clavier au mode normal");
           this._keylistener = this.onKeyDownModeNormal.bind(this);
           break;
         case "null":
@@ -1374,7 +1373,6 @@
       this.form = data.form;
     }
     setPanelFocus(actif) {
-      console.log("[setPanelFocus] Focus mis sur le panneau %s", this.titName);
       document.body.classList[actif ? "add" : "remove"]("actif");
       this._actif = actif;
       this.keyManager.setMode("normal");
@@ -2107,7 +2105,6 @@
       RpcEntry.notify("save-item", { CRId: compRpcId, item });
     }
     static onSavedItem(params) {
-      console.log("[CLIENT ENTRY] Retour dans le panneau Entry avec le r\xE9sultat de l'enregistrement", params);
       ComplexRpc.resolveRequest(params.CRId, params);
     }
   };
@@ -2144,6 +2141,9 @@
   EntryPanel.form.setPanel(EntryPanel);
   Entry.panel = EntryPanel;
   var RpcEntry = createRpcClient();
+  RpcEntry.on("flash", (params) => {
+    EntryPanel.flash(params.message, params.type || "notice");
+  });
   RpcEntry.on("start", () => {
     setTimeout(EntryPanel.activateContextualHelp.bind(EntryPanel), 1e3);
   });
@@ -2151,14 +2151,12 @@
     if (EntryPanel.isActif) {
       return;
     }
-    console.log("[CLIENT ENTRY] Je dois marquer le panneau Entry actif");
     EntryPanel.activate();
   });
   RpcEntry.on("desactivate", () => {
     if (EntryPanel.isInactif) {
       return;
     }
-    console.log("[CLIENT ENTRY] Je dois marquer le panneau Entry comme inactif.");
     EntryPanel.desactivate();
   });
   RpcEntry.on("populate", (params) => {
@@ -2171,11 +2169,9 @@
     EntryPanel.scrollToAndSelect(params.entry_id);
   });
   RpcEntry.on("check-oeuvres-resultat", (params) => {
-    console.log("[CLIENT ENTRY] Je re\xE7ois le r\xE9sultat du check des oeuvres", params);
     ComplexRpc.resolveRequest(params.CRId, params.resultat);
   });
   RpcEntry.on("check-exemples-resultat", (params) => {
-    console.log("[CLIENT ENTRY] R\xE9ception du r\xE9sultat du check des exemples : ", params);
     ComplexRpc.resolveRequest(params.CRId, params.resultat);
   });
   RpcEntry.on("after-saved-item", (params) => {

@@ -21,6 +21,7 @@ import { PanelClient } from '../PanelClient';
 import { EntryForm } from './EntryForm';
 import { ComplexRpc } from '../services/ComplexRpc';
 
+
 export class Entry extends ClientItem<UEntry, FullEntry> {
   declare public data: FullEntry;
   readonly type = 'entry';
@@ -65,7 +66,7 @@ export class Entry extends ClientItem<UEntry, FullEntry> {
   }
 
   public static onSavedItem(params: {CRId: string, ok: boolean, error: any, item: IEntry}){
-    console.log("[CLIENT ENTRY] Retour dans le panneau Entry avec le résultat de l'enregistrement", params);
+    // console.log("[CLIENT ENTRY] Retour dans le panneau Entry avec le résultat de l'enregistrement", params);
     ComplexRpc.resolveRequest(params.CRId, params);
   }
 
@@ -114,6 +115,15 @@ Entry.panel = EntryPanel;
 
 export const RpcEntry = createRpcClient();
 
+/**
+ * Méthode générique pour envoyer un message depuis l'extension avec
+ * CanalEntry.notify('flash', {message: "Le message à écrire"})
+ * note : utilisable par les trois panneaux/classes
+ */
+RpcEntry.on('flash', (params) => {
+  EntryPanel.flash(params.message, params.type || 'notice');
+});
+
 // Evènement reçu de l'extension à l'ouverture (après l'installation 
 // complète) permettant essentiellement d'afficher la première aide.
 RpcEntry.on('start', () => {
@@ -122,12 +132,12 @@ RpcEntry.on('start', () => {
 
 RpcEntry.on('activate', () => {
   if ( EntryPanel.isActif ) { return ; }
-  console.log("[CLIENT ENTRY] Je dois marquer le panneau Entry actif");
+  // console.log("[CLIENT ENTRY] Je dois marquer le panneau Entry actif");
   EntryPanel.activate();
 });
 RpcEntry.on('desactivate', () => {
   if ( EntryPanel.isInactif ) { return ; } 
-  console.log("[CLIENT ENTRY] Je dois marquer le panneau Entry comme inactif.");
+  // console.log("[CLIENT ENTRY] Je dois marquer le panneau Entry comme inactif.");
   EntryPanel.desactivate();
 });
 
@@ -144,12 +154,12 @@ RpcEntry.on('display-entry', (params) => {
 });
 
 RpcEntry.on('check-oeuvres-resultat', (params: {CRId: string, resultat: {[x: string]: any}}) => {
-  console.log("[CLIENT ENTRY] Je reçois le résultat du check des oeuvres", params );
+  // console.log("[CLIENT ENTRY] Je reçois le résultat du check des oeuvres", params );
   ComplexRpc.resolveRequest(params.CRId, params.resultat);
 });
 
 RpcEntry.on('check-exemples-resultat', (params: {CRId: string, resultat: {known: string[], unknown: string[]}}) => {
-  console.log("[CLIENT ENTRY] Réception du résultat du check des exemples : ", params);
+  // console.log("[CLIENT ENTRY] Réception du résultat du check des exemples : ", params);
   ComplexRpc.resolveRequest(params.CRId, params.resultat);
 });
 

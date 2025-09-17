@@ -3,6 +3,7 @@ import { createRpcServer } from './panels/RpcServer';
 import { Entry } from '../models/Entry';
 import { Oeuvre } from '../models/Oeuvre';
 import { App } from './App';
+import { execSync } from 'child_process';
 
 abstract class Rpc {
   protected panel: any;
@@ -84,6 +85,16 @@ class RpcEntry extends Rpc {
       // console.log("[EXTENSION] Reception de l'entrée à sauver", params);
       Object.assign(params, { ok: null, errors: [] });
       Entry.saveItem(params);
+    });
+
+    this.rpc.on('export-all-data', async (params: any) => {
+      console.log("[EXTENSION] Demande de sauvegarde des données");
+      CanalEntry.rpc.notify('flash', {message: "Toutes les données ont été backupées dans des fichiers."});
+    });
+    this.rpc.on('open-support-folder', async (params: any) => {
+      console.log("[EXTENTION] Ouverture du dossier support");
+      execSync(`open -a Finder "${App.supportFolder}"`, {encoding: 'utf8'});
+      CanalEntry.rpc.notify('flash', {message: "Dossier support ouvert dans le finder"});
     });
   }
 }

@@ -75,124 +75,6 @@
     }
   };
 
-  // src/webviews/services/App.ts
-  var App = class {
-    /**
-     * 
-     * Les méthodes suivantes peuvent s'appeler en tapant simplement leur
-     * nom en console (bas des panneaux — 'c' pour rejoindre la console)
-     */
-    static openSupport() {
-      console.log("je dois apprendre \xE0 ouvrir le dossier support");
-      return "Ouverture du dossier Support";
-    }
-    static exportAllData() {
-      console.log("Je dois apprendre \xE0 backuper les donn\xE9es dans les fichiers.");
-      return "Exportation des donn\xE9es demand\xE9e.";
-    }
-    /**
-     * 
-     * Méthode fonctionnelles
-     * 
-     * @param code Code à évaluer
-     * @returns True si tout s'est bien passé (le code à pu être évalué), False sinon
-     * 
-     */
-    static eval(code) {
-      const ok = this.tryEval(code) || this.tryEval("this." + code) || this.tryEval(code + "()") || this.tryEval("this." + code + "()") || console.warn("Code non \xE9valuable dans App : %s", code);
-      if (ok) {
-        return true;
-      } else {
-        return false;
-      }
-    }
-    static tryEval(code) {
-      try {
-        const result = new Function("return " + code).call(this);
-        if (void 0 === result) {
-          throw new Error("Code qui ne renvoie rien");
-        }
-        if ("function" === typeof result) {
-          result();
-        }
-        return true;
-      } catch (erreur) {
-        return false;
-      }
-    }
-  };
-
-  // src/webviews/ClientItem.ts
-  var ClientItem = class {
-    static klass;
-    static get accessTable() {
-      return this._accessTable;
-    }
-    static panel;
-    static _accessTable;
-    static _selector;
-    static get Selector() {
-      return this._selector || (this._selector = new SelectionManager(this.klass));
-    }
-    static get app() {
-      return App;
-    }
-    // Raccourcis vers l'accessTable, pour obtenir des informations
-    // sur les items ou les items eux-même
-    static get(itemId) {
-      return this.accessTable.getById(itemId);
-    }
-    static getObj(itemId) {
-      return this.accessTable.getObj(itemId);
-    }
-    static each(method) {
-      this.accessTable.each(method);
-    }
-    static isVisible(id) {
-      return this.accessTable.isVisible(id);
-    }
-    static setVisible(id) {
-      this.accessTable.setVisibility(id, true);
-    }
-    static setInvisible(id) {
-      this.accessTable.setVisibility(id, false);
-    }
-    static selectFirstItem() {
-      this.panel.select(this.accessTable.firstItem);
-    }
-    static editItem(itemId) {
-      this.panel.form.editItem(this.get(itemId));
-    }
-    static createNewItem() {
-      this.panel.form.editItem(new this.klass({ id: "" }));
-    }
-    toRow() {
-      return {};
-    }
-    /**
-     * Méthode qui reçoit les items sérialisés depuis l'extension et va les
-     * consigner dans le panneau, dans une AccessTable qui permettra de 
-     * parcourrir les éléments. 
-     */
-    static deserializeItems(items, klass) {
-      const allItems = items.map((item) => new this.klass(JSON.parse(item)));
-      this.klass.setAccessTable(allItems);
-    }
-    data;
-    constructor(itemData) {
-      this.data = itemData;
-    }
-    // Pour obtenir l'AccKey (ak) de l'item
-    static getAccKey(id) {
-      return this.accessTable.getAccKeyById(id);
-    }
-    // public get obj(){ return this._obj ;}
-    // protected get isNotVisible(){ return this._visible === false;}
-    // protected get isVisible(){ return this._visible === true ;}
-    // private _obj!: HTMLDivElement;
-    // private _visible: boolean = true;
-  };
-
   // src/bothside/StringUtils.ts
   var StringNormalizer = class {
     /**
@@ -207,6 +89,453 @@
      */
     static rationalize(text) {
       return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "");
+    }
+  };
+
+  // src/webviews/services/AccessTable.ts
+  var AccessTable = class {
+    constructor(klass, items) {
+      this.klass = klass;
+      this.populateInTable(items);
+    }
+    keysMap = /* @__PURE__ */ new Map();
+    arrayItems = [];
+    _size;
+    // après un ajout ou une suppression, par exemple
+    reset() {
+      this._size = null;
+    }
+    get size() {
+      return this._size || (this._size = this.keysMap.size);
+    }
+    isVisible(id) {
+      return this.getAccKeyById(id).visible === true;
+    }
+    setVisibility(id, state) {
+      const ak = this.getAccKeyById(id);
+      if (ak.visible !== state) {
+        ak.visible = state;
+        if (ak.obj === void 0) {
+          ak.obj = this.DOMElementOf(id);
+        }
+        const display = state ? "block" : "none";
+        ak.display = display;
+        ak.obj.style.display = display;
+      }
+    }
+    selectNextItem(panel) {
+      const selection = panel.getSelection();
+      let nextId;
+      if (selection) {
+        let nextItemVisible;
+        nextItemVisible = this.getNextVisibleById(selection);
+        if (nextItemVisible) {
+          nextId = nextItemVisible.data.id;
+        }
+      }
+      nextId = nextId || this.firstItem.data.id;
+      panel.select(nextId);
+    }
+    selectPrevItem(panel) {
+      const selection = panel.getSelection();
+      let prevId;
+      if (selection) {
+        let prevItemVisible;
+        prevItemVisible = this.getPrevVisibleById(selection);
+        if (prevItemVisible) {
+          prevId = prevItemVisible.data.id;
+        }
+      }
+      prevId = prevId || this.firstItem.data.id;
+      panel.select(prevId);
+    }
+    getNextVisibleById(refId) {
+      let ak;
+      let nextAk;
+      while (ak = this.getNextAccKeyById(refId)) {
+        if (ak.visible) {
+          return this.getById(ak.id);
+        }
+      }
+    }
+    getPrevVisibleById(refId) {
+      let ak;
+      let prevAk;
+      while (ak = this.getPrevAccKeyById(refId)) {
+        if (ak.visible) {
+          return this.getById(ak.id);
+        }
+      }
+    }
+    setSelectState(id, state) {
+      this.getAccKeyById(id).selected = state;
+    }
+    traverseAnyTypeWith(value, fnIfId, fnIfIndex, fnIfAccKey, fnIfItem) {
+      switch (typeof value) {
+        case "string":
+          return fnIfId(value);
+        case "number":
+          return fnIfIndex(value);
+        case "object":
+          switch (value.type) {
+            case "accedable-item":
+              return fnIfAccKey(value);
+            case "entry":
+            case "oeuvre":
+            case "exemple":
+              return fnIfItem(value);
+          }
+      }
+    }
+    /**
+     * Retourne l'item d'identifiant +id+ 
+     * 
+     * On peut l'obtenir en envoyant l'identifiant (string), l'index dans
+     * la liste (number), l'accedable-key (AccedableItem) ou l'item 
+     * lui-même.
+     */
+    get(foo) {
+      return this.traverseAnyTypeWith(
+        foo,
+        this.getById.bind(this),
+        this.getByIndex.bind(this),
+        this.getByAccKey.bind(this),
+        (foo2) => {
+          return foo2;
+        }
+      );
+    }
+    // @return true si l'élément d'identifiant +id+ existe.
+    existsById(id) {
+      return this.keysMap.has(id);
+    }
+    getById(id) {
+      return this.arrayItems[this.keysMap.get(id).index];
+    }
+    getByIndex(index) {
+      return this.arrayItems[index];
+    }
+    getByAccKey(ak) {
+      return this.getById(ak.id);
+    }
+    /**
+     * Retourne l'objet DOM de l'item en s'assurant qu'il est défini
+     * dans l'AccKey (ce qui n'est pas fait par défaut)
+     */
+    getObj(id) {
+      const ak = this.getAccKeyById(id);
+      if (!ak) {
+        console.error("Impossible d'obtenir l'AK de l'id '%s'\u2026", id, this.arrayItems);
+      }
+      ak.obj || Object.assign(ak, { obj: this.DOMElementOf(id) });
+      if (!ak.obj) {
+        console.error("Impossible d'obtenir l'objet de l'item '%'\u2026", id);
+      }
+      return ak.obj;
+    }
+    /**
+     *  Retourne l'accKey de l'élément foo
+     * TODO : doit fonctionner pour tout élément (cf. getNextAccKey)
+     */
+    getAccKey(foo) {
+      return this.traverseAnyTypeWith(
+        foo,
+        this.getAccKeyById.bind(this),
+        this.getAccKeyByIndex.bind(this),
+        (foo2) => {
+          return foo2;
+        },
+        this.getAccKeyByItem.bind(this)
+      );
+    }
+    getAccKeyById(itemId) {
+      return this.keysMap.get(itemId);
+    }
+    getAccKeyByIndex(index) {
+      return this.getAccKeyById(this.getByIndex(index).data.id);
+    }
+    getAccKeyByItem(item) {
+      return this.getAccKeyById(item.data.id);
+    }
+    /**
+     *  Retourne l'Item (Entry, Oeuvre, Exemple) de l'élément foo
+     */
+    getNextItem(foo) {
+      return this.traverseAnyTypeWith(
+        foo,
+        this.getNextItemById.bind(this),
+        this.getNextItemByIndex.bind(this),
+        this.getNextItemByAccKey.bind(this),
+        this.getNextItemByItem.bind(this)
+      );
+    }
+    getNextItemById(id) {
+      const nextAK = this.getNextAccKeyById(id);
+      return nextAK ? this.getById(nextAK.id) : void 0;
+    }
+    getNextItemByIndex(index) {
+      return this.getNextItemById(this.arrayItems[index].data.id);
+    }
+    getNextItemByAccKey(ak) {
+      return ak.next ? this.getById(ak.next) : void 0;
+    }
+    getNextItemByItem(item) {
+      return this.getNextItemById(item.data.id);
+    }
+    /**
+     *  Retourne l'Item (Entry, Oeuvre, Exemple) qui suit l'élément
+     * défini par +foo+ qui peut être l'id, l'index, l'accessKey
+     * {AccedableItem} ou l'item lui-mêmeK
+     */
+    getPrevItem(foo) {
+      return this.traverseAnyTypeWith(
+        foo,
+        this.getPrevItemById.bind(this),
+        this.getPrevItemByIndex.bind(this),
+        this.getPrevItemByAccKey.bind(this),
+        this.getPrevItemByItem.bind(this)
+      );
+    }
+    getPrevItemById(id) {
+      const prevAK = this.getPrevAccKeyById(id);
+      return prevAK ? this.getById(prevAK.id) : void 0;
+    }
+    getPrevItemByIndex(index) {
+      return this.getPrevItemById(this.arrayItems[index].data.id);
+    }
+    getPrevItemByAccKey(ak) {
+      return ak.prev ? this.getById(ak.prev) : void 0;
+    }
+    getPrevItemByItem(item) {
+      return this.getPrevItemById(item.data.id);
+    }
+    /**
+     *  Retourne l'accedableKey {AccedableItem} de l'élément désigné
+     * par +foo+ qui peut être l'identifiant, l'index, l'access-key ou
+     * l'item lui-même de l'item de référence. 
+     *
+     * Note : la version LA PLUS RAPIDE (O)1 consiste à fournir l'IDENTIFIANT
+     * 
+     */
+    getNextAccKey(foo) {
+      return this.traverseAnyTypeWith(
+        foo,
+        this.getNextAccKeyById.bind(this),
+        this.getNextAccKeyByIndex.bind(this),
+        this.getNextAccKeyByAccKey.bind(this),
+        this.getNextAccKeyByItem.bind(this)
+      );
+    }
+    getNextAccKeyById(id) {
+      const ak = this.getAccKey(id);
+      return ak.next ? this.getAccKey(ak.next) : void 0;
+    }
+    getNextAccKeyByIndex(index) {
+      return this.getNextAccKeyById(this.arrayItems[index].data.id);
+    }
+    getNextAccKeyByAccKey(ak) {
+      return ak.next ? this.getNextAccKeyById(ak.next) : void 0;
+    }
+    getNextAccKeyByItem(item) {
+      return this.getNextAccKeyById(item.data.id);
+    }
+    /**
+     * Retourne l'AccessKey {AccedableItem} précédent de l'élément 
+     * désigné par +foo+ qui peut être l'id, l'index, l'access-key ou
+     * l'item lui-même de l'élément.
+     */
+    getPrevAccKey(foo) {
+      return this.traverseAnyTypeWith(
+        foo,
+        this.getPrevAccKeyById.bind(this),
+        this.getPrevAccKeyByIndex.bind(this),
+        this.getPrevAccKeyByAccKey.bind(this),
+        this.getPrevAccKeyByItem.bind(this)
+      );
+    }
+    getPrevAccKeyById(id) {
+      const ak = this.getAccKey(id);
+      return ak.prev ? this.getAccKey(ak.prev) : void 0;
+    }
+    getPrevAccKeyByIndex(index) {
+      return this.getPrevAccKeyById(this.arrayItems[index].data.id);
+    }
+    getPrevAccKeyByAccKey(ak) {
+      return ak.prev ? this.getPrevAccKeyById(ak.prev) : void 0;
+    }
+    getPrevAccKeyByItem(item) {
+      return this.getPrevAccKeyById(item.data.id);
+    }
+    // Boucle sur tous les éléments (sans retour)
+    each(traverseMethod) {
+      this.eachSince(traverseMethod, this.firstItem.data.id);
+    }
+    // Boucle depuis l'élément d'identifiant +id+
+    eachSince(traverseMethod, id) {
+      let item = this.getById(id);
+      do {
+        if (item) {
+          traverseMethod(item);
+          item = this.getNextItemById(item.data.id);
+        } else {
+          break;
+        }
+      } while (item);
+    }
+    /**
+     * Boucle sur toutes les AcceedableItem (AccKey/ak)
+     */
+    eachAccKey(fnEach) {
+      this.keysMap.forEach(fnEach);
+    }
+    /**
+     * Boucle sur tous les items à partir de l'item d'id +id+ en
+     * collectant une donnée quelconque.
+     */
+    mapSince(traverseMethod, id) {
+      const collected = [];
+      let item = this.getById(id);
+      do {
+        if (item) {
+          let retour = traverseMethod(item);
+          collected.push(retour);
+          item = this.getNextItemById(item.data.id);
+        } else {
+          break;
+        }
+      } while (item);
+      return collected;
+    }
+    // Boucle sur TOUTES les données en collectant une donnée
+    map(traverseMethod) {
+      return this.mapSince(traverseMethod, this.firstItem.data.id);
+    }
+    /**
+     * Méthode qui boucle sur tous les éléments depuis l'élément d'id
+     * +itemId+ et retourne une Map avec en clé l'identifiant de
+     * l'item et en valeur la valeur retournée par la méthode
+     * +traverseMethod+
+     */
+    collectSince(traverseMethod, itemId) {
+      const collected = /* @__PURE__ */ new Map();
+      let item = this.getById(itemId);
+      do {
+        if (item) {
+          let retour = traverseMethod(item);
+          collected.set(item.data.id, retour);
+          item = this.getNextItemById(item.data.id);
+        } else {
+          break;
+        }
+      } while (item);
+      return collected;
+    }
+    // Boucle sur tous les éléments en récoltant une valeur qu'on met
+    // dans une Map qui a en clé l'identifiant de l'item
+    collect(traverseMethod) {
+      return this.collectSince(traverseMethod, this.firstItem.data.id);
+    }
+    /**
+     * Retourne le premier item. Par convention, c'est le premier
+     * de la liste.
+     */
+    get firstItem() {
+      return this.arrayItems[0];
+    }
+    /**
+     * Boucle sur les items, depuis l'item d'identifiant +id+ ou depuis le premier et 
+     * retourne le premier qui répond à la condition +condition+
+     */
+    find(condition) {
+      return this.findAfter(condition, void 0);
+    }
+    findAfter(condition, id) {
+      let item;
+      if (id === void 0) {
+        item = this.firstItem;
+      } else {
+        item = this.getNextItemById(id);
+      }
+      let found;
+      do {
+        if (item) {
+          if (condition(item) === true) {
+            found = item;
+            break;
+          }
+          item = this.getNextItemById(item.data.id);
+        }
+      } while (item);
+      return found;
+    }
+    /**
+     * Recherche dans l'ordre tous les éléments répondant à la condition +condition+
+     * 
+     * @param condition Methode qui doit retourner true pour que l'item soit retenu
+     * @param options   Table d'options {count: nombre attendu} 
+     * @returns 
+     */
+    findAll(condition, options) {
+      return this.findAllAfter(condition, void 0, options);
+    }
+    // Idem que précédente mais permet de spécifier le premier élément
+    findAllAfter(condition, id, options) {
+      const collected = [];
+      let collected_count = 0;
+      let item;
+      if (id === void 0) {
+        item = this.firstItem;
+      } else {
+        item = this.getNextItemById(id);
+      }
+      do {
+        if (item) {
+          if (condition(item) === true) {
+            collected.push(item);
+            collected_count++;
+            if (options.count && collected_count === options.count) {
+              break;
+            }
+          }
+          item = this.getNextItemById(item.data.id);
+        }
+      } while (item);
+      return collected;
+    }
+    /**
+     * Peuplement de la table d'accès avec création des 'chainedItem'
+     * 
+     * @param items Les éléments transmis, tels que relevés dans les tables (Entry, Oeuvre, Exemple);
+     */
+    // Méthode qui "initie" la table d'accès en transformant chaque
+    // item (Entry, Oeuvre, Exemple) en un AccedableItem, en prenant
+    // son index et son index suivant pour les mettres dans la Map
+    // qui consignes les valeurs d'accès
+    populateInTable(items) {
+      this.keysMap = /* @__PURE__ */ new Map();
+      this.arrayItems = [];
+      for (let i = 0, len = items.length; i < len; ++i) {
+        const item = items[i];
+        const nextItem = items[i + 1] || void 0;
+        const prevItem = items[i - 1] || void 0;
+        const chained = {
+          type: "accedable-item",
+          id: item.data.id,
+          obj: void 0,
+          index: i,
+          next: nextItem ? nextItem.data.id : void 0,
+          prev: prevItem ? prevItem.data.id : void 0,
+          visible: true,
+          display: "block",
+          selected: false,
+          modified: false
+        };
+        this.keysMap.set(item.data.id, chained);
+        this.arrayItems.push(item);
+      }
+    }
+    DOMElementOf(id) {
+      return document.querySelector(`main#items > div[data-id="${id}"]`);
     }
   };
 
@@ -445,15 +774,12 @@
       this.mode = mode;
     }
     set mode(mode) {
-      console.info("[VimLikeManager mode] Mise du mode \xE0 '%s')", mode);
       this._mode = mode;
       switch (mode) {
         case "edit":
-          console.log("[VimLikeManager.mode] Passage du mode clavier au mode edit");
           this._keylistener = this.onKeyDownModeEdit.bind(this);
           break;
         case "normal":
-          console.log("[VimLikeManager.mode] Passage du mode clavier au mode normal");
           this._keylistener = this.onKeyDownModeNormal.bind(this);
           break;
         case "null":
@@ -927,7 +1253,6 @@
       this.form = data.form;
     }
     setPanelFocus(actif) {
-      console.log("[setPanelFocus] Focus mis sur le panneau %s", this.titName);
       document.body.classList[actif ? "add" : "remove"]("actif");
       this._actif = actif;
       this.keyManager.setMode("normal");
@@ -947,451 +1272,31 @@
     }
   };
 
-  // src/webviews/services/AccessTable.ts
-  var AccessTable = class {
-    constructor(klass, items) {
-      this.klass = klass;
-      this.populateInTable(items);
-    }
-    keysMap = /* @__PURE__ */ new Map();
-    arrayItems = [];
-    _size;
-    // après un ajout ou une suppression, par exemple
-    reset() {
-      this._size = null;
-    }
-    get size() {
-      return this._size || (this._size = this.keysMap.size);
-    }
-    isVisible(id) {
-      return this.getAccKeyById(id).visible === true;
-    }
-    setVisibility(id, state) {
-      const ak = this.getAccKeyById(id);
-      if (ak.visible !== state) {
-        ak.visible = state;
-        if (ak.obj === void 0) {
-          ak.obj = this.DOMElementOf(id);
-        }
-        const display = state ? "block" : "none";
-        ak.display = display;
-        ak.obj.style.display = display;
-      }
-    }
-    selectNextItem(panel) {
-      const selection = panel.getSelection();
-      let nextId;
-      if (selection) {
-        let nextItemVisible;
-        nextItemVisible = this.getNextVisibleById(selection);
-        if (nextItemVisible) {
-          nextId = nextItemVisible.data.id;
-        }
-      }
-      nextId = nextId || this.firstItem.data.id;
-      panel.select(nextId);
-    }
-    selectPrevItem(panel) {
-      const selection = panel.getSelection();
-      let prevId;
-      if (selection) {
-        let prevItemVisible;
-        prevItemVisible = this.getPrevVisibleById(selection);
-        if (prevItemVisible) {
-          prevId = prevItemVisible.data.id;
-        }
-      }
-      prevId = prevId || this.firstItem.data.id;
-      panel.select(prevId);
-    }
-    getNextVisibleById(refId) {
-      let ak;
-      let nextAk;
-      while (ak = this.getNextAccKeyById(refId)) {
-        if (ak.visible) {
-          return this.getById(ak.id);
-        }
-      }
-    }
-    getPrevVisibleById(refId) {
-      let ak;
-      let prevAk;
-      while (ak = this.getPrevAccKeyById(refId)) {
-        if (ak.visible) {
-          return this.getById(ak.id);
-        }
-      }
-    }
-    setSelectState(id, state) {
-      this.getAccKeyById(id).selected = state;
-    }
-    traverseAnyTypeWith(value, fnIfId, fnIfIndex, fnIfAccKey, fnIfItem) {
-      switch (typeof value) {
-        case "string":
-          return fnIfId(value);
-        case "number":
-          return fnIfIndex(value);
-        case "object":
-          switch (value.type) {
-            case "accedable-item":
-              return fnIfAccKey(value);
-            case "entry":
-            case "oeuvre":
-            case "exemple":
-              return fnIfItem(value);
-          }
-      }
-    }
+  // src/bothside/UConstants.ts
+  var Constants = class {
+    static ENTRIES_GENRES = {
+      "nm": "n.m.",
+      "nmp": "n.m.pl.",
+      "nf": "n.f.",
+      "np": "n.pl.",
+      "vb": "verbe",
+      "adj": "adj.",
+      "adv": "adv."
+    };
     /**
-     * Retourne l'item d'identifiant +id+ 
+     * Les préfixes/marques qui introduisent des index dans les définitions
+     * principalement. Permet, par exemple dans le check des valeurs des
+     * définitions, de vérifier l'existence des mots référencés.
      * 
-     * On peut l'obtenir en envoyant l'identifiant (string), l'index dans
-     * la liste (number), l'accedable-key (AccedableItem) ou l'item 
-     * lui-même.
-     */
-    get(foo) {
-      return this.traverseAnyTypeWith(
-        foo,
-        this.getById.bind(this),
-        this.getByIndex.bind(this),
-        this.getByAccKey.bind(this),
-        (foo2) => {
-          return foo2;
-        }
-      );
-    }
-    // @return true si l'élément d'identifiant +id+ existe.
-    existsById(id) {
-      return this.keysMap.has(id);
-    }
-    getById(id) {
-      return this.arrayItems[this.keysMap.get(id).index];
-    }
-    getByIndex(index) {
-      return this.arrayItems[index];
-    }
-    getByAccKey(ak) {
-      return this.getById(ak.id);
-    }
-    /**
-     * Retourne l'objet DOM de l'item en s'assurant qu'il est défini
-     * dans l'AccKey (ce qui n'est pas fait par défaut)
-     */
-    getObj(id) {
-      const ak = this.getAccKeyById(id);
-      if (!ak) {
-        console.error("Impossible d'obtenir l'AK de l'id '%s'\u2026", id, this.arrayItems);
-      }
-      ak.obj || Object.assign(ak, { obj: this.DOMElementOf(id) });
-      if (!ak.obj) {
-        console.error("Impossible d'obtenir l'objet de l'item '%'\u2026", id);
-      }
-      return ak.obj;
-    }
-    /**
-     *  Retourne l'accKey de l'élément foo
-     * TODO : doit fonctionner pour tout élément (cf. getNextAccKey)
-     */
-    getAccKey(foo) {
-      return this.traverseAnyTypeWith(
-        foo,
-        this.getAccKeyById.bind(this),
-        this.getAccKeyByIndex.bind(this),
-        (foo2) => {
-          return foo2;
-        },
-        this.getAccKeyByItem.bind(this)
-      );
-    }
-    getAccKeyById(itemId) {
-      return this.keysMap.get(itemId);
-    }
-    getAccKeyByIndex(index) {
-      return this.getAccKeyById(this.getByIndex(index).data.id);
-    }
-    getAccKeyByItem(item) {
-      return this.getAccKeyById(item.data.id);
-    }
-    /**
-     *  Retourne l'Item (Entry, Oeuvre, Exemple) de l'élément foo
-     */
-    getNextItem(foo) {
-      return this.traverseAnyTypeWith(
-        foo,
-        this.getNextItemById.bind(this),
-        this.getNextItemByIndex.bind(this),
-        this.getNextItemByAccKey.bind(this),
-        this.getNextItemByItem.bind(this)
-      );
-    }
-    getNextItemById(id) {
-      const nextAK = this.getNextAccKeyById(id);
-      return nextAK ? this.getById(nextAK.id) : void 0;
-    }
-    getNextItemByIndex(index) {
-      return this.getNextItemById(this.arrayItems[index].data.id);
-    }
-    getNextItemByAccKey(ak) {
-      return ak.next ? this.getById(ak.next) : void 0;
-    }
-    getNextItemByItem(item) {
-      return this.getNextItemById(item.data.id);
-    }
-    /**
-     *  Retourne l'Item (Entry, Oeuvre, Exemple) qui suit l'élément
-     * défini par +foo+ qui peut être l'id, l'index, l'accessKey
-     * {AccedableItem} ou l'item lui-mêmeK
-     */
-    getPrevItem(foo) {
-      return this.traverseAnyTypeWith(
-        foo,
-        this.getPrevItemById.bind(this),
-        this.getPrevItemByIndex.bind(this),
-        this.getPrevItemByAccKey.bind(this),
-        this.getPrevItemByItem.bind(this)
-      );
-    }
-    getPrevItemById(id) {
-      const prevAK = this.getPrevAccKeyById(id);
-      return prevAK ? this.getById(prevAK.id) : void 0;
-    }
-    getPrevItemByIndex(index) {
-      return this.getPrevItemById(this.arrayItems[index].data.id);
-    }
-    getPrevItemByAccKey(ak) {
-      return ak.prev ? this.getById(ak.prev) : void 0;
-    }
-    getPrevItemByItem(item) {
-      return this.getPrevItemById(item.data.id);
-    }
-    /**
-     *  Retourne l'accedableKey {AccedableItem} de l'élément désigné
-     * par +foo+ qui peut être l'identifiant, l'index, l'access-key ou
-     * l'item lui-même de l'item de référence. 
-     *
-     * Note : la version LA PLUS RAPIDE (O)1 consiste à fournir l'IDENTIFIANT
+     * Leur forme canonique est :
      * 
+     *  <mark>(<id entrée>) ou <mark>(<texte écrit>|<id entrée>)
      */
-    getNextAccKey(foo) {
-      return this.traverseAnyTypeWith(
-        foo,
-        this.getNextAccKeyById.bind(this),
-        this.getNextAccKeyByIndex.bind(this),
-        this.getNextAccKeyByAccKey.bind(this),
-        this.getNextAccKeyByItem.bind(this)
-      );
-    }
-    getNextAccKeyById(id) {
-      const ak = this.getAccKey(id);
-      return ak.next ? this.getAccKey(ak.next) : void 0;
-    }
-    getNextAccKeyByIndex(index) {
-      return this.getNextAccKeyById(this.arrayItems[index].data.id);
-    }
-    getNextAccKeyByAccKey(ak) {
-      return ak.next ? this.getNextAccKeyById(ak.next) : void 0;
-    }
-    getNextAccKeyByItem(item) {
-      return this.getNextAccKeyById(item.data.id);
-    }
-    /**
-     * Retourne l'AccessKey {AccedableItem} précédent de l'élément 
-     * désigné par +foo+ qui peut être l'id, l'index, l'access-key ou
-     * l'item lui-même de l'élément.
-     */
-    getPrevAccKey(foo) {
-      return this.traverseAnyTypeWith(
-        foo,
-        this.getPrevAccKeyById.bind(this),
-        this.getPrevAccKeyByIndex.bind(this),
-        this.getPrevAccKeyByAccKey.bind(this),
-        this.getPrevAccKeyByItem.bind(this)
-      );
-    }
-    getPrevAccKeyById(id) {
-      const ak = this.getAccKey(id);
-      return ak.prev ? this.getAccKey(ak.prev) : void 0;
-    }
-    getPrevAccKeyByIndex(index) {
-      return this.getPrevAccKeyById(this.arrayItems[index].data.id);
-    }
-    getPrevAccKeyByAccKey(ak) {
-      return ak.prev ? this.getPrevAccKeyById(ak.prev) : void 0;
-    }
-    getPrevAccKeyByItem(item) {
-      return this.getPrevAccKeyById(item.data.id);
-    }
-    // Boucle sur tous les éléments (sans retour)
-    each(traverseMethod) {
-      this.eachSince(traverseMethod, this.firstItem.data.id);
-    }
-    // Boucle depuis l'élément d'identifiant +id+
-    eachSince(traverseMethod, id) {
-      let item = this.getById(id);
-      do {
-        if (item) {
-          traverseMethod(item);
-          item = this.getNextItemById(item.data.id);
-        } else {
-          break;
-        }
-      } while (item);
-    }
-    /**
-     * Boucle sur toutes les AcceedableItem (AccKey/ak)
-     */
-    eachAccKey(fnEach) {
-      this.keysMap.forEach(fnEach);
-    }
-    /**
-     * Boucle sur tous les items à partir de l'item d'id +id+ en
-     * collectant une donnée quelconque.
-     */
-    mapSince(traverseMethod, id) {
-      const collected = [];
-      let item = this.getById(id);
-      do {
-        if (item) {
-          let retour = traverseMethod(item);
-          collected.push(retour);
-          item = this.getNextItemById(item.data.id);
-        } else {
-          break;
-        }
-      } while (item);
-      return collected;
-    }
-    // Boucle sur TOUTES les données en collectant une donnée
-    map(traverseMethod) {
-      return this.mapSince(traverseMethod, this.firstItem.data.id);
-    }
-    /**
-     * Méthode qui boucle sur tous les éléments depuis l'élément d'id
-     * +itemId+ et retourne une Map avec en clé l'identifiant de
-     * l'item et en valeur la valeur retournée par la méthode
-     * +traverseMethod+
-     */
-    collectSince(traverseMethod, itemId) {
-      const collected = /* @__PURE__ */ new Map();
-      let item = this.getById(itemId);
-      do {
-        if (item) {
-          let retour = traverseMethod(item);
-          collected.set(item.data.id, retour);
-          item = this.getNextItemById(item.data.id);
-        } else {
-          break;
-        }
-      } while (item);
-      return collected;
-    }
-    // Boucle sur tous les éléments en récoltant une valeur qu'on met
-    // dans une Map qui a en clé l'identifiant de l'item
-    collect(traverseMethod) {
-      return this.collectSince(traverseMethod, this.firstItem.data.id);
-    }
-    /**
-     * Retourne le premier item. Par convention, c'est le premier
-     * de la liste.
-     */
-    get firstItem() {
-      return this.arrayItems[0];
-    }
-    /**
-     * Boucle sur les items, depuis l'item d'identifiant +id+ ou depuis le premier et 
-     * retourne le premier qui répond à la condition +condition+
-     */
-    find(condition) {
-      return this.findAfter(condition, void 0);
-    }
-    findAfter(condition, id) {
-      let item;
-      if (id === void 0) {
-        item = this.firstItem;
-      } else {
-        item = this.getNextItemById(id);
-      }
-      let found;
-      do {
-        if (item) {
-          if (condition(item) === true) {
-            found = item;
-            break;
-          }
-          item = this.getNextItemById(item.data.id);
-        }
-      } while (item);
-      return found;
-    }
-    /**
-     * Recherche dans l'ordre tous les éléments répondant à la condition +condition+
-     * 
-     * @param condition Methode qui doit retourner true pour que l'item soit retenu
-     * @param options   Table d'options {count: nombre attendu} 
-     * @returns 
-     */
-    findAll(condition, options) {
-      return this.findAllAfter(condition, void 0, options);
-    }
-    // Idem que précédente mais permet de spécifier le premier élément
-    findAllAfter(condition, id, options) {
-      const collected = [];
-      let collected_count = 0;
-      let item;
-      if (id === void 0) {
-        item = this.firstItem;
-      } else {
-        item = this.getNextItemById(id);
-      }
-      do {
-        if (item) {
-          if (condition(item) === true) {
-            collected.push(item);
-            collected_count++;
-            if (options.count && collected_count === options.count) {
-              break;
-            }
-          }
-          item = this.getNextItemById(item.data.id);
-        }
-      } while (item);
-      return collected;
-    }
-    /**
-     * Peuplement de la table d'accès avec création des 'chainedItem'
-     * 
-     * @param items Les éléments transmis, tels que relevés dans les tables (Entry, Oeuvre, Exemple);
-     */
-    // Méthode qui "initie" la table d'accès en transformant chaque
-    // item (Entry, Oeuvre, Exemple) en un AccedableItem, en prenant
-    // son index et son index suivant pour les mettres dans la Map
-    // qui consignes les valeurs d'accès
-    populateInTable(items) {
-      this.keysMap = /* @__PURE__ */ new Map();
-      this.arrayItems = [];
-      for (let i = 0, len = items.length; i < len; ++i) {
-        const item = items[i];
-        const nextItem = items[i + 1] || void 0;
-        const prevItem = items[i - 1] || void 0;
-        const chained = {
-          type: "accedable-item",
-          id: item.data.id,
-          obj: void 0,
-          index: i,
-          next: nextItem ? nextItem.data.id : void 0,
-          prev: prevItem ? prevItem.data.id : void 0,
-          visible: true,
-          display: "block",
-          selected: false,
-          modified: false
-        };
-        this.keysMap.set(item.data.id, chained);
-        this.arrayItems.push(item);
-      }
-    }
-    DOMElementOf(id) {
-      return document.querySelector(`main#items > div[data-id="${id}"]`);
-    }
+    static MARK_ENTRIES = {
+      "->": { name: "Envoi simple" },
+      "index": { name: "Simple indexation" },
+      "tt": { name: "simple terme technique (sans page)" }
+    };
   };
 
   // src/webviews/services/ComplexRpc.ts
@@ -1800,6 +1705,479 @@
       });
       return ok;
     }
+  };
+
+  // src/webviews/models/EntryForm.ts
+  var allg = Constants.ENTRIES_GENRES;
+  var genres = Object.keys(allg).map((key) => [key, allg[key]]);
+  var EntryForm = class _EntryForm extends FormManager {
+    formId = "entry-form";
+    prefix = "entry";
+    properties = [
+      { propName: "entree", type: String, required: true, fieldType: "text", onChange: this.onChangeEntree.bind(this) },
+      { propName: "id", type: String, required: true, fieldType: "text" },
+      { propName: "genre", type: String, required: true, fieldType: "select", values: genres },
+      { propName: "categorie_id", type: String, required: false, fieldType: "text" },
+      { propName: "definition", type: String, required: false, fieldType: "textarea" }
+    ];
+    // Table des raccourcis 'one key' propre au formulaire
+    tableKeys = {
+      // <touche>: <fonction bindée>, par exemple
+      // 'i': this.showInfo.bind(this)
+    };
+    static REG_SHORT_DEF = /\b(cf\.|voir|synonyme|contraire)\b/;
+    static REGEX_APPELS_ENTRIES = new RegExp(`(?:${Object.keys(Constants.MARK_ENTRIES).join("|")})\\(([^)]+)\\)`, "g");
+    static REG_OEUVRES = /\boeuvre\(([^)]+)\)/g;
+    onChangeEntree() {
+      const itemIsNew = this.getValueOf("id") === "";
+      if (itemIsNew) {
+        console.log("C'est un nouvel item, il faut calculer son ID d'apr\xE8s son entr\xE9e.");
+      }
+    }
+    // À faire après l'édition d'une Entrée
+    afterEdit() {
+      const id = this.field("id").value;
+      const isNewItem = id === "";
+      if (isNewItem) {
+        this.setIdLock(false);
+      }
+    }
+    /**
+     * Grand méthode de check de la validité de l'item. On ne l'envoie
+     * en enregistrement que s'il est parfaitement conforme. 
+     */
+    async checkItem(item) {
+      const isNew = item.isNew;
+      const errors = [];
+      this.diverseChecks(item, errors);
+      const unknownOeuvres = await this.checkExistenceOeuvres(item);
+      if (unknownOeuvres.length) {
+        errors.push(`des \u0153uvres sont introuvables : ${unknownOeuvres.map((t) => `"${t}"`).join(", ")}`);
+      }
+      const unknownEx = await this.checkExistenceExemples(item);
+      if (unknownEx.length) {
+        errors.push(`des exemples sont introuvables: ${unknownEx.join(", ")}`);
+      }
+      if (errors.length) {
+        console.error("Donn\xE9es invalides", errors);
+        return errors.join(", ").toLowerCase();
+      }
+    }
+    async checkExistenceOeuvres(item) {
+      const checkerOeuvres = new ComplexRpc({
+        call: this.searchUnknownOeuvresIn.bind(this, item.definition)
+      });
+      let resultat = await checkerOeuvres.run();
+      const res = resultat;
+      console.log("Retour apr\xE8s checkerOeuvres", resultat);
+      return res.unknown;
+    }
+    diverseChecks(item, errors) {
+      if (item.entree === "") {
+        errors.push("L'entr\xE9e doit \xEAtre d\xE9finie");
+      }
+      if (item.changeset.has("entree")) {
+        const newEntree = item.changeset.get("entree");
+        console.log("L'entr\xE9e a chang\xE9 (%s/%s)", item.original.entree, newEntree);
+        if (Entry.doesEntreeExist(newEntree)) {
+          errors.push(`L'entr\xE9e "${newEntree}" existe d\xE9j\xE0\u2026`);
+        }
+      }
+      if (item.id === "") {
+        errors.push("L'identifiant doit absoluement \xEAtre d\xE9fini");
+      } else if (item.changeset.has("id")) {
+        if (Entry.doesIdExist(item.id)) {
+          errors.push(`L'identifiant "${item.id}" existe d\xE9j\xE0. Je ne peux le r\xE9attribuer`);
+        }
+      }
+      if (item.definition === "") {
+        errors.push("La d\xE9finition du mot doit \xEAtre donn\xE9e");
+      } else if (item.changeset.has("definition")) {
+        if (item.definition.length < 50 && null === item.definition.match(_EntryForm.REG_SHORT_DEF)) {
+          errors.push("La d\xE9finition est courte, sans justification\u2026");
+        }
+        const unknownEntries = this.searchUnknownEntriesIn(item.definition);
+        if (unknownEntries.length > 0) {
+          errors.push(`entr\xE9es inconnues dans la d\xE9fintion (${unknownEntries.join(", ")})`);
+        }
+      } else {
+        console.log("La d\xE9finition n'a pas \xE9t\xE9 modifi\xE9e.");
+      }
+      if (item.genre === "") {
+        errors.push("Le genre de l'entr\xE9e doit \xEAtre donn\xE9");
+      } else if (item.changeset.has("genre") && Object.keys(Constants.ENTRIES_GENRES).includes(item.genre)) {
+        errors.push(`bizarrement, le genre "${item.genre} est inconnu\u2026`);
+      }
+      if (item.categorie_id !== "" && item.changeset.has("categorie_id")) {
+        const unknownCategorie = this.checkUnknownCategoriesIn(item.categorie_id);
+        if (unknownCategorie.length) {
+          errors.push(`des cat\xE9gories sont inconnues : ${unknownCategorie.join(", ")}`);
+        }
+      }
+      return errors;
+    }
+    // Pour chercher les entrées mentionnées dans la définition
+    searchUnknownEntriesIn(str) {
+      const founds = [];
+      const matches = str.matchAll(_EntryForm.REGEX_APPELS_ENTRIES);
+      for (const match of matches) {
+        const foo = match[1];
+        let [entry, entryId] = foo.split("|");
+        entryId = (entryId || entry).trim();
+        if (Entry.doesIdExist(entryId)) {
+          console.log("Id d'entr\xE9e existante", entryId);
+        } else if (Entry.doesEntreeExist(entryId)) {
+          console.log("Entr\xE9e existante (par son nom)", entryId);
+        } else if (entryId.endsWith("s")) {
+          const entryIdSing = entryId.substring(0, entryId.length - 1);
+          if (Entry.doesEntreeExist(entryIdSing)) {
+            console.log("Entr\xE9e existante (pas son nom singulier)", entryId);
+          } else if (Entry.doesIdExist(entryIdSing)) {
+            console.log("Id entr\xE9e existante (dans sa forme singuli\xE8re)", entryId);
+          }
+        } else {
+          founds.push(entryId);
+        }
+      }
+      return founds;
+    }
+    /**
+     * Vérifie que les œuvres désignées dans les balises oeuvre(...) existent
+     * bel et bien.
+     *
+     * Cette fonction s'intègre dans une requête Rpc complexe (ComplexRpc)
+     * 
+     * Pour ce faire, on a besoin de passer par l'extension car on n'a pas 
+     * accès aux oeuvres depuis ici.
+     * 
+     * @param str Dans la phase 1, La définition, dans la phase 2, le json revenant du check
+     * @param phase Pour savoir si on remonte de la vérifiation (phase 2)
+     * @returns La liste des œuvres qui n'ont pas été trouvées
+     */
+    searchUnknownOeuvresIn(str, CRId) {
+      const matches = str.matchAll(_EntryForm.REG_OEUVRES);
+      const oeuvres = [];
+      for (let match of matches) {
+        oeuvres.push(match[1]);
+      }
+      console.log("Oeuvres \xE0 checker", oeuvres);
+      RpcEntry.notify("check-oeuvres", { CRId, oeuvres });
+    }
+    /**
+     * Fonction principale pour checker les exemples dans la définition
+     * C'est elle qui initie la requête Rpc complexe. 
+     */
+    async checkExistenceExemples(item) {
+      const comp = new ComplexRpc({
+        call: this.searchUnknownExemplesIn.bind(this, item.definition)
+      });
+      const resultat = await comp.run();
+      const res = resultat;
+      return res.unknown;
+    }
+    /**
+     * Fonction vérifiant l'existence des exemples
+     * 
+     * Elle s'intègre dans la requête Rpc complexe inaugurée par la
+     * fonction checkExistenceExemples.
+     * 
+     * Rappel : les exemples, dans les définitions, sont définis par
+     * EXEMPLES[<ID oeuvre>:<indice exemple>, <ID oeuvre>:<indice>, etc.]
+     * Il peut y en avoir plusieurs par définition, comme pour la définition des genres.
+     *  
+     * @param str Le texte de la définition
+     * @param CRId L'identifiant de la ComplexRpc qui gère toute la communication
+     * 
+     * @return Rien, c'est la méthode message en bout de chaine qui résolvera 
+     * la requête Rpc complexe pour poursuivre.
+     */
+    searchUnknownExemplesIn(str, CRId) {
+      let matches = str.matchAll(/EXEMPLES\[([^\]]+)\]/g);
+      const exemples = [];
+      for (var match of matches) {
+        match[1].split(",").map((s) => s.trim()).forEach((paire) => {
+          const [oeuvreId, exIndice] = paire.split(":");
+          exemples.push([oeuvreId, exIndice]);
+        });
+      }
+      RpcEntry.notify("check-exemples", { CRId, exemples });
+    }
+    // @return la liste des catégories inconnues
+    checkUnknownCategoriesIn(str) {
+      const cats = str.split(",").map((s) => s.trim());
+      return cats.filter((cat) => false === Entry.doesIdExist(cat));
+    }
+    /**
+     * ENREGISTREMENT DE L'ENTRÉE
+     * -------------------------- 
+     * Procédure complexe (ComplexRpc)
+     */
+    async onSave(item) {
+      const itemSaver = new ComplexRpc({
+        call: Entry.saveItem.bind(Entry, item)
+      });
+      const res = await itemSaver.run();
+      console.log("res dans onSave", res);
+      if (res.ok) {
+        console.log("Apr\xE8s l'enregistrement de l'item, je dois apprendre \xE0 updater l'item (plut\xF4t en m\xE9thode g\xE9n\xE9rale ?)");
+        Entry.panel.flash("Item enregistr\xE9 avec succ\xE8s.", "notice");
+      } else {
+        console.error("ERREURS LORS DE L'ENREGISTREMENT DE L'ITEM", res.errors);
+        Entry.panel.flash("Erreur (enregistrement de l\u2019entr\xE9e (voir la console", "error");
+      }
+      return true;
+    }
+    /**
+     * Observation propre du formulaire des Entrées
+     * 
+     */
+    observeForm() {
+      this.btnLockId.addEventListener("click", this.onLockId.bind(this));
+    }
+    get btnLockId() {
+      return this.obj.querySelector("button.btn-lock-id");
+    }
+    onLockId() {
+      this.toggleIdLock();
+    }
+  };
+
+  // src/webviews/models/Entry.ts
+  var Entry = class _Entry extends ClientItem {
+    type = "entry";
+    static minName = "entry";
+    static klass = _Entry;
+    static currentItem;
+    static setAccessTable(items) {
+      this._accessTable = new AccessTable(_Entry, items);
+    }
+    // retourn le premier item visible après l'item +item+
+    static getFirstVisibleAfter(refItem) {
+      const aT = this.accessTable;
+      return aT.findAfter(
+        (item) => {
+          return aT.getAccKeyById(item.data.id).visible === true;
+        },
+        refItem.data.id
+      );
+    }
+    /*
+        === MÉTHODES DE CHECK ===
+     */
+    // @return true si l'entrée +entree+ existe déjà
+    static doesEntreeExist(entree) {
+      entree = entree.toLowerCase();
+      return this.accessTable.find((item) => item.data.entree.toLowerCase() === entree) !== void 0;
+    }
+    // @return true si l'identifiant +id+ existe déjà
+    static doesIdExist(id) {
+      if (this.accessTable.existsById(id)) {
+        return true;
+      }
+      return false;
+    }
+    /**
+     * Méthode pour enregistrer l'item dans la table
+     * 
+     * 
+     */
+    static saveItem(item, compRpcId) {
+      RpcEntry.notify("save-item", { CRId: compRpcId, item });
+    }
+    static onSavedItem(params) {
+      ComplexRpc.resolveRequest(params.CRId, params);
+    }
+  };
+  var EntryPanelClass = class extends PanelClient {
+    get accessTable() {
+      return Entry.accessTable;
+    }
+    /**
+     * Méthode de filtrage propre aux Entrées (Entry)
+     * 
+     * @param searched Texte à trouver
+     * @returns Liste des items trouvés
+     */
+    // Méthode de filtrage des entrées
+    // Retourne celles qui commencent par +searched+
+    searchMatchingItems(searched) {
+      const prefixLower = StringNormalizer.toLower(searched);
+      const prefixRa = StringNormalizer.rationalize(searched);
+      return this.filter(Entry.accessTable, (entry) => {
+        entry = entry;
+        return entry.data.entree_min.startsWith(prefixLower) || entry.data.entree_min_ra.startsWith(prefixRa);
+      });
+    }
+    // initKeyManager() {
+    //   this._keyManager = new VimLikeManager(document.body, this, Entry);
+    // }
+  };
+  var EntryPanel = new EntryPanelClass({
+    minName: "entry",
+    titName: "Entries",
+    klass: Entry,
+    form: new EntryForm()
+  });
+  EntryPanel.form.setPanel(EntryPanel);
+  Entry.panel = EntryPanel;
+  var RpcEntry = createRpcClient();
+  RpcEntry.on("flash", (params) => {
+    EntryPanel.flash(params.message, params.type || "notice");
+  });
+  RpcEntry.on("start", () => {
+    setTimeout(EntryPanel.activateContextualHelp.bind(EntryPanel), 1e3);
+  });
+  RpcEntry.on("activate", () => {
+    if (EntryPanel.isActif) {
+      return;
+    }
+    EntryPanel.activate();
+  });
+  RpcEntry.on("desactivate", () => {
+    if (EntryPanel.isInactif) {
+      return;
+    }
+    EntryPanel.desactivate();
+  });
+  RpcEntry.on("populate", (params) => {
+    const items = Entry.deserializeItems(params.data, Entry);
+    EntryPanel.populate(Entry.accessTable);
+    EntryPanel.initKeyManager();
+  });
+  RpcEntry.on("display-entry", (params) => {
+    console.log("[CLIENT] Je dois afficher l'entr\xE9e '%s'", params.entry_id);
+    EntryPanel.scrollToAndSelect(params.entry_id);
+  });
+  RpcEntry.on("check-oeuvres-resultat", (params) => {
+    ComplexRpc.resolveRequest(params.CRId, params.resultat);
+  });
+  RpcEntry.on("check-exemples-resultat", (params) => {
+    ComplexRpc.resolveRequest(params.CRId, params.resultat);
+  });
+  RpcEntry.on("after-saved-item", (params) => {
+    console.log("[CLIENT Entry] R\xE9ception du after-saved-item", params);
+    Entry.onSavedItem(params);
+  });
+  window.Entry = Entry;
+
+  // src/webviews/services/App.ts
+  var App = class {
+    /**
+     * 
+     * Les méthodes suivantes peuvent s'appeler en tapant simplement leur
+     * nom en console (bas des panneaux — 'c' pour rejoindre la console)
+     */
+    static async openSupport() {
+      console.log("je dois apprendre \xE0 ouvrir le dossier support");
+      RpcEntry.notify("open-support-folder");
+      return "Ouverture du dossier Support";
+    }
+    static async exportAllData() {
+      console.log("Je dois apprendre \xE0 backuper les donn\xE9es dans les fichiers.");
+      RpcEntry.notify("export-all-data");
+      return "Exportation des donn\xE9es demand\xE9e.";
+    }
+    /**
+     * 
+     * Méthode fonctionnelles
+     * 
+     * @param code Code à évaluer
+     * @returns True si tout s'est bien passé (le code à pu être évalué), False sinon
+     * 
+     */
+    static eval(code) {
+      const ok = this.tryEval(code) || this.tryEval("this." + code) || this.tryEval(code + "()") || this.tryEval("this." + code + "()") || console.warn("Code non \xE9valuable dans App : %s", code);
+      if (ok) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+    static tryEval(code) {
+      try {
+        const result = new Function("return " + code).call(this);
+        if (void 0 === result) {
+          throw new Error("Code qui ne renvoie rien");
+        }
+        if ("function" === typeof result) {
+          result();
+        }
+        return true;
+      } catch (erreur) {
+        return false;
+      }
+    }
+  };
+
+  // src/webviews/ClientItem.ts
+  var ClientItem = class {
+    static klass;
+    static get accessTable() {
+      return this._accessTable;
+    }
+    static panel;
+    static _accessTable;
+    static _selector;
+    static get Selector() {
+      return this._selector || (this._selector = new SelectionManager(this.klass));
+    }
+    static get app() {
+      return App;
+    }
+    // Raccourcis vers l'accessTable, pour obtenir des informations
+    // sur les items ou les items eux-même
+    static get(itemId) {
+      return this.accessTable.getById(itemId);
+    }
+    static getObj(itemId) {
+      return this.accessTable.getObj(itemId);
+    }
+    static each(method) {
+      this.accessTable.each(method);
+    }
+    static isVisible(id) {
+      return this.accessTable.isVisible(id);
+    }
+    static setVisible(id) {
+      this.accessTable.setVisibility(id, true);
+    }
+    static setInvisible(id) {
+      this.accessTable.setVisibility(id, false);
+    }
+    static selectFirstItem() {
+      this.panel.select(this.accessTable.firstItem);
+    }
+    static editItem(itemId) {
+      this.panel.form.editItem(this.get(itemId));
+    }
+    static createNewItem() {
+      this.panel.form.editItem(new this.klass({ id: "" }));
+    }
+    toRow() {
+      return {};
+    }
+    /**
+     * Méthode qui reçoit les items sérialisés depuis l'extension et va les
+     * consigner dans le panneau, dans une AccessTable qui permettra de 
+     * parcourrir les éléments. 
+     */
+    static deserializeItems(items, klass) {
+      const allItems = items.map((item) => new this.klass(JSON.parse(item)));
+      this.klass.setAccessTable(allItems);
+    }
+    data;
+    constructor(itemData) {
+      this.data = itemData;
+    }
+    // Pour obtenir l'AccKey (ak) de l'item
+    static getAccKey(id) {
+      return this.accessTable.getAccKeyById(id);
+    }
+    // public get obj(){ return this._obj ;}
+    // protected get isNotVisible(){ return this._visible === false;}
+    // protected get isVisible(){ return this._visible === true ;}
+    // private _obj!: HTMLDivElement;
+    // private _visible: boolean = true;
   };
 
   // src/webviews/services/OeuvreFinder.ts

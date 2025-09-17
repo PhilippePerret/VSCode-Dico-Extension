@@ -22,16 +22,16 @@ export class VimLikeManager {
   private form: FormManager<any, any>;
   public setMode(mode: MODES) { this.mode = mode; }
   protected set mode(mode: MODES) { // de l'extérieur, utiliser la méthode setMode 
-    console.info("[VimLikeManager mode] Mise du mode à '%s')", mode);
+    // console.info("[VimLikeManager mode] Mise du mode à '%s')", mode);
     this._mode = mode ;
     // Le mode détermine le capteur d'évènement
     switch(mode) {
       case 'edit':
-        console.log("[VimLikeManager.mode] Passage du mode clavier au mode edit");
+        // console.log("[VimLikeManager.mode] Passage du mode clavier au mode edit");
         this._keylistener = this.onKeyDownModeEdit.bind(this);
         break;
       case 'normal':
-        console.log("[VimLikeManager.mode] Passage du mode clavier au mode normal");
+        // console.log("[VimLikeManager.mode] Passage du mode clavier au mode normal");
         this._keylistener = this.onKeyDownModeNormal.bind(this);
         break;
       case 'null':

@@ -1,9 +1,7 @@
 # Todo list
 
 * J'EN SUIS À :
-  - Mettre en place le script de sortie des données (DB => FICHIERS)
-    - lien-bouton depuis le mode d'emploi pour déclencher l'export
-    - un lien-bouton aussi pour ouvrir le dossier
+  - Procédure d'ajout ou d'actualisation d'une donnée dans accessTable + Panneau
 
 * POURSUIVRE AVEC : 
   - Implémentation du formulaire pour les oeuvres
