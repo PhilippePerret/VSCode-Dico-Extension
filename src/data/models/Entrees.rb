@@ -6,9 +6,9 @@ class Entry
     end
 
     def export_all
-      formats = [:json, :yaml, :text]
-      # DB.export_data(name: 'entrees', formats: formats)
-      puts "Je n'exporte pas encore les entrées"
+      formats = [:json, :yaml, :text, :csv]
+      DB.export_data('entrees', formats)
+      puts "Données entrées exportées"
     end
 
     # Reçoit l'entrée (humaine, textuelle) et retourne l'id correspondant

@@ -1,4 +1,8 @@
 require 'sqlite3'
+require 'json'
+require 'yaml'
+require 'csv'
+require_relative 'hash_extension'
 
 TEXT = 'text'
 INT = 'int'
@@ -10,36 +14,70 @@ class DB
     #
     # @param :name Nom de la table des données
     # @param :formats Liste des formats. Peut contenir [:json, :yaml, :text]
-    def export_data(name:, formats:)
+    def export_data(name, formats)
+      asJson = formats.include?(:json)
+      asYaml = formats.include?(:yaml)
+      asText = formats.include?(:text)
+      asCsv  = formats.include?(:csv)
       begin
-        @json_file = formats.include?(:json) ? File.open(json_path(name:), 'w') : nil
-        @yaml_file = formats.include?(:yaml) ? File.open(yaml_path(name:), 'w') : nil
-        @text_file = formats.include?(:text) ? File.open(text_path(name:), 'w') : nil
+        @json_file = asJson ? File.open(json_path(name), 'w') : nil
+        @yaml_file = asYaml ? File.open(yaml_path(name), 'w') : nil
+        @text_file = asText ? File.open(text_path(name), 'w') : nil
+        @csv_file = asCsv ? File.open(csv_path(name), 'w') : nil
 
+        @json_file.puts '[' if asJson
+        @yaml_file.puts '---' if asYaml
+
+        first_one = true
+        columns = nil
+        db.results_as_hash = true
         db.execute("SELECT * FROM #{name}") do |row|
-          puts row.inspect
+          if first_one
+            puts row.inspect
+            columns = row.keys
+            @csv_file.puts columns.join(';') if asCsv
+            first_one = false
+          end
+          @json_file.puts "\t" + row.to_json if asJson
+          @yaml_file.puts YAML.dump([row])[4..-1] if asYaml
+          @text_file.puts row.to_text if asText
+          @csv_file.puts row.to_csv(name) if asCsv
+          # break
         end
+        
+        @json_file.puts ']' if asJson
 
       rescue Exception => e
         puts "Une erreur s'est produite : #{e.message}"
+        puts e.backtrace.join("\n")
       ensure
         @json_file && @json_file.close
         @yaml_file && @yaml_file.close
         @text_file && @text_file.close
+        @csv_file && @csv_file.close
       end
     end
     
     def expath(name:, extension:) 
-      File.join(db_folder, 'exports', "#{name}-#{}.#{extension}")
+      File.join(db_folder, 'exports', "#{name}-#{now_str}.#{extension}")
     end
-    def json_path(name:)
-      expath(name: :name, extension: 'json')
+    def now_str
+      @now_str ||= begin
+        now = Time.now
+        "#{now.year}-#{now.month}-#{now.day}-#{now.hour}"
+      end
     end
-    def yaml_path(name:)
-      expath(name: :name, extension: 'yaml')
+    def json_path(name)
+      expath(name: name, extension: 'json')
     end
-    def text_path(name:)
-      expath(name: :name, extension: 'txt')
+    def yaml_path(name)
+      expath(name: name, extension: 'yaml')
+    end
+    def text_path(name)
+      expath(name: name, extension: 'txt')
+    end
+    def csv_path(name)
+      expath(name: name, extension: 'csv')
     end
     
     # Pour mettre des données dans la base
@@ -148,7 +186,7 @@ class DB
       @db_path ||= File.join(db_folder, 'dico.db')
     end
     def db_folder
-      @db_folder ||= File.join(Dir.home, 'Library', "Application\ Support", 'Code - Insiders', 'User', 'globalStorage', 'dico-cnario')
+      @db_folder ||= File.join(Dir.home, 'Library', "Application\ Support", "Code\ -\ Insiders", 'User', 'globalStorage', 'dico-cnario')
     end
   end #/<< self
 end

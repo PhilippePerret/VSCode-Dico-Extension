@@ -4,9 +4,9 @@ class Oeuvre
   class << self
 
     def export_all
-      formats = [:json, :yaml]
-      DB.export_data(name: 'oeuvres', formats: formats)
-      puts "Oeuvre exportées avec succès au format #{formats.join(', ')}"
+      formats = [:json, :yaml, :text, :csv]
+      DB.export_data('oeuvres', formats)
+      puts "Oeuvre exportées avec succès aux formats #{formats.join(', ')}"
     end
 
     def import_all

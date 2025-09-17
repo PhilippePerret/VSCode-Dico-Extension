@@ -1,6 +1,7 @@
 require_relative 'models/Entrees'
 require_relative 'models/Oeuvres'
 require_relative 'models/Exemples'
+require_relative 'models/db'
 
 class DataGetter 
   class << self

@@ -4,9 +4,9 @@ class Exemple
   class << self
     
     def export_all
-      formats = [:json, :yaml]
-      # DB.export_data(name: 'exemples', formats: formats)
-      puts "Je n'exporte pas encore les exemples"
+      formats = [:json, :yaml, :text, :csv]
+      DB.export_data('exemples', formats)
+      puts "Données exemples exportées"
     end
     
     def import_all
