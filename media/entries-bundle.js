@@ -33,6 +33,53 @@
     }
   };
 
+  // src/webviews/services/App.ts
+  var App = class {
+    /**
+     * 
+     * Les méthodes suivantes peuvent s'appeler en tapant simplement leur
+     * nom en console (bas des panneaux — 'c' pour rejoindre la console)
+     */
+    static openSupport() {
+      console.log("je dois apprendre \xE0 ouvrir le dossier support");
+      return "Ouverture du dossier Support";
+    }
+    static exportAllData() {
+      console.log("Je dois apprendre \xE0 backuper les donn\xE9es dans les fichiers.");
+      return "Exportation des donn\xE9es demand\xE9e.";
+    }
+    /**
+     * 
+     * Méthode fonctionnelles
+     * 
+     * @param code Code à évaluer
+     * @returns True si tout s'est bien passé (le code à pu être évalué), False sinon
+     * 
+     */
+    static eval(code) {
+      const ok = this.tryEval(code) || this.tryEval("this." + code) || this.tryEval(code + "()") || this.tryEval("this." + code + "()") || console.warn("Code non \xE9valuable dans App : %s", code);
+      if (ok) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+    static tryEval(code) {
+      try {
+        const result = new Function("return " + code).call(this);
+        if (void 0 === result) {
+          throw new Error("Code qui ne renvoie rien");
+        }
+        if ("function" === typeof result) {
+          result();
+        }
+        return true;
+      } catch (erreur) {
+        return false;
+      }
+    }
+  };
+
   // src/webviews/ClientItem.ts
   var ClientItem = class {
     static klass;
@@ -44,6 +91,9 @@
     static _selector;
     static get Selector() {
       return this._selector || (this._selector = new SelectionManager(this.klass));
+    }
+    static get app() {
+      return App;
     }
     // Raccourcis vers l'accessTable, pour obtenir des informations
     // sur les items ou les items eux-même
@@ -619,12 +669,16 @@
     runCode() {
       const code = this.console.value;
       try {
-        console.log("\xC9valuation du code %s", code, (0, eval)(code));
+        const result = (0, eval)(code);
+        console.log("\xC9valuation du code %s", code, result);
         this.history.push(code);
         this.ihistory = this.history.length;
         this.console.value = "";
       } catch (error) {
-        console.error("Une erreur s'est produite en \xE9valuant le cde : ", code, error);
+        if (false === App.eval(code)) {
+          this.panel.flash("Ce code produit une erreur\u2026", "error");
+          console.error(code, error);
+        }
       }
     }
     setCode() {
@@ -673,7 +727,21 @@
       **n** : (comme "nouveau") pour cr\xE9er un nouvel \xE9l\xE9ment avant la s\xE9lection.
       **e**: (comme "\xE9diter") pour modifier l'\xE9l\xE9ment s\xE9lectionn\xE9.
       
-      \xC0 tout moment, taper **?** pour afficher l'aide contextuelle.`,
+      \xC0 tout moment, taper **?** pour afficher l'aide contextuelle.
+      
+      ## Backup des donn\xE9es dans fichiers
+
+      Tu peux faire un backup de toutes les donn\xE9es vers des fichiers
+      dans le format JSON, YAML, CSV et simple TEXT. Pour ce faire, deux moyens : 
+
+      \u2013 Ouvrez un Terminal \xE0 ce dossier et jouer le script <code>ruby ./src/data/export-data.rb</code>.
+      - Taper <code>exportAllData</code> dans la console (<shortcut>c</shortcut> pour rejoindre directement la console).
+
+      Pour ouvrir le dossier support contenant la base et les backups : taper <code>openSupport</code> en console:w
+      .
+
+      <button onclick="PanelClient.ici()">Essai fonction Help</button>
+      `,
         // Crétation d'un élément
         "create-element": `
       ## Cr\xE9ation d'un \xE9l\xE9ment
@@ -744,7 +812,7 @@
       return [this.formate(content), kbb];
     }
     formate(str) {
-      return str.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\*(.+?)\*/g, "<em>$1</em>").split("\n").map((s) => `<div>${s}\xA0</div>`).join("");
+      return str.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\*(.+?)\*/g, "<em>$1</em>").replace(/^### (.+)$/g, "<h3>$1</h3>").replace(/^## (.+)$/g, "<h2>$1</h2>").replace(/^# (.+)$/g, "<h1>$1</h1>").split("\n").map((s) => `<div>${s}\xA0</div>`).join("");
     }
     /**
      * Affichage du texte d'aide contextuelle et mise en attente
@@ -876,7 +944,6 @@
        *      que soit la situation, d'obtenir de l'aide.
        */
     universelKeyboardCapture(ev) {
-      console.log("[universel capture (mode %s)] Key up = ", this.mode, ev.key, ev);
       if (ev.key === "?") {
         this.panel.activateContextualHelp();
         return stopEvent(ev);
@@ -1069,6 +1136,9 @@
     }
     desactivate() {
       this.setPanelFocus(false);
+    }
+    static ici() {
+      console.log("Le ici du panneau.");
     }
     /**
      * Méthode puissante permettant d'attendre une réaction de l'utilisateur en affichant un 

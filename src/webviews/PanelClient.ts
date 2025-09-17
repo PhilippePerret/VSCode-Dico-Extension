@@ -37,6 +37,7 @@ export class PanelClient<T extends Tplus, C> {
   // Pour marquer le panneau actif ou inactif
   public activate() { this.setPanelFocus(true); }
   public desactivate() { this.setPanelFocus(false); }
+  public static ici(){console.log("Le ici du panneau.");}
 
   /**
    * Méthode puissante permettant d'attendre une réaction de l'utilisateur en affichant un 

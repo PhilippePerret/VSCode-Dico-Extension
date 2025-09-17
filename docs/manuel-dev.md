@@ -4,6 +4,12 @@
 
 
 
+## Console
+
+Les trois consoles en bas de chaque panneau permet d’évaluer du code dans le cadre du panneau ou de la fenêtre. Si on est dans le panneau des entrées, on peut faire appel à la classe `Entry`. Par exemple `Entry.doesEntreeExist("Abandon")` va renvoyer « true » dans la console.
+
+On peut définir n’importe quelle fonction dans la class `App` (celle côté webviews) et l’appeler en citant simplement son nom (si elle n’a pas besoin d’arguments) dans la console. On peut par exemple taper simplement `exportAllData` dans la console pour appeler l’export des données.
+
 ## Communication RPC inter-panneau
 
 Les trois panneaux sont isolés. Pour communiquer de l'un à l'autre, on doit utiliser leur canal RPC en passant par l'extension.

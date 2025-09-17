@@ -8,6 +8,7 @@ import { AccessTable } from "./services/AccessTable";
 import { AnyElementType } from "../extension/models/AnyElement";
 import { SelectionManager } from "./services/SelectionManager";
 import { PanelClient } from "./PanelClient";
+import { App } from "./services/App";
 
 type Tel_u = FullEntry | FullOeuvre | FullExemple;
 type Tel = typeof Entry | typeof Oeuvre | typeof Exemple;
@@ -26,6 +27,8 @@ export abstract class ClientItem<Tel, Tel_u> {
   public static get Selector(){ 
     return this._selector || (this._selector = new SelectionManager(this.klass));
   }
+
+  public static get app() { return App; } 
 
   // Raccourcis vers l'accessTable, pour obtenir des informations
   // sur les items ou les items eux-même

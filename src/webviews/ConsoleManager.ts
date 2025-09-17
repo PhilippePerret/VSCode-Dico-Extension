@@ -1,4 +1,5 @@
 import { PanelClient } from "./PanelClient";
+import { App } from "./services/App";
 
 /**
  * Pour gérer les consoles de chaque panneau
@@ -15,12 +16,16 @@ export class ConsoleManager {
     // Il vaut évaluer l'expression
     const code = this.console.value;
     try {
-      console.log("Évaluation du code %s", code, (0, eval)(code));
+      const result = (0, eval)(code);
+      console.log("Évaluation du code %s", code, result);
       this.history.push(code);
       this.ihistory = this.history.length; // oui, vraiment
       this.console.value = '';
     } catch (error) {
-      console.error("Une erreur s'est produite en évaluant le cde : ", code, error);
+      if ( false === App.eval(code)) {
+        this.panel.flash("Ce code produit une erreur…", 'error');
+        console.error(code, error);
+      }
     }
   }
   setCode(){

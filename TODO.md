@@ -2,8 +2,6 @@
 
 * J'EN SUIS À :
   - Mettre en place le script de sortie des données (DB => FICHIERS)
-    Cette mise en place est impératif maintenant car des nouvelles données ont été ajoutées et il ne faut plus utiliser les anciens fichiers pour charger les données.
-    - ruby exportant de la table aux fichiers
     - lien-bouton depuis le mode d'emploi pour déclencher l'export
     - un lien-bouton aussi pour ouvrir le dossier
 

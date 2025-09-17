@@ -1,4 +1,5 @@
 import { PanelClient } from "../PanelClient";
+import { App } from "./App";
 
 export class Help {
   /**
@@ -20,7 +21,21 @@ export class Help {
       **n** : (comme "nouveau") pour créer un nouvel élément avant la sélection.
       **e**: (comme "éditer") pour modifier l'élément sélectionné.
       
-      À tout moment, taper **?** pour afficher l'aide contextuelle.`,
+      À tout moment, taper **?** pour afficher l'aide contextuelle.
+      
+      ## Backup des données dans fichiers
+
+      Tu peux faire un backup de toutes les données vers des fichiers
+      dans le format JSON, YAML, CSV et simple TEXT. Pour ce faire, deux moyens : 
+
+      – Ouvrez un Terminal à ce dossier et jouer le script <code>ruby ./src/data/export-data.rb</code>.
+      - Taper <code>exportAllData</code> dans la console (<shortcut>c</shortcut> pour rejoindre directement la console).
+
+      Pour ouvrir le dossier support contenant la base et les backups : taper <code>openSupport</code> en console:w
+      .
+
+      <button onclick="PanelClient.ici()">Essai fonction Help</button>
+      `,
       
       // Crétation d'un élément
       'create-element': `
@@ -62,6 +77,7 @@ export class Help {
       `,
     };    
   }
+
   constructor(private panel: PanelClient<any, any>) {
   }
   /**
@@ -103,6 +119,9 @@ export class Help {
     return str
       .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/^### (.+)$/g, '<h3>$1</h3>')
+      .replace(/^## (.+)$/g, '<h2>$1</h2>')
+      .replace(/^# (.+)$/g, '<h1>$1</h1>')
       .split("\n").map(s => `<div>${s} </div>`).join('');
   }
   /**

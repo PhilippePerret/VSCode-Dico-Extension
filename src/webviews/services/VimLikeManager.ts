@@ -107,7 +107,8 @@ export class VimLikeManager {
    *      que soit la situation, d'obtenir de l'aide.
    */
   universelKeyboardCapture(ev: KeyboardEvent) {
-    console.log("[universel capture (mode %s)] Key up = ", this.mode, ev.key, ev);
+    // Pour voir toutes les touches qui sont pressées, toutes
+    // console.log("[universel capture (mode %s)] Key up = ", this.mode, ev.key, ev);
 
     if ( ev.key === '?' ) {
       // <= L'user a tapé la touche '?'

@@ -112,6 +112,7 @@ header div#message {
 	width: 96%;
 	font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
 	font-size: 11pt;
+	padding: 4px 8px;
 	min-height: 30px;
 	max-height: 64px;
 	overflow-y: auto;
