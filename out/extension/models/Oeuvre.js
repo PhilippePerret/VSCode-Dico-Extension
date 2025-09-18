@@ -2,12 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Oeuvre = void 0;
 const UniversalCacheManager_1 = require("../../bothside/UniversalCacheManager");
-const UOeuvre_1 = require("../../bothside/UOeuvre");
 const App_1 = require("../services/App");
 const StringUtils_1 = require("../../bothside/StringUtils");
 const db_manager_1 = require("../db/db_manager");
 const Rpc_1 = require("../services/Rpc");
-class Oeuvre extends UOeuvre_1.UOeuvre {
+class Oeuvre {
+    data;
     static panelId = 'oeuvres';
     static REG_ARTICLES = /\b(an|a|the|le|la|les|l'|de|du)\b/i;
     static cacheDebug() { return this.cache; }
@@ -24,6 +24,31 @@ class Oeuvre extends UOeuvre_1.UOeuvre {
             caseFirst: 'lower'
         });
     }
+    // Constructor and data access
+    constructor(data) {
+        this.data = data;
+    }
+    // Getters pour accès direct aux propriétés courantes
+    get id() { return this.data.id; }
+    get titre_affiche() { return this.data.dbData.titre_affiche; }
+    get titre_original() { return this.data.dbData.titre_original; }
+    get titre_francais() { return this.data.dbData.titre_francais; }
+    get annee() { return this.data.dbData.annee; }
+    get auteurs() { return this.data.dbData.auteurs; }
+    get notes() { return this.data.dbData.notes; }
+    get resume() { return this.data.dbData.resume; }
+    // Méthodes statiques héritées
+    static mef_auteurs(auteurs) {
+        // Logique de mise en forme des auteurs
+        return auteurs;
+    }
+    static getDataSerialized() {
+        return this.cache.getDataSerialized();
+    }
+    static completeItemForClientAfterSave(item) {
+        // Logique de complétion après sauvegarde
+        return item;
+    }
     /**
      * @api
      *
@@ -33,9 +58,6 @@ class Oeuvre extends UOeuvre_1.UOeuvre {
         const dbManager = db_manager_1.DBManager.getInstance(App_1.App._context);
         params = await dbManager.saveItemIn('oeuvres', params.item, params, this);
         Rpc_1.CanalOeuvre.afterSaveItem(params);
-    }
-    constructor(data) {
-        super(data);
     }
     /**
      * Méthode pour préparation tous les items pour le cache
@@ -47,12 +69,19 @@ class Oeuvre extends UOeuvre_1.UOeuvre {
      * Méthode de préparation de la donnée pour le cache
      */
     static prepareItemForCache(item) {
-        const preparedItem = item;
-        Object.assign(preparedItem, {
-            itemType: 'oeuvre',
-            titres: ["Un titre", "un autre titre", "et encore un"],
-        });
-        return preparedItem;
+        return {
+            id: item.id, // ID at root level for easy access
+            dbData: item,
+            cachedData: {
+                itemType: 'oeuvre',
+                titres: [],
+                titresLookUp: []
+            },
+            domState: {
+                selected: false,
+                display: 'block'
+            }
+        };
     }
     static async finalizeCachedItems() {
         await this.cache.traverse(this.finalizeCachedItem.bind(this));
@@ -61,14 +90,14 @@ class Oeuvre extends UOeuvre_1.UOeuvre {
     static finalizeCachedItem(oeuvre) {
         // Créer un array avec tous les titres disponibles
         const titres = [];
-        if (oeuvre.titre_francais) {
-            titres.push(StringUtils_1.StringNormalizer.rationalize(oeuvre.titre_francais));
+        if (oeuvre.dbData.titre_francais) {
+            titres.push(StringUtils_1.StringNormalizer.rationalize(oeuvre.dbData.titre_francais));
         }
-        if (oeuvre.titre_original) {
-            titres.push(StringUtils_1.StringNormalizer.rationalize(oeuvre.titre_original));
+        if (oeuvre.dbData.titre_original) {
+            titres.push(StringUtils_1.StringNormalizer.rationalize(oeuvre.dbData.titre_original));
         }
-        if (oeuvre.titre_affiche) {
-            titres.push(StringUtils_1.StringNormalizer.rationalize(oeuvre.titre_affiche));
+        if (oeuvre.dbData.titre_affiche) {
+            titres.push(StringUtils_1.StringNormalizer.rationalize(oeuvre.dbData.titre_affiche));
         }
         // Il faut supprimer les articles dans les titres
         titres.forEach(titre => {
@@ -85,12 +114,11 @@ class Oeuvre extends UOeuvre_1.UOeuvre {
         });
         // Versions minuscules pour recherche
         const titresLookUp = uniqTitres.map(titre => StringUtils_1.StringNormalizer.toLower(titre));
-        return Object.assign(oeuvre, {
-            titres: titres,
-            titre_affiche_formated: oeuvre.titre_affiche,
-            auteurs_formated: oeuvre.auteurs && Oeuvre.mef_auteurs(oeuvre.auteurs),
-            titresLookUp: titresLookUp
-        });
+        oeuvre.cachedData.titres = titres;
+        oeuvre.cachedData.titre_affiche_formated = oeuvre.dbData.titre_affiche;
+        oeuvre.cachedData.auteurs_formated = oeuvre.dbData.auteurs && Oeuvre.mef_auteurs(oeuvre.dbData.auteurs);
+        oeuvre.cachedData.titresLookUp = titresLookUp;
+        return oeuvre;
     }
     /**
      * Get the title to use for sorting (French if exists, otherwise original)
@@ -225,7 +253,9 @@ class Oeuvre extends UOeuvre_1.UOeuvre {
      */
     static fromRow(row) {
         try {
-            return new Oeuvre(row);
+            // Il faut créer un OeuvreType complet depuis les données DB
+            const oeuvreType = this.prepareItemForCache(row);
+            return new Oeuvre(oeuvreType);
         }
         catch (erreur) {
             console.error("# ERREUR avec l'OEUVRE : %s", erreur, row);

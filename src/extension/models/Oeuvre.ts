@@ -1,41 +1,22 @@
 import { UniversalCacheManager } from '../../bothside/UniversalCacheManager';
 import { UOeuvre } from '../../bothside/UOeuvre';
+import { DBOeuvreType, OeuvreType } from '../../bothside/types';
 import { App } from '../services/App';
 import { StringNormalizer } from '../../bothside/StringUtils';
 import { DBManager } from '../db/db_manager';
 import { CanalOeuvre } from '../services/Rpc';
 
-export interface IOeuvre {
-	id: string;
-	titre_affiche: string;
-	titre_original?: string;
-	titre_francais?: string;
-	annee?: number;
-	auteurs?: string;
-	notes?: string;
-	resume?: string;
-}
+// Re-export types for external use
+export { DBOeuvreType, OeuvreType } from '../../bothside/types';
 
-export interface FullOeuvre extends IOeuvre {
-	itemType: 'entry' | 'oeuvre' | 'exemple';
-  resume_formated?: string;
-  titre_original?: string;
-  titre_francais?: string;
-  titre_affiche_formated?: string;
-  titre_francais_formated?: string;
-  titres: string[];                // Tous les titres combinés pour recherche
-  titresLookUp: string[];          // Versions minuscules des titres (pour filtrage)
-  auteurs_formated?: string;
-}
-
-export class Oeuvre extends UOeuvre {
+export class Oeuvre {
 	public static panelId = 'oeuvres';
 	private static readonly REG_ARTICLES = /\b(an|a|the|le|la|les|l'|de|du)\b/i;
 
 	public static cacheDebug() { return this.cache; }
-	protected static _cacheManagerInstance: UniversalCacheManager<IOeuvre, FullOeuvre> = new UniversalCacheManager();
+	protected static _cacheManagerInstance: UniversalCacheManager<DBOeuvreType, OeuvreType> = new UniversalCacheManager();
   protected static get cache() { return this._cacheManagerInstance; };
-	public static get(oeuvre_id: string): FullOeuvre { return this.cache.get(oeuvre_id) as FullOeuvre ;}
+	public static get(oeuvre_id: string): OeuvreType { return this.cache.get(oeuvre_id) as OeuvreType ;}
 
 	public static sortFonction(a: Oeuvre, b: Oeuvre): number {
 		const titleA = a.titre_original || a.titre_affiche;
@@ -46,50 +27,82 @@ export class Oeuvre extends UOeuvre {
 			caseFirst: 'lower'
 		});
 	}
+	
+	// Constructor and data access
+	constructor(public data: OeuvreType) {}
+	
+	// Getters pour accès direct aux propriétés courantes
+	get id(): string { return this.data.id; }
+	get titre_affiche(): string { return this.data.dbData.titre_affiche; }
+	get titre_original(): string | undefined { return this.data.dbData.titre_original; }
+	get titre_francais(): string | undefined { return this.data.dbData.titre_francais; }
+	get annee(): number | undefined { return this.data.dbData.annee; }
+	get auteurs(): string | undefined { return this.data.dbData.auteurs; }
+	get notes(): string | undefined { return this.data.dbData.notes; }
+	get resume(): string | undefined { return this.data.dbData.resume; }
+	
+	// Méthodes statiques héritées
+	static mef_auteurs(auteurs: string): string {
+		// Logique de mise en forme des auteurs
+		return auteurs;
+	}
+	
+	static getDataSerialized() {
+		return this.cache.getDataSerialized();
+	}
+	
+	static completeItemForClientAfterSave(item: any) {
+		// Logique de complétion après sauvegarde
+		return item;
+	}
 
 	/**
 	 * @api
 	 * 
 	 * Sauvegarde de l'œuvre 
 	 */
-	public static async saveOeuvre(params: {CRId: string, item: IOeuvre, ok: boolean, errors: any, [x: string]: any}){
+	public static async saveOeuvre(params: {CRId: string, item: DBOeuvreType, ok: boolean, errors: any, [x: string]: any}){
 		const dbManager = DBManager.getInstance(App._context);
 		params = await dbManager.saveItemIn('oeuvres', params.item, params, this);
 		CanalOeuvre.afterSaveItem(params);
 	}
 
-	constructor(data: IOeuvre) {
-		super(data);
-	}
 	/**
 	 * Méthode pour préparation tous les items pour le cache
 	 */
-	public static cacheAllData(items: IOeuvre[]): void {
+	public static cacheAllData(items: DBOeuvreType[]): void {
 		this.cache.inject(items, this.prepareItemForCache.bind(this));
 	}
 	/**
 	 * Méthode de préparation de la donnée pour le cache
 	 */
-	protected static prepareItemForCache(item: IOeuvre): FullOeuvre {
-		const preparedItem = item as FullOeuvre;
-		Object.assign(preparedItem, {
-			itemType: 'oeuvre',
-			titres: ["Un titre", "un autre titre", "et encore un"],
-		});
-		return preparedItem;
+	protected static prepareItemForCache(item: DBOeuvreType): OeuvreType {
+		return {
+			id: item.id,  // ID at root level for easy access
+			dbData: item,
+			cachedData: {
+				itemType: 'oeuvre',
+				titres: [],
+				titresLookUp: []
+			},
+			domState: {
+				selected: false,
+				display: 'block'
+			}
+		};
 	}
 
 	public static async finalizeCachedItems(): Promise<void> {
 		await this.cache.traverse(this.finalizeCachedItem.bind(this));
 		App.incAndCheckReadyCounter();
 	}
-	protected static finalizeCachedItem(oeuvre: FullOeuvre): FullOeuvre {
+	protected static finalizeCachedItem(oeuvre: OeuvreType): OeuvreType {
 		    // Créer un array avec tous les titres disponibles
     const titres: string[] = [];
 
-    if (oeuvre.titre_francais) { titres.push(StringNormalizer.rationalize(oeuvre.titre_francais)); }
-    if (oeuvre.titre_original) { titres.push(StringNormalizer.rationalize(oeuvre.titre_original)); }
-    if (oeuvre.titre_affiche) { titres.push(StringNormalizer.rationalize(oeuvre.titre_affiche)); }
+    if (oeuvre.dbData.titre_francais) { titres.push(StringNormalizer.rationalize(oeuvre.dbData.titre_francais)); }
+    if (oeuvre.dbData.titre_original) { titres.push(StringNormalizer.rationalize(oeuvre.dbData.titre_original)); }
+    if (oeuvre.dbData.titre_affiche) { titres.push(StringNormalizer.rationalize(oeuvre.dbData.titre_affiche)); }
   
     // Il faut supprimer les articles dans les titres
     titres.forEach(titre => {
@@ -106,12 +119,12 @@ export class Oeuvre extends UOeuvre {
 		// Versions minuscules pour recherche
     const titresLookUp = uniqTitres.map(titre => StringNormalizer.toLower(titre));
 		
-		return Object.assign(oeuvre, {
-			titres: titres,
-			titre_affiche_formated: oeuvre.titre_affiche,
-			auteurs_formated: oeuvre.auteurs && Oeuvre.mef_auteurs(oeuvre.auteurs),
-			titresLookUp: titresLookUp 
-		}) as FullOeuvre;
+		oeuvre.cachedData.titres = titres;
+		oeuvre.cachedData.titre_affiche_formated = oeuvre.dbData.titre_affiche;
+		oeuvre.cachedData.auteurs_formated = oeuvre.dbData.auteurs && Oeuvre.mef_auteurs(oeuvre.dbData.auteurs);
+		oeuvre.cachedData.titresLookUp = titresLookUp;
+
+		return oeuvre;
 	}
 
 	/**
@@ -229,7 +242,7 @@ export class Oeuvre extends UOeuvre {
 	/**
 	 * Validate oeuvre data
 	 */
-	static validate(data: Partial<IOeuvre>): string[] {
+	static validate(data: Partial<DBOeuvreType>): string[] {
 		const errors: string[] = [];
 
 		if (!data.titre_affiche?.trim()) {
@@ -262,9 +275,11 @@ export class Oeuvre extends UOeuvre {
 	/**
 	 * Create from database row
 	 */
-	static fromRow(row: IOeuvre): Oeuvre | undefined {
+	static fromRow(row: DBOeuvreType): Oeuvre | undefined {
 		try {
-			return new Oeuvre(row);
+			// Il faut créer un OeuvreType complet depuis les données DB
+			const oeuvreType = this.prepareItemForCache(row);
+			return new Oeuvre(oeuvreType);
 		} catch(erreur) {
 			console.error("# ERREUR avec l'OEUVRE : %s", erreur, row);
 		}

@@ -1,6 +1,6 @@
 import { RpcChannel } from '../../bothside/RpcChannel';
 import { UExemple } from '../../bothside/UExemple';
-import { FullExemple } from '../../extension/models/Exemple';
+import { ExempleType, DBExempleType } from '../../bothside/types';
 import { StringNormalizer } from '../../bothside/StringUtils';
 import { ClientItem } from '../ClientItem';
 import { createRpcClient } from '../RpcClient';
@@ -11,12 +11,24 @@ import { AnyElementType } from './AnyClientElement';
 import { ExempleForm } from './ExempleForm';
 
 
-export class Exemple extends ClientItem<UExemple, FullExemple> {
-  declare public data: FullExemple;
+export class Exemple extends ClientItem<DBExempleType, ExempleType> {
   readonly type = 'exemple';
   static readonly minName = 'exemple';
   static readonly klass = Exemple;
   static currentItem: Exemple;
+  
+  // Constructor and data access
+  constructor(public data: ExempleType) {
+    super(data);
+  }
+  
+  // Getters pour accès direct aux propriétés courantes
+  get id(): string { return this.data.id; }
+  get oeuvre_id(): string { return this.data.dbData.oeuvre_id; }
+  get indice(): number { return this.data.dbData.indice; }
+  get entry_id(): string { return this.data.dbData.entry_id; }
+  get content(): string { return this.data.dbData.content; }
+  get notes(): string | undefined { return this.data.dbData.notes; }
   static setAccessTable(items: Exemple[]) {
     this._accessTable = new AccessTable<Exemple>(Exemple, items);
   }
@@ -68,7 +80,7 @@ class ExemplePanelClass extends PanelClient<Exemple, typeof Exemple> {
 
     switch(prop) {
       case 'entree_formated':
-        return `<a data-type="entry" data-id="${ex.data.entry_id}">${value}</a>`;
+        return `<a data-type="entry" data-id="${ex.data.dbData.entry_id}">${value}</a>`;
       default: return String(value);
     }
   }
@@ -113,27 +125,27 @@ class ExemplePanelClass extends PanelClient<Exemple, typeof Exemple> {
     let currentOeuvreId: string = ''; // le titre couramment affiché
     accessTable.each((item: Exemple): undefined => {
       const ditem = item.data;
-      if ( ditem.oeuvre_id === currentOeuvreId ) { return ; }
+      if ( ditem.dbData.oeuvre_id === currentOeuvreId ) { return ; }
       // --- NOUVEAU TITRE ---
-      currentOeuvreId = ditem.oeuvre_id;
+      currentOeuvreId = ditem.dbData.oeuvre_id;
       const obj = document.createElement('h2');
       obj.dataset.id = currentOeuvreId;
       obj.addEventListener('click', this.onClickLinkToOeuvre.bind(this, obj));
       obj.className = 'titre-oeuvre';
       const spanTit = document.createElement('span');
       spanTit.className = 'titre';
-      spanTit.innerHTML = ditem.oeuvre_titre;
+      spanTit.innerHTML = ditem.cachedData.oeuvre_titre;
       obj.appendChild(spanTit);
       const titre = {
-        id: ditem.oeuvre_id,
+        id: ditem.dbData.oeuvre_id,
         obj: obj,
-        titre: ditem.oeuvre_titre,
+        titre: ditem.cachedData.oeuvre_titre,
         display: 'block'
       } as OTitre;
       // On consigne ce titre pour pouvoir le manipuler facilement
       this.BlockTitres.set(titre.id, titre);
 
-      const firstEx = document.querySelector(`main#items > div[data-id="${ditem.id}"]`);
+      const firstEx = document.querySelector(`main#items > div[data-id="${ditem.dbData.id}"]`);
       this.container.insertBefore(obj, firstEx);
     });
   }
@@ -171,7 +183,7 @@ class ExemplePanelClass extends PanelClient<Exemple, typeof Exemple> {
         // Filtrage par titre d'œuvre (défaut)
         exemplesFound = this.filter(Exemple.accessTable, (ex: AnyElementType) => {
           ex = ex as Exemple;
-          return ex.data.titresLookUp.some((titre: string) => {
+          return ex.data.cachedData.titresLookUp.some((titre: string) => {
             return titre.substring(0, searchLow.length) === searchLow;
           });
         }) as Exemple[];
@@ -179,7 +191,7 @@ class ExemplePanelClass extends PanelClient<Exemple, typeof Exemple> {
       case 'by-entry':
         // Filtrage pour entrée
         exemplesFound = this.filter(Exemple.accessTable, (ex: AnyElementType) => {
-          const seg = (ex as Exemple).data.entry4filter.substring(0, searchLow.length);
+          const seg = (ex as Exemple).data.cachedData.entry4filter.substring(0, searchLow.length);
           return seg === searchLow || seg === searchRa;
         }) as Exemple[];
         break;
@@ -187,8 +199,8 @@ class ExemplePanelClass extends PanelClient<Exemple, typeof Exemple> {
          exemplesFound = this.filter(Exemple.accessTable, (ex: AnyElementType) => {
           ex = ex as Exemple;
           console.log("ex", ex.data);
-          return ex.data.content_min.includes(searchLow) ||
-            ex.data.content_min_ra.includes(searchRa);
+          return ex.data.cachedData.content_min.includes(searchLow) ||
+            ex.data.cachedData.content_min_ra.includes(searchRa);
         }) as Exemple[];
         break;
       default:
@@ -204,8 +216,8 @@ class ExemplePanelClass extends PanelClient<Exemple, typeof Exemple> {
 
     exemplesFound.forEach((ex: Exemple) => {
       // Si le titre a déjà été traité, on passe au suivant
-      if ( titres2aff.has(ex.data.oeuvre_id)) { return ; }
-      titres2aff.set(ex.data.oeuvre_id, true);
+      if ( titres2aff.has(ex.data.dbData.oeuvre_id)) { return ; }
+      titres2aff.set(ex.data.dbData.oeuvre_id, true);
     });
     // Ici, on a dans titres2aff les titres à afficher
     this.BlockTitres.forEach((btitre:OTitre) => {

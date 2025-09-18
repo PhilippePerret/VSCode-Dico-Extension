@@ -11,7 +11,7 @@
  *     panneaux.
  */
 import { UEntry } from '../../bothside/UEntry';
-import { FullEntry, IEntry } from '../../extension/models/Entry';
+import { DBEntryType, EntryType, CachedEntryType, DomStateType } from '../../bothside/types';
 import { StringNormalizer } from '../../bothside/StringUtils';
 import { ClientItem } from '../ClientItem';
 import { createRpcClient } from '../RpcClient';
@@ -21,13 +21,28 @@ import { PanelClient } from '../PanelClient';
 import { EntryForm } from './EntryForm';
 import { ComplexRpc } from '../services/ComplexRpc';
 
+// Types legacy pour transition - à supprimer après migration complète
+export type FullEntry = EntryType;
+export type IEntry = DBEntryType;
 
-export class Entry extends ClientItem<UEntry, FullEntry> {
-  declare public data: FullEntry;
+
+export class Entry extends ClientItem<DBEntryType, EntryType> {
   readonly type = 'entry';
   static readonly minName = 'entry';
   static readonly klass = Entry;
   static currentItem: Entry;
+  
+  // Constructor and data access
+  constructor(public data: EntryType) {
+    super(data);
+  }
+  
+  // Getters pour accès direct aux propriétés courantes
+  get id(): string { return this.data.id; }
+  get entree(): string { return this.data.dbData.entree; }
+  get genre(): string { return this.data.dbData.genre; }
+  get categorie_id(): string | undefined { return this.data.dbData.categorie_id; }
+  get definition(): string { return this.data.dbData.definition; }
 
   static setAccessTable(items: Entry[]) {
     this._accessTable = new AccessTable<Entry>(Entry, items);
@@ -48,7 +63,7 @@ export class Entry extends ClientItem<UEntry, FullEntry> {
   // @return true si l'entrée +entree+ existe déjà
   public static doesEntreeExist(entree: string): boolean {
     entree = entree.toLowerCase();
-    return this.accessTable.find((item) => item.data.entree.toLowerCase() === entree) !== undefined ;
+    return this.accessTable.find((item) => item.data.dbData.entree.toLowerCase() === entree) !== undefined ;
   }
   // @return true si l'identifiant +id+ existe déjà
   public static doesIdExist(id: string): boolean {
@@ -61,11 +76,11 @@ export class Entry extends ClientItem<UEntry, FullEntry> {
    * 
    * 
    */
-  public static saveItem(item: IEntry, compRpcId: string) {
+  public static saveItem(item: DBEntryType, compRpcId: string) {
     RpcEntry.notify('save-item', {CRId: compRpcId, item: item});
   }
 
-  public static onSavedItem(params: {CRId: string, ok: boolean, error: any, item: IEntry}){
+  public static onSavedItem(params: {CRId: string, ok: boolean, error: any, item: DBEntryType}){
     // console.log("[CLIENT ENTRY] Retour dans le panneau Entry avec le résultat de l'enregistrement", params);
     ComplexRpc.resolveRequest(params.CRId, params);
   }
@@ -88,8 +103,8 @@ class EntryPanelClass extends PanelClient<Entry, typeof Entry> {
     const prefixRa = StringNormalizer.rationalize(searched);
     return this.filter(Entry.accessTable, (entry: AnyElementType) => {
       entry = entry as Entry;
-      return entry.data.entree_min.startsWith(prefixLower) || 
-             entry.data.entree_min_ra.startsWith(prefixRa);
+      return entry.data.cachedData.entree_min.startsWith(prefixLower) || 
+             entry.data.cachedData.entree_min_ra.startsWith(prefixRa);
     }) as Entry[];
   }
 

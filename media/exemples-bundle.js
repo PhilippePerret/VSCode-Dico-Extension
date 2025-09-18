@@ -72,7 +72,8 @@
       this.panel.form.editItem(this.get(itemId));
     }
     static createNewItem() {
-      this.panel.form.editItem(new this.klass({ id: "" }));
+      const emptyDbData = { id: "" };
+      this.panel.form.editItem(new this.klass(emptyDbData));
     }
     toRow() {
       return {};
@@ -431,491 +432,6 @@
     }
   };
 
-  // src/webviews/services/AccessTable.ts
-  var AccessTable = class {
-    constructor(klass, items) {
-      this.klass = klass;
-      this.populateInTable(items);
-    }
-    keysMap = /* @__PURE__ */ new Map();
-    arrayItems = [];
-    _size;
-    // après un ajout ou une suppression, par exemple
-    reset() {
-      this._size = null;
-    }
-    get size() {
-      return this._size || (this._size = this.keysMap.size);
-    }
-    isVisible(id) {
-      return this.getAccKeyById(id).visible === true;
-    }
-    setVisibility(id, state) {
-      const ak = this.getAccKeyById(id);
-      if (ak.visible !== state) {
-        ak.visible = state;
-        if (ak.obj === void 0) {
-          ak.obj = this.DOMElementOf(id);
-        }
-        const display = state ? "block" : "none";
-        ak.display = display;
-        ak.obj.style.display = display;
-      }
-    }
-    selectNextItem(panel) {
-      const selection = panel.getSelection();
-      let nextId;
-      if (selection) {
-        let nextItemVisible;
-        nextItemVisible = this.getNextVisibleById(selection);
-        if (nextItemVisible) {
-          nextId = nextItemVisible.data.id;
-        }
-      }
-      nextId = nextId || this.firstItem.data.id;
-      panel.select(nextId);
-    }
-    selectPrevItem(panel) {
-      const selection = panel.getSelection();
-      let prevId;
-      if (selection) {
-        let prevItemVisible;
-        prevItemVisible = this.getPrevVisibleById(selection);
-        if (prevItemVisible) {
-          prevId = prevItemVisible.data.id;
-        }
-      }
-      prevId = prevId || this.firstItem.data.id;
-      panel.select(prevId);
-    }
-    getNextVisibleById(refId) {
-      let ak;
-      let nextAk;
-      while (ak = this.getNextAccKeyById(refId)) {
-        if (ak.visible) {
-          return this.getById(ak.id);
-        }
-      }
-    }
-    getPrevVisibleById(refId) {
-      let ak;
-      let prevAk;
-      while (ak = this.getPrevAccKeyById(refId)) {
-        if (ak.visible) {
-          return this.getById(ak.id);
-        }
-      }
-    }
-    setSelectState(id, state) {
-      this.getAccKeyById(id).selected = state;
-    }
-    traverseAnyTypeWith(value, fnIfId, fnIfIndex, fnIfAccKey, fnIfItem) {
-      switch (typeof value) {
-        case "string":
-          return fnIfId(value);
-        case "number":
-          return fnIfIndex(value);
-        case "object":
-          switch (value.type) {
-            case "accedable-item":
-              return fnIfAccKey(value);
-            case "entry":
-            case "oeuvre":
-            case "exemple":
-              return fnIfItem(value);
-          }
-      }
-    }
-    /**
-     * Retourne l'item d'identifiant +id+ 
-     * 
-     * On peut l'obtenir en envoyant l'identifiant (string), l'index dans
-     * la liste (number), l'accedable-key (AccedableItem) ou l'item 
-     * lui-même.
-     */
-    get(foo) {
-      return this.traverseAnyTypeWith(
-        foo,
-        this.getById.bind(this),
-        this.getByIndex.bind(this),
-        this.getByAccKey.bind(this),
-        (foo2) => {
-          return foo2;
-        }
-      );
-    }
-    // @return true si l'élément d'identifiant +id+ existe.
-    existsById(id) {
-      return this.keysMap.has(id);
-    }
-    getById(id) {
-      return this.arrayItems[this.keysMap.get(id).index];
-    }
-    getByIndex(index) {
-      return this.arrayItems[index];
-    }
-    getByAccKey(ak) {
-      return this.getById(ak.id);
-    }
-    /**
-     * Retourne l'objet DOM de l'item en s'assurant qu'il est défini
-     * dans l'AccKey (ce qui n'est pas fait par défaut)
-     */
-    getObj(id) {
-      const ak = this.getAccKeyById(id);
-      if (!ak) {
-        console.error("Impossible d'obtenir l'AK de l'id '%s'\u2026", id, this.arrayItems);
-      }
-      ak.obj || Object.assign(ak, { obj: this.DOMElementOf(id) });
-      if (!ak.obj) {
-        console.error("Impossible d'obtenir l'objet de l'item '%'\u2026", id);
-      }
-      return ak.obj;
-    }
-    /**
-     *  Retourne l'accKey de l'élément foo
-     * TODO : doit fonctionner pour tout élément (cf. getNextAccKey)
-     */
-    getAccKey(foo) {
-      return this.traverseAnyTypeWith(
-        foo,
-        this.getAccKeyById.bind(this),
-        this.getAccKeyByIndex.bind(this),
-        (foo2) => {
-          return foo2;
-        },
-        this.getAccKeyByItem.bind(this)
-      );
-    }
-    getAccKeyById(itemId) {
-      return this.keysMap.get(itemId);
-    }
-    getAccKeyByIndex(index) {
-      return this.getAccKeyById(this.getByIndex(index).data.id);
-    }
-    getAccKeyByItem(item) {
-      return this.getAccKeyById(item.data.id);
-    }
-    /**
-     * Actualise ou Crée le nouvel item Item après son enregistrement.
-     * 
-     * Pour savoir si c'est une création ou une actualisation, il
-     * suffit de voir si l'identifiant est connu de la table (noter
-     * que pour les exemples, il n'y a pas d'identifiant autre que
-     * volatile).
-     * 
-     * Noter que ce sont toujours les données compolètes qui sont
-     * remontées, même pour une actualisation. Car l'actualisation
-     * a pu modifier des données qui servent pour le tri, le formatage,
-     * etc.
-     * 
-     */
-    upsert(item) {
-      console.log("Item re\xE7u par upsert", item);
-      const checkedId = ((ity, item2) => {
-        switch (ity) {
-          case "entry":
-          case "oeuvre":
-            return item2.id;
-          case "exemple":
-            const ite = item2;
-            return `${ite.oeuvre_id}-${ite.indice}`;
-        }
-      })(item.itemType, item);
-      if (this.existsById(checkedId)) {
-        console.log("C'est une actualisation de l'item ", checkedId);
-        console.log("Actualisation de", this.getById(checkedId));
-      } else {
-        console.log("C'est une cr\xE9ation de l'item", item);
-        const fullItem = Object.assign({}, {
-          data: item,
-          type: "entry"
-        });
-      }
-      return true;
-    }
-    /**
-     *  Retourne l'Item (Entry, Oeuvre, Exemple) de l'élément foo
-     */
-    getNextItem(foo) {
-      return this.traverseAnyTypeWith(
-        foo,
-        this.getNextItemById.bind(this),
-        this.getNextItemByIndex.bind(this),
-        this.getNextItemByAccKey.bind(this),
-        this.getNextItemByItem.bind(this)
-      );
-    }
-    getNextItemById(id) {
-      const nextAK = this.getNextAccKeyById(id);
-      return nextAK ? this.getById(nextAK.id) : void 0;
-    }
-    getNextItemByIndex(index) {
-      return this.getNextItemById(this.arrayItems[index].data.id);
-    }
-    getNextItemByAccKey(ak) {
-      return ak.next ? this.getById(ak.next) : void 0;
-    }
-    getNextItemByItem(item) {
-      return this.getNextItemById(item.data.id);
-    }
-    /**
-     *  Retourne l'Item (Entry, Oeuvre, Exemple) qui suit l'élément
-     * défini par +foo+ qui peut être l'id, l'index, l'accessKey
-     * {AccedableItem} ou l'item lui-mêmeK
-     */
-    getPrevItem(foo) {
-      return this.traverseAnyTypeWith(
-        foo,
-        this.getPrevItemById.bind(this),
-        this.getPrevItemByIndex.bind(this),
-        this.getPrevItemByAccKey.bind(this),
-        this.getPrevItemByItem.bind(this)
-      );
-    }
-    getPrevItemById(id) {
-      const prevAK = this.getPrevAccKeyById(id);
-      return prevAK ? this.getById(prevAK.id) : void 0;
-    }
-    getPrevItemByIndex(index) {
-      return this.getPrevItemById(this.arrayItems[index].data.id);
-    }
-    getPrevItemByAccKey(ak) {
-      return ak.prev ? this.getById(ak.prev) : void 0;
-    }
-    getPrevItemByItem(item) {
-      return this.getPrevItemById(item.data.id);
-    }
-    /**
-     *  Retourne l'accedableKey {AccedableItem} de l'élément désigné
-     * par +foo+ qui peut être l'identifiant, l'index, l'access-key ou
-     * l'item lui-même de l'item de référence. 
-     *
-     * Note : la version LA PLUS RAPIDE (O)1 consiste à fournir l'IDENTIFIANT
-     * 
-     */
-    getNextAccKey(foo) {
-      return this.traverseAnyTypeWith(
-        foo,
-        this.getNextAccKeyById.bind(this),
-        this.getNextAccKeyByIndex.bind(this),
-        this.getNextAccKeyByAccKey.bind(this),
-        this.getNextAccKeyByItem.bind(this)
-      );
-    }
-    getNextAccKeyById(id) {
-      const ak = this.getAccKey(id);
-      return ak.next ? this.getAccKey(ak.next) : void 0;
-    }
-    getNextAccKeyByIndex(index) {
-      return this.getNextAccKeyById(this.arrayItems[index].data.id);
-    }
-    getNextAccKeyByAccKey(ak) {
-      return ak.next ? this.getNextAccKeyById(ak.next) : void 0;
-    }
-    getNextAccKeyByItem(item) {
-      return this.getNextAccKeyById(item.data.id);
-    }
-    /**
-     * Retourne l'AccessKey {AccedableItem} précédent de l'élément 
-     * désigné par +foo+ qui peut être l'id, l'index, l'access-key ou
-     * l'item lui-même de l'élément.
-     */
-    getPrevAccKey(foo) {
-      return this.traverseAnyTypeWith(
-        foo,
-        this.getPrevAccKeyById.bind(this),
-        this.getPrevAccKeyByIndex.bind(this),
-        this.getPrevAccKeyByAccKey.bind(this),
-        this.getPrevAccKeyByItem.bind(this)
-      );
-    }
-    getPrevAccKeyById(id) {
-      const ak = this.getAccKey(id);
-      return ak.prev ? this.getAccKey(ak.prev) : void 0;
-    }
-    getPrevAccKeyByIndex(index) {
-      return this.getPrevAccKeyById(this.arrayItems[index].data.id);
-    }
-    getPrevAccKeyByAccKey(ak) {
-      return ak.prev ? this.getPrevAccKeyById(ak.prev) : void 0;
-    }
-    getPrevAccKeyByItem(item) {
-      return this.getPrevAccKeyById(item.data.id);
-    }
-    // Boucle sur tous les éléments (sans retour)
-    each(traverseMethod) {
-      this.eachSince(traverseMethod, this.firstItem.data.id);
-    }
-    // Boucle depuis l'élément d'identifiant +id+
-    eachSince(traverseMethod, id) {
-      let item = this.getById(id);
-      do {
-        if (item) {
-          traverseMethod(item);
-          item = this.getNextItemById(item.data.id);
-        } else {
-          break;
-        }
-      } while (item);
-    }
-    /**
-     * Boucle sur toutes les AcceedableItem (AccKey/ak)
-     */
-    eachAccKey(fnEach) {
-      this.keysMap.forEach(fnEach);
-    }
-    /**
-     * Boucle sur tous les items à partir de l'item d'id +id+ en
-     * collectant une donnée quelconque.
-     */
-    mapSince(traverseMethod, id) {
-      const collected = [];
-      let item = this.getById(id);
-      do {
-        if (item) {
-          let retour = traverseMethod(item);
-          collected.push(retour);
-          item = this.getNextItemById(item.data.id);
-        } else {
-          break;
-        }
-      } while (item);
-      return collected;
-    }
-    // Boucle sur TOUTES les données en collectant une donnée
-    map(traverseMethod) {
-      return this.mapSince(traverseMethod, this.firstItem.data.id);
-    }
-    /**
-     * Méthode qui boucle sur tous les éléments depuis l'élément d'id
-     * +itemId+ et retourne une Map avec en clé l'identifiant de
-     * l'item et en valeur la valeur retournée par la méthode
-     * +traverseMethod+
-     */
-    collectSince(traverseMethod, itemId) {
-      const collected = /* @__PURE__ */ new Map();
-      let item = this.getById(itemId);
-      do {
-        if (item) {
-          let retour = traverseMethod(item);
-          collected.set(item.data.id, retour);
-          item = this.getNextItemById(item.data.id);
-        } else {
-          break;
-        }
-      } while (item);
-      return collected;
-    }
-    // Boucle sur tous les éléments en récoltant une valeur qu'on met
-    // dans une Map qui a en clé l'identifiant de l'item
-    collect(traverseMethod) {
-      return this.collectSince(traverseMethod, this.firstItem.data.id);
-    }
-    /**
-     * Retourne le premier item. Par convention, c'est le premier
-     * de la liste.
-     */
-    get firstItem() {
-      return this.arrayItems[0];
-    }
-    /**
-     * Boucle sur les items, depuis l'item d'identifiant +id+ ou depuis le premier et 
-     * retourne le premier qui répond à la condition +condition+
-     */
-    find(condition) {
-      return this.findAfter(condition, void 0);
-    }
-    findAfter(condition, id) {
-      let item;
-      if (id === void 0) {
-        item = this.firstItem;
-      } else {
-        item = this.getNextItemById(id);
-      }
-      let found;
-      do {
-        if (item) {
-          if (condition(item) === true) {
-            found = item;
-            break;
-          }
-          item = this.getNextItemById(item.data.id);
-        }
-      } while (item);
-      return found;
-    }
-    /**
-     * Recherche dans l'ordre tous les éléments répondant à la condition +condition+
-     * 
-     * @param condition Methode qui doit retourner true pour que l'item soit retenu
-     * @param options   Table d'options {count: nombre attendu} 
-     * @returns 
-     */
-    findAll(condition, options) {
-      return this.findAllAfter(condition, void 0, options);
-    }
-    // Idem que précédente mais permet de spécifier le premier élément
-    findAllAfter(condition, id, options) {
-      const collected = [];
-      let collected_count = 0;
-      let item;
-      if (id === void 0) {
-        item = this.firstItem;
-      } else {
-        item = this.getNextItemById(id);
-      }
-      do {
-        if (item) {
-          if (condition(item) === true) {
-            collected.push(item);
-            collected_count++;
-            if (options.count && collected_count === options.count) {
-              break;
-            }
-          }
-          item = this.getNextItemById(item.data.id);
-        }
-      } while (item);
-      return collected;
-    }
-    /**
-     * Peuplement de la table d'accès avec création des 'chainedItem'
-     * 
-     * @param items Les éléments transmis, tels que relevés dans les tables (Entry, Oeuvre, Exemple);
-     */
-    // Méthode qui "initie" la table d'accès en transformant chaque
-    // item (Entry, Oeuvre, Exemple) en un AccedableItem, en prenant
-    // son index et son index suivant pour les mettres dans la Map
-    // qui consignes les valeurs d'accès
-    populateInTable(items) {
-      this.keysMap = /* @__PURE__ */ new Map();
-      this.arrayItems = [];
-      for (let i = 0, len = items.length; i < len; ++i) {
-        const item = items[i];
-        const nextItem = items[i + 1] || void 0;
-        const prevItem = items[i - 1] || void 0;
-        const chained = {
-          type: "accedable-item",
-          id: item.data.id,
-          obj: void 0,
-          index: i,
-          next: nextItem ? nextItem.data.id : void 0,
-          prev: prevItem ? prevItem.data.id : void 0,
-          visible: true,
-          display: "block",
-          selected: false,
-          modified: false
-        };
-        this.keysMap.set(item.data.id, chained);
-        this.arrayItems.push(item);
-      }
-    }
-    DOMElementOf(id) {
-      return document.querySelector(`main#items > div[data-id="${id}"]`);
-    }
-  };
-
   // src/webviews/services/App.ts
   var App = class _App {
     /**
@@ -931,12 +447,12 @@
       return "Exportation des donn\xE9es demand\xE9e.";
     }
     static async notify(message, params = void 0) {
-      const RpcEntry = window.RpcEntry;
-      if (RpcEntry) {
+      const RpcEntry2 = window.RpcEntry;
+      if (RpcEntry2) {
         if (params) {
-          RpcEntry.notify(message, params);
+          RpcEntry2.notify(message, params);
         } else {
-          RpcEntry.notify(message);
+          RpcEntry2.notify(message);
         }
       }
     }
@@ -1448,6 +964,71 @@
     }
   };
 
+  // src/bothside/UConstants.ts
+  var Constants = class {
+    static ENTRIES_GENRES = {
+      "nm": "n.m.",
+      "nmp": "n.m.pl.",
+      "nf": "n.f.",
+      "np": "n.pl.",
+      "vb": "verbe",
+      "adj": "adj.",
+      "adv": "adv."
+    };
+    static genreNotExists(genre) {
+      return !this.ENTRIES_GENRES[genre];
+    }
+    /**
+     * Les préfixes/marques qui introduisent des index dans les définitions
+     * principalement. Permet, par exemple dans le check des valeurs des
+     * définitions, de vérifier l'existence des mots référencés.
+     * 
+     * Leur forme canonique est :
+     * 
+     *  <mark>(<id entrée>) ou <mark>(<texte écrit>|<id entrée>)
+     */
+    static MARK_ENTRIES = {
+      "->": { name: "Envoi simple" },
+      "index": { name: "Simple indexation" },
+      "tt": { name: "simple terme technique (sans page)" }
+    };
+  };
+
+  // src/webviews/services/ComplexRpc.ts
+  var ComplexRpc = class _ComplexRpc {
+    static requestTable = /* @__PURE__ */ new Map();
+    static addRequest(req) {
+      this.requestTable.set(req.id, req);
+    }
+    // À appeler à la fin, pour résoudre
+    static resolveRequest(requestId, params) {
+      this.requestTable.get(requestId).resolve(params);
+    }
+    id;
+    call;
+    // Fonction qui va lancer l'appel (reçoit en DERNIER argument l'identifiant de cette instance — pour le transmettre)
+    ok;
+    // le 'resolve' de new Promise((resolve, reject) => {})
+    ko;
+    // le reject de new Promise((resolve,reject) => {})
+    constructor(param) {
+      this.id = crypto.randomUUID();
+      this.call = param.call;
+      _ComplexRpc.addRequest(this);
+    }
+    run() {
+      return new Promise((ok, ko) => {
+        this.ok = ok;
+        this.ko = ko;
+        setTimeout(this.ko.bind(this, "timeout-20"), 10 * 1e4);
+        this.call(this.id);
+      });
+    }
+    resolve(params) {
+      this.ok(params);
+    }
+  };
+
   // src/webviews/services/FormManager.ts
   var FormManager = class {
     // table des raccourcis propres
@@ -1824,6 +1405,1790 @@
     }
   };
 
+  // src/webviews/models/EntryForm.ts
+  var allg = Constants.ENTRIES_GENRES;
+  var genres = Object.keys(allg).map((key) => [key, allg[key]]);
+  var EntryForm = class _EntryForm extends FormManager {
+    formId = "entry-form";
+    prefix = "entry";
+    properties = [
+      { propName: "entree", type: String, required: true, fieldType: "text", onChange: this.onChangeEntree.bind(this) },
+      { propName: "id", type: String, required: true, fieldType: "text" },
+      { propName: "genre", type: String, required: true, fieldType: "select", values: genres },
+      { propName: "categorie_id", type: String, required: false, fieldType: "text" },
+      { propName: "definition", type: String, required: false, fieldType: "textarea" }
+    ];
+    // Table des raccourcis 'one key' propre au formulaire
+    tableKeys = {
+      // <touche>: <fonction bindée>, par exemple
+      // 'i': this.showInfo.bind(this)
+    };
+    static REG_SHORT_DEF = /\b(cf\.|voir|synonyme|contraire)\b/;
+    static REGEX_APPELS_ENTRIES = new RegExp(`(?:${Object.keys(Constants.MARK_ENTRIES).join("|")})\\(([^)]+)\\)`, "g");
+    static REG_OEUVRES = /\boeuvre\(([^)]+)\)/g;
+    onChangeEntree() {
+      const itemIsNew = this.getValueOf("id") === "";
+      if (itemIsNew) {
+        let proposId = this.getValueOf("entree");
+        if (proposId !== "") {
+          proposId = StringNormalizer.rationalize(proposId);
+          this.setValueOf("id", proposId);
+        }
+      }
+    }
+    // À faire juste après la mise en édition d'une Entrée
+    afterEdit() {
+      const id = this.field("id").value;
+      const isNewItem = id === "";
+      if (isNewItem) {
+        this.setIdLock(false);
+      }
+    }
+    /**
+     * Grand méthode de check de la validité de l'item. On ne l'envoie
+     * en enregistrement que s'il est parfaitement conforme. 
+     */
+    async checkItem(item) {
+      const isNew = item.isNew;
+      const errors = [];
+      this.diverseChecks(item, errors);
+      const unknownOeuvres = await this.checkExistenceOeuvres(item);
+      if (unknownOeuvres.length) {
+        errors.push(`des \u0153uvres sont introuvables : ${unknownOeuvres.map((t) => `"${t}"`).join(", ")}`);
+      }
+      const unknownEx = await this.checkExistenceExemples(item);
+      if (unknownEx.length) {
+        errors.push(`des exemples sont introuvables: ${unknownEx.join(", ")}`);
+      }
+      if (errors.length) {
+        console.error("Donn\xE9es invalides", errors);
+        return errors.join(", ").toLowerCase();
+      }
+    }
+    async checkExistenceOeuvres(item) {
+      const checkerOeuvres = new ComplexRpc({
+        call: this.searchUnknownOeuvresIn.bind(this, item.definition)
+      });
+      let resultat = await checkerOeuvres.run();
+      const res = resultat;
+      console.log("Retour apr\xE8s checkerOeuvres", resultat);
+      return res.unknown;
+    }
+    diverseChecks(item, errors) {
+      if (item.entree === "") {
+        errors.push("L'entr\xE9e doit \xEAtre d\xE9finie");
+      }
+      if (item.changeset.has("entree")) {
+        const newEntree = item.changeset.get("entree");
+        console.log("L'entr\xE9e a chang\xE9 (%s/%s)", item.original.entree, newEntree);
+        if (Entry.doesEntreeExist(newEntree)) {
+          errors.push(`L'entr\xE9e "${newEntree}" existe d\xE9j\xE0\u2026`);
+        }
+      }
+      if (item.id === "") {
+        errors.push("L'identifiant doit absoluement \xEAtre d\xE9fini");
+      } else if (item.changeset.has("id")) {
+        if (Entry.doesIdExist(item.id)) {
+          errors.push(`L'identifiant "${item.id}" existe d\xE9j\xE0. Je ne peux le r\xE9attribuer`);
+        }
+      }
+      if (item.definition === "") {
+        errors.push("La d\xE9finition du mot doit \xEAtre donn\xE9e");
+      } else if (item.changeset.has("definition")) {
+        if (item.definition.length < 50 && null === item.definition.match(_EntryForm.REG_SHORT_DEF)) {
+          errors.push("La d\xE9finition est courte, sans justification\u2026");
+        }
+        const unknownEntries = this.searchUnknownEntriesIn(item.definition);
+        if (unknownEntries.length > 0) {
+          errors.push(`entr\xE9es inconnues dans la d\xE9fintion (${unknownEntries.join(", ")})`);
+        }
+      } else {
+        console.log("La d\xE9finition n'a pas \xE9t\xE9 modifi\xE9e.");
+      }
+      if (item.genre === "") {
+        errors.push("Le genre de l'entr\xE9e doit \xEAtre donn\xE9");
+      } else if (item.changeset.has("genre") && Constants.genreNotExists(item.genre)) {
+        errors.push(`bizarrement, le genre "${item.genre} est inconnu\u2026`);
+      }
+      if (item.categorie_id !== "" && item.changeset.has("categorie_id")) {
+        const unknownCategorie = this.checkUnknownCategoriesIn(item.categorie_id);
+        if (unknownCategorie.length) {
+          errors.push(`des cat\xE9gories sont inconnues : ${unknownCategorie.join(", ")}`);
+        }
+      }
+      return errors;
+    }
+    // Pour chercher les entrées mentionnées dans la définition
+    searchUnknownEntriesIn(str) {
+      const founds = [];
+      const matches = str.matchAll(_EntryForm.REGEX_APPELS_ENTRIES);
+      for (const match of matches) {
+        const foo = match[1];
+        let [entry, entryId] = foo.split("|");
+        entryId = (entryId || entry).trim();
+        if (Entry.doesIdExist(entryId)) {
+          console.log("Id d'entr\xE9e existante", entryId);
+        } else if (Entry.doesEntreeExist(entryId)) {
+          console.log("Entr\xE9e existante (par son nom)", entryId);
+        } else if (entryId.endsWith("s")) {
+          const entryIdSing = entryId.substring(0, entryId.length - 1);
+          if (Entry.doesEntreeExist(entryIdSing)) {
+            console.log("Entr\xE9e existante (pas son nom singulier)", entryId);
+          } else if (Entry.doesIdExist(entryIdSing)) {
+            console.log("Id entr\xE9e existante (dans sa forme singuli\xE8re)", entryId);
+          }
+        } else {
+          founds.push(entryId);
+        }
+      }
+      return founds;
+    }
+    /**
+     * Vérifie que les œuvres désignées dans les balises oeuvre(...) existent
+     * bel et bien.
+     *
+     * Cette fonction s'intègre dans une requête Rpc complexe (ComplexRpc)
+     * 
+     * Pour ce faire, on a besoin de passer par l'extension car on n'a pas 
+     * accès aux oeuvres depuis ici.
+     * 
+     * @param str Dans la phase 1, La définition, dans la phase 2, le json revenant du check
+     * @param phase Pour savoir si on remonte de la vérifiation (phase 2)
+     * @returns La liste des œuvres qui n'ont pas été trouvées
+     */
+    searchUnknownOeuvresIn(str, CRId) {
+      const matches = str.matchAll(_EntryForm.REG_OEUVRES);
+      const oeuvres = [];
+      for (let match of matches) {
+        oeuvres.push(match[1]);
+      }
+      console.log("Oeuvres \xE0 checker", oeuvres);
+      RpcEntry.notify("check-oeuvres", { CRId, oeuvres });
+    }
+    /**
+     * Fonction principale pour checker les exemples dans la définition
+     * C'est elle qui initie la requête Rpc complexe. 
+     */
+    async checkExistenceExemples(item) {
+      const comp = new ComplexRpc({
+        call: this.searchUnknownExemplesIn.bind(this, item.definition)
+      });
+      const resultat = await comp.run();
+      const res = resultat;
+      return res.unknown;
+    }
+    /**
+     * Fonction vérifiant l'existence des exemples
+     * 
+     * Elle s'intègre dans la requête Rpc complexe inaugurée par la
+     * fonction checkExistenceExemples.
+     * 
+     * Rappel : les exemples, dans les définitions, sont définis par
+     * EXEMPLES[<ID oeuvre>:<indice exemple>, <ID oeuvre>:<indice>, etc.]
+     * Il peut y en avoir plusieurs par définition, comme pour la définition des genres.
+     *  
+     * @param str Le texte de la définition
+     * @param CRId L'identifiant de la ComplexRpc qui gère toute la communication
+     * 
+     * @return Rien, c'est la méthode message en bout de chaine qui résolvera 
+     * la requête Rpc complexe pour poursuivre.
+     */
+    searchUnknownExemplesIn(str, CRId) {
+      let matches = str.matchAll(/EXEMPLES\[([^\]]+)\]/g);
+      const exemples = [];
+      for (var match of matches) {
+        match[1].split(",").map((s) => s.trim()).forEach((paire) => {
+          const [oeuvreId, exIndice] = paire.split(":");
+          exemples.push([oeuvreId, exIndice]);
+        });
+      }
+      RpcEntry.notify("check-exemples", { CRId, exemples });
+    }
+    // @return la liste des catégories inconnues
+    checkUnknownCategoriesIn(str) {
+      const cats = str.split(",").map((s) => s.trim());
+      return cats.filter((cat) => false === Entry.doesIdExist(cat));
+    }
+    /**
+     * ENREGISTREMENT DE L'ENTRÉE
+     * -------------------------- 
+     * Procédure complexe (ComplexRpc)
+     */
+    async onSave(item) {
+      const itemSaver = new ComplexRpc({
+        call: Entry.saveItem.bind(Entry, item)
+      });
+      const res = await itemSaver.run();
+      console.log("res dans onSave", res);
+      if (res.ok) {
+        Entry.panel.flash("Item enregistr\xE9 avec succ\xE8s.", "notice");
+        Entry.accessTable.upsert(res.item);
+      } else {
+        console.error("ERREURS LORS DE L'ENREGISTREMENT DE L'ITEM", res.errors);
+        Entry.panel.flash("Erreur (enregistrement de l\u2019entr\xE9e (voir la console", "error");
+      }
+      return true;
+    }
+    /**
+     * Observation propre du formulaire des Entrées
+     * 
+     */
+    observeForm() {
+      this.btnLockId.addEventListener("click", this.onLockId.bind(this));
+    }
+    get btnLockId() {
+      return this.obj.querySelector("button.btn-lock-id");
+    }
+    onLockId() {
+      this.toggleIdLock();
+    }
+  };
+
+  // src/webviews/models/Entry.ts
+  var Entry = class _Entry extends ClientItem {
+    // Constructor and data access
+    constructor(data) {
+      super(data);
+      this.data = data;
+    }
+    type = "entry";
+    static minName = "entry";
+    static klass = _Entry;
+    static currentItem;
+    // Getters pour accès direct aux propriétés courantes
+    get id() {
+      return this.data.id;
+    }
+    get entree() {
+      return this.data.dbData.entree;
+    }
+    get genre() {
+      return this.data.dbData.genre;
+    }
+    get categorie_id() {
+      return this.data.dbData.categorie_id;
+    }
+    get definition() {
+      return this.data.dbData.definition;
+    }
+    static setAccessTable(items) {
+      this._accessTable = new AccessTable(_Entry, items);
+    }
+    // retourn le premier item visible après l'item +item+
+    static getFirstVisibleAfter(refItem) {
+      const aT = this.accessTable;
+      return aT.findAfter(
+        (item) => {
+          return aT.getAccKeyById(item.data.id).visible === true;
+        },
+        refItem.data.id
+      );
+    }
+    /*
+        === MÉTHODES DE CHECK ===
+     */
+    // @return true si l'entrée +entree+ existe déjà
+    static doesEntreeExist(entree) {
+      entree = entree.toLowerCase();
+      return this.accessTable.find((item) => item.data.dbData.entree.toLowerCase() === entree) !== void 0;
+    }
+    // @return true si l'identifiant +id+ existe déjà
+    static doesIdExist(id) {
+      if (this.accessTable.existsById(id)) {
+        return true;
+      }
+      return false;
+    }
+    /**
+     * Méthode pour enregistrer l'item dans la table
+     * 
+     * 
+     */
+    static saveItem(item, compRpcId) {
+      RpcEntry.notify("save-item", { CRId: compRpcId, item });
+    }
+    static onSavedItem(params) {
+      ComplexRpc.resolveRequest(params.CRId, params);
+    }
+  };
+  var EntryPanelClass = class extends PanelClient {
+    get accessTable() {
+      return Entry.accessTable;
+    }
+    /**
+     * Méthode de filtrage propre aux Entrées (Entry)
+     * 
+     * @param searched Texte à trouver
+     * @returns Liste des items trouvés
+     */
+    // Méthode de filtrage des entrées
+    // Retourne celles qui commencent par +searched+
+    searchMatchingItems(searched) {
+      const prefixLower = StringNormalizer.toLower(searched);
+      const prefixRa = StringNormalizer.rationalize(searched);
+      return this.filter(Entry.accessTable, (entry) => {
+        entry = entry;
+        return entry.data.cachedData.entree_min.startsWith(prefixLower) || entry.data.cachedData.entree_min_ra.startsWith(prefixRa);
+      });
+    }
+    // initKeyManager() {
+    //   this._keyManager = new VimLikeManager(document.body, this, Entry);
+    // }
+  };
+  var EntryPanel = new EntryPanelClass({
+    minName: "entry",
+    titName: "Entries",
+    klass: Entry,
+    form: new EntryForm()
+  });
+  EntryPanel.form.setPanel(EntryPanel);
+  Entry.panel = EntryPanel;
+  var RpcEntry = createRpcClient();
+  RpcEntry.on("flash", (params) => {
+    EntryPanel.flash(params.message, params.type || "notice");
+  });
+  RpcEntry.on("start", () => {
+    setTimeout(EntryPanel.activateContextualHelp.bind(EntryPanel), 1e3);
+  });
+  RpcEntry.on("activate", () => {
+    if (EntryPanel.isActif) {
+      return;
+    }
+    EntryPanel.activate();
+  });
+  RpcEntry.on("desactivate", () => {
+    if (EntryPanel.isInactif) {
+      return;
+    }
+    EntryPanel.desactivate();
+  });
+  RpcEntry.on("populate", (params) => {
+    const items = Entry.deserializeItems(params.data, Entry);
+    EntryPanel.populate(Entry.accessTable);
+    EntryPanel.initKeyManager();
+  });
+  RpcEntry.on("display-entry", (params) => {
+    console.log("[CLIENT] Je dois afficher l'entr\xE9e '%s'", params.entry_id);
+    EntryPanel.scrollToAndSelect(params.entry_id);
+  });
+  RpcEntry.on("check-oeuvres-resultat", (params) => {
+    ComplexRpc.resolveRequest(params.CRId, params.resultat);
+  });
+  RpcEntry.on("check-exemples-resultat", (params) => {
+    ComplexRpc.resolveRequest(params.CRId, params.resultat);
+  });
+  RpcEntry.on("after-saved-item", (params) => {
+    console.log("[CLIENT Entry] R\xE9ception du after-saved-item", params);
+    Entry.onSavedItem(params);
+  });
+  window.Entry = Entry;
+  window.RpcEntry = RpcEntry;
+
+  // src/webviews/services/OeuvreFinder.ts
+  var OeuvrePicker = class {
+    // Le formulaire (transmis par la fenêtre principale)
+    static form;
+    /**
+     * @api
+     * 
+     * Entrée pour pouvoir trouver les informations d'un oeuvre.
+     * 
+     * Fonctionnement
+     * --------------
+     *  - On relève tous les titres possibles (sur TMDB (films) ou WikiPedia)
+     *  - S'ils sont plus de 5, on les filtres par les options
+     *  - S'ils sont toujours plus de 5, on demande de faire un premier choix,
+     *    avec les données simples.
+     *  - On relève les informations complètes des oeuvres restantes
+     *  - On les affiche en boucle pour pouvoir en choisir une.
+     * 
+     * @param titre Le titre à trouver
+     * @param options Options pour faciliter la recherche
+     * @param form Formulaire dans lequle mettre les résultats
+     */
+    static async findWithTitle(titre, options, form) {
+      this.form = form;
+      let oeuvres = [];
+      if (options.type === void 0 || options.type === "film" || options.type === "s\xE9rie") {
+        oeuvres = await TMDB.getSimpleInformations(titre, options);
+      }
+      if (oeuvres.length === 0) {
+        oeuvres = await new WikiPedia("fr").findOeuvreFromTitle(titre, options);
+        console.log("Oeuvres remont\xE9es pas wikip\xE9dia:", oeuvres);
+      }
+      if (oeuvres.length === 0) {
+        this.flash("Aucune \u0153uvre trouv\xE9e avec ce titre\u2026", "error");
+        return void 0;
+      }
+      if (oeuvres.length > 5) {
+        const oeuvresFiltred = this.filterPerOptions(oeuvres, options);
+        if (oeuvresFiltred.length > 0) {
+          oeuvres = oeuvresFiltred;
+        }
+      }
+      if (oeuvres.length === 1) {
+        this.peupleForm(oeuvres[0]);
+        return;
+      }
+      if (oeuvres.length > 5) {
+        oeuvres = await this.chooseFiveMax(oeuvres);
+        if (oeuvres.length === 1) {
+          this.peupleForm(oeuvres[0]);
+          return;
+        }
+      }
+      if (options.type === void 0 || options.type === "film") {
+        oeuvres = await TMDB.getFullInformations(oeuvres);
+      }
+      this.choose(oeuvres, 0);
+    }
+    /**
+     * Reçoit une liste d'oeuvres et les affiche en boucle pour en 
+     * choisir une.
+     * 
+     * @param oeuvres Les oeuvres parmi lesquelles choisir
+     * @param ioeuvre Le "pointeur" de liste qui permet de savoir quelle oeuvre affichée
+     */
+    static choose(oeuvres, ioeuvre) {
+      if (ioeuvre >= oeuvres.length - 1) {
+        this.flash("On reprend\u2026", "notice");
+        ioeuvre = 0;
+      }
+      const dataOeuvre = oeuvres[ioeuvre];
+      ++ioeuvre;
+      this.peupleForm(dataOeuvre);
+      const map = /* @__PURE__ */ new Map();
+      map.set("o", ["Prendre cette \u0153uvre", this.onChoose.bind(this)]);
+      map.set("n", ["Suivante", this.choose.bind(this, oeuvres, ioeuvre)]);
+      map.set("q", ["Finir", this.onCancel.bind(this)]);
+      this.form.panel.flashAction("Est-ce cette \u0153uvre-l\xE0 ?", map);
+    }
+    /**
+     * Permet de choisir, parmi un trop grand nombre d'œuvres, les cinq dont on va
+     * relever toutes les informations pour pouvoir choisir la bonne.
+     * 
+     * @param oeuvres Les oeuvres initiales (20 maximum, avec TMDB)
+     * @returns 
+     */
+    static async chooseFiveMax(oeuvres) {
+      const result = {
+        oeuvres,
+        // Les oeuvres, mais qu'on shiftera
+        kept: [],
+        // Les oeuvres qui seront gardées
+        choosed: [],
+        // C'est une liste par commodité, mais il n'y aura que l'oeuvre choisie (if any) 
+        max: 5
+        // Le nombre maximum d'œuvres à conserver
+      };
+      return new Promise((resolve, reject) => {
+        Object.assign(result, { resolve, reject });
+        this.chooseMaxIn(result);
+      });
+    }
+    static chooseMaxIn(result) {
+      const oeuvre = result.oeuvres.shift();
+      if (oeuvre && result.kept.length < result.max && result.choosed.length === 0) {
+        this.peupleForm(oeuvre);
+        const map = /* @__PURE__ */ new Map();
+        map.set("o", ["Mettre de c\xF4t\xE9", () => {
+          result.kept.push(oeuvre);
+          this.chooseMaxIn(result);
+        }]);
+        map.set("n", ["Rejeter", () => this.chooseMaxIn(result)]);
+        map.set("y", ["C\u2019est celle l\xE0\xA0!", () => {
+          result.choosed = [oeuvre];
+          result.kept = [];
+          this.chooseMaxIn(result);
+        }]);
+        map.set("q", ["Finir", () => {
+          result.max = 0;
+          this.chooseMaxIn(result);
+        }]);
+        this.form.panel.flashAction("Que dois-je faire de cette \u0153uvre\xA0?", map);
+      } else {
+        result.resolve(result.kept.push(...result.choosed));
+      }
+    }
+    // Juste pour avoir un point de sortie
+    static onCancel(ev) {
+      ev && stopEvent(ev);
+    }
+    static onChoose(ev) {
+      ev && stopEvent(ev);
+    }
+    static flash(message, type) {
+      this.form.panel.flash(message, type);
+    }
+    // Affiche les données de l'œuvre dans le formulaire, pour pouvoir 
+    // les garder.
+    static peupleForm(oeuvre) {
+      console.log("Peupler le formulaire avec : ", oeuvre);
+      this.form.setValueOf("titre_affiche", oeuvre.titre);
+      this.form.setValueOf("titre_original", oeuvre.titre_original);
+      oeuvre.auteurs && this.form.setValueOf("auteurs", oeuvre.auteurs);
+      this.form.setValueOf("resume", oeuvre.resume);
+      oeuvre.annee && this.form.setValueOf("annee", oeuvre.annee);
+      const infos = {
+        langue: oeuvre.langue || void 0,
+        pays: oeuvre.pays || void 0,
+        editeur: oeuvre.editeur || void 0,
+        isbn: oeuvre.isbn || void 0,
+        director: oeuvre.director || void 0
+      };
+      let infosStr = JSON.stringify(infos);
+      if (infosStr === "{}") {
+        infosStr = "";
+      }
+      this.form.setValueOf("notes", infosStr);
+    }
+    /**
+     * @api
+     * 
+     * Méthode permettant de filtrer les oeuvres par années
+     */
+    static filterPerOptions(oeuvres, options) {
+      oeuvres = this.filterPerYear(oeuvres, options);
+      oeuvres = this.filterPerCountry(oeuvres, options);
+      oeuvres = this.filterPerLanguage(oeuvres, options);
+      return oeuvres;
+    }
+    // Filtrage par année
+    static filterPerYear(oeuvres, options) {
+      options.annee = Number(options.annee);
+      var onlyOneMatches = false;
+      oeuvres = oeuvres.map((result) => {
+        if (onlyOneMatches) {
+          return result;
+        }
+        if (options.annee && result.annee === options.annee) {
+          onlyOneMatches = true;
+        }
+        return result;
+      }).filter((result) => {
+        if (onlyOneMatches) {
+          return result.annee === options.annee;
+        } else {
+          return result.annee < options.annee + 5 && result.annee > options.annee - 5;
+        }
+      });
+      return oeuvres;
+    }
+    static filterPerCountry(oeuvres, options) {
+      if (void 0 === options.pays) {
+        return oeuvres;
+      }
+      return oeuvres.filter((oeuvre) => oeuvre.pays === options.pays);
+    }
+    static filterPerLanguage(oeuvres, options) {
+      if (void 0 === options.langue) {
+        return oeuvres;
+      }
+      return oeuvres.filter((oeuvre) => oeuvre.langue === options.langue);
+    }
+  };
+  var TMDB = class {
+    /**
+     * @api
+     * Récupère et retourne les informations des films de titre +titre+
+     * 
+     * @param titre Le titre du film dont il faut avoir les informations. Plus tard, on verra si on peut avoir plusieurs films d'un coup.
+     * @returns 
+     */
+    static async getSimpleInformations(titre, options) {
+      let searchResults = await this.searchMovie(titre);
+      searchResults = searchResults.map((result) => {
+        return {
+          id: result.id,
+          annee: Number(result.release_date.substring(0, 4)),
+          langue: result.original_language,
+          titre_original: result.original_title,
+          titre: result.title,
+          resume: result.overview
+        };
+      });
+      console.log("Premiers r\xE9sultats pr\xE9par\xE9s (%i)", searchResults.length, structuredClone(searchResults));
+      return searchResults;
+    }
+    /**
+     * Retourne les informations complètes pour les films +oeuvres+
+     * 
+     */
+    static async getFullInformations(oeuvres) {
+      return await Promise.all(oeuvres.map(async (oeuvre) => this.getAllInfos(oeuvre)));
+    }
+    // @return Toutes les informations sur le film +dOeuvre+
+    static async getAllInfos(dOeuvre) {
+      const movieId = dOeuvre.id;
+      const details = await this.getMovieDetails(movieId);
+      const credits = await this.getMovieCredits(movieId);
+      return Object.assign(dOeuvre, {
+        idmbId: details.imdb_id,
+        pays: details.origin_country.join(", "),
+        director: credits.director,
+        auteurs: credits.auteurs
+      });
+    }
+    static _TMDBSecrets;
+    static get TMDB_READING_API_TOKEN() {
+      return this._TMDBSecrets.reading_api_token;
+    }
+    static async getTMDBSecrets() {
+      return RpcOeuvre.ask("tmdb-secrets").then((retour) => {
+        this._TMDBSecrets = retour;
+        return retour;
+      }).catch((error) => {
+        console.error("Une erreur est survenue", error);
+      });
+    }
+    // Recherche par titre
+    static async searchMovie(title) {
+      if (void 0 === this._TMDBSecrets) {
+        await this.getTMDBSecrets();
+      }
+      const url = `https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(title)}`;
+      const response = await fetch(url, {
+        headers: {
+          "Authorization": `Bearer ${this.TMDB_READING_API_TOKEN}`,
+          "Content-Type": "application/json"
+        }
+      });
+      const data = await response.json();
+      return data.results;
+    }
+    // Informations détaillées d'un film par ID
+    static async getMovieDetails(movieId) {
+      const url = `https://api.themoviedb.org/3/movie/${movieId}`;
+      const response = await fetch(url, {
+        headers: {
+          "Authorization": `Bearer ${this.TMDB_READING_API_TOKEN}`,
+          "Content-Type": "application/json"
+        }
+      });
+      return await response.json();
+    }
+    // Informations techniques (cast & crew)
+    static async getMovieCredits(movieId) {
+      const url = `https://api.themoviedb.org/3/movie/${movieId}/credits`;
+      const response = await fetch(url, {
+        headers: {
+          "Authorization": `Bearer ${this.TMDB_READING_API_TOKEN}`,
+          "Content-Type": "application/json"
+        }
+      });
+      const data = await response.json();
+      console.log("Information cr\xE9dits compl\xE8tes", data);
+      const credits = {
+        directors: [],
+        writers: [],
+        director: void 0,
+        auteurs: void 0
+      };
+      data.crew.forEach((person) => {
+        switch (person.job) {
+          case "Director":
+            credits.directors.push(person.name + MARK_UNKNOWN_GENRE);
+            break;
+          case "Writer":
+          case "Co-Writer":
+          case "Author":
+          case "Adaptation":
+          case "Screenplay":
+          case "Story":
+          case "Screenstory":
+          case "Book":
+          case "Novel":
+            credits.writers.push(person.name + MARK_UNKNOWN_GENRE);
+            break;
+        }
+      });
+      const allauteurs = [];
+      allauteurs.push(...credits.directors);
+      allauteurs.push(...credits.writers);
+      credits.director = credits.directors.join(", ");
+      credits.auteurs = allauteurs.join(", ");
+      return credits;
+    }
+  };
+  var MARK_UNKNOWN_GENRE = "[HF?]";
+  var WikiPedia = class {
+    baseUrl;
+    wikiApiUrl;
+    constructor(lang = "fr") {
+      this.baseUrl = "https://fr.wikipedia.org/api/rest_v1/page/summary/";
+      this.wikiApiUrl = `https://${lang}.wikipedia.org/w/api.php`;
+    }
+    /**
+     * @api
+     * 
+     * Trouve sur Wikipédia toutes les oeuvres correspondant au titre +titre+ et
+     * en reetourne les informations dans un format standard (OeuvreType).
+     * 
+     * @param titre Le titre donné
+     * @param options Les options pour filtrer (peut-être)
+     * @returns La liste des oeuvres potentielles
+     */
+    async findOeuvreFromTitle(titre, options) {
+      try {
+        let searchResults = await this.searchPage(titre);
+        if (!searchResults || searchResults.length === 0) {
+          return [];
+        }
+        searchResults = searchResults.filter((data) => {
+          return data.title.match(titre);
+        });
+        const resultsProv = searchResults.filter((data) => {
+          return data.title.match(options.type);
+        });
+        if (resultsProv.length > 0) {
+          searchResults = resultsProv;
+        }
+        searchResults = await this.getPageSummary(searchResults);
+        searchResults = await this.getPageContent(searchResults);
+        searchResults = await this.getInfobox(searchResults);
+        searchResults = this.structureInfosFromSources(searchResults);
+        return searchResults.map((result) => {
+          return {
+            titre: result.titre,
+            titre_original: result.titre_original || result.titre,
+            titre_francais: result.titre_francais,
+            auteur: result.auteur,
+            annee: result.annee,
+            isbn: result.isbn,
+            pays: result.pays,
+            langue: result.langue,
+            type: options.type,
+            resume: result.resume
+          };
+        });
+      } catch (error) {
+        console.error("Erreur lors de la r\xE9cup\xE9ration des informations:", error);
+        throw error;
+      }
+    }
+    // Rechercher jusqu'à 10 pages Wikipedia par l'API correspondant au titre
+    async searchPage(titre) {
+      const searchUrl = `${this.wikiApiUrl}?action=query&format=json&list=search&srsearch=${encodeURIComponent(titre)}&srlimit=10&origin=*`;
+      const response = await fetch(searchUrl);
+      const data = await response.json();
+      return data.query?.search || [];
+    }
+    // Récupérer le résumé de la page
+    async getPageSummary(searchResults) {
+      return await Promise.all(
+        searchResults.map(async (result) => {
+          const summaryUrl = `${this.baseUrl}${encodeURIComponent(result.title)}`;
+          const response = await fetch(summaryUrl);
+          if (response.ok) {
+            Object.assign(result, { summary: response.json() });
+          }
+          return result;
+        })
+      );
+    }
+    // Récupérer le contenu complet de la page
+    async getPageContent(searchResults) {
+      return Promise.all(
+        searchResults.map(async (result) => {
+          const contentUrl = `${this.wikiApiUrl}?action=query&format=json&titles=${encodeURIComponent(result.title)}&prop=extracts&exintro=false&explaintext=true&origin=*`;
+          const response = await fetch(contentUrl);
+          const data = await response.json();
+          const pages = data.query.pages;
+          const pageId = Object.keys(pages)[0];
+          Object.assign(result, { pageContent: pages[pageId]?.extract || "" });
+          return result;
+        })
+      );
+    }
+    // Récupérer l'infobox de la page
+    async getInfobox(searchResults) {
+      return Promise.all(
+        searchResults.map(async (result) => {
+          const infoboxUrl = `${this.wikiApiUrl}?action=query&format=json&titles=${encodeURIComponent(result.title)}&prop=revisions&rvprop=content&origin=*`;
+          const response = await fetch(infoboxUrl);
+          const data = await response.json();
+          const pages = data.query.pages;
+          const pageId = Object.keys(pages)[0];
+          const content = pages[pageId]?.revisions?.[0]?.["*"] || "";
+          const infobox = this.parseInfobox(content);
+          Object.assign(result, {
+            infoBox: infobox,
+            annee: infobox.annee,
+            auteur: infobox.auteur,
+            isbn: infobox.isbn,
+            pays: infobox.pays
+          });
+          return result;
+        })
+      );
+    }
+    // Parser l'infobox depuis le wikicode
+    parseInfobox(wikicode) {
+      const infobox = {};
+      const patterns = {
+        titre: /\|\s*titre\s*=\s*(.+)/i,
+        titre_original: /\|\s*titre[_\s]*orig(?:inal)?\s*=\s*(.+)/i,
+        titre_francais: /\|\s*titre[_\s]*français?\s*=\s*(.+)/i,
+        auteur: /\|\s*auteurs?\s*=\s*(.+)/i,
+        annee: /\|\s*(?:année|date)[_\s]*(?:publication|parution)?\s*=\s*(.+)/i,
+        pays: /\|\s*pays\s*=\s*(.+)/i,
+        langue: /\|\s*langue[_\s]*originale?\s*=\s*(.+)/i,
+        isbn: /\|\s*isbn\s*=\s*(.+)/i,
+        editeur: /\|\s*éditeurs?\s*=\s*(.+)/i
+      };
+      for (const [key, pattern] of Object.entries(patterns)) {
+        const match = wikicode.match(pattern);
+        if (match) {
+          let value = match[1].trim();
+          value = value.replace(/\[\[([^\]|]+)(\|[^\]]+)?\]\]/g, "$1");
+          value = value.replace(/{{[^}]+}}/g, "");
+          value = value.replace(/<[^>]+>/g, "");
+          infobox[key] = value.trim();
+        }
+      }
+      if (infobox.annee) {
+        infobox.annee = Number(infobox.annee.substring(0, 4));
+      }
+      if (infobox.isbn) {
+        infobox.isbn = infobox.isbn.split(" ")[0];
+      }
+      return infobox;
+    }
+    structureInfosFromSources(searchResults) {
+      return searchResults.map(
+        (result) => this.extractBookInfo(result.summary, result.pageContent, result.infoBox, result.title)
+      );
+    }
+    // Extraire les informations du livre depuis toutes les sources
+    extractBookInfo(summary, content, infobox, pageTitle) {
+      const bookInfo = {
+        titre: null,
+        titre_original: null,
+        titre_francais: null,
+        auteurs: null,
+        annee: null,
+        pays: null,
+        langue: null,
+        isbn: null,
+        editeur: null,
+        resume: null
+      };
+      try {
+        bookInfo.titre = infobox.titre || pageTitle;
+        bookInfo.titre_original = infobox.titre_original || this.extractFromText(content, /titre original[:\s]+([^\n.]+)/i);
+        bookInfo.titre_francais = infobox.titre_francais || this.extractFromText(content, /titre français[:\s]+([^\n.]+)/i);
+        bookInfo.auteurs = infobox.auteur || this.extractFromText(content, /(?:écrit par|auteur[:\s]+|de\s+)([A-Z][^\n.]+)/);
+        const getAnnee = () => {
+          const anneeMatch = this.extractFromText(content, /(?:publié en|paru en|écrit en)\s+(\d{4})/i);
+          if (anneeMatch) {
+            return Number(anneeMatch.match(/\d{4}/)?.[0]);
+          }
+        };
+        bookInfo.annee = infobox.annee || getAnnee();
+        bookInfo.pays = infobox.pays || this.extractFromText(content, /(?:pays d'origine|publié en|originaire de)\s+([A-Z][^\n.,]+)/i);
+        bookInfo.langue = infobox.langue || this.extractFromText(content, /langue originale[:\s]+([^\n.,]+)/i);
+        const isbnMatch = infobox.isbn || this.extractFromText(content, /ISBN[:\s]+([\d-]+)/i);
+        bookInfo.isbn = isbnMatch;
+        bookInfo.editeur = infobox.editeur || this.extractFromText(content, /(?:éditions|éditeur)[:\s]+([^\n.,]+)/i);
+        bookInfo.resume = summary.extract || content.substring(0, 500) + "[\u2026]";
+        Object.keys(bookInfo).forEach((key) => {
+          if (!bookInfo[key] || typeof bookInfo[key] === "string" && bookInfo[key].trim() === "") {
+            bookInfo[key] = null;
+          }
+        });
+      } catch (erreur) {
+        console.error("Erreur lors de l'extraction des donn\xE9es : ", erreur);
+        bookInfo.error = erreur.message;
+      }
+      return bookInfo;
+    }
+    // Fonction utilitaire pour extraire du texte avec regex
+    extractFromText(text, pattern) {
+      const match = text.match(pattern);
+      return match ? match[1].trim() : null;
+    }
+  };
+
+  // src/webviews/models/OeuvreForm.ts
+  var OeuvreForm = class extends FormManager {
+    prefix = "oeuvre";
+    formId = "oeuvre-form";
+    properties = [
+      { propName: "titre_affiche", type: String, required: true, fieldType: "text", onChange: this.onChangeTitreAffiched.bind(this) },
+      { propName: "id", type: String, required: true, fieldType: "text" },
+      { propName: "titre_original", type: String, required: true, fieldType: "text", onChange: this.onChangeTitreOriginal.bind(this) },
+      { propName: "titre_francais", type: String, required: false, fieldType: "text" },
+      { propName: "auteurs", type: String, required: true, fieldType: "text", onChange: this.onChangeAuteurs.bind(this) },
+      { propName: "type", type: String, required: true, fieldType: "select", values: [["film", "Film"], ["s\xE9rie", "S\xE9rie"], ["roman", "Roman"], ["pi\xE8ce", "Pi\xE8ce"], ["livre", "Livre"], ["bd", "BD"]] },
+      { propName: "annee", type: String, required: true, fieldType: "text" },
+      { propName: "resume", type: String, required: false, fieldType: "textarea" },
+      { propName: "notes", type: String, required: false, fieldType: "textarea" }
+    ];
+    // Table des raccourcis 'one key' propre au formulaire 
+    tableKeys = {
+      i: this.getOeuvreExternInfo.bind(this)
+    };
+    static REG_AUTEUR = /([^ ]+) ([^\[])\[(H|F)\]/;
+    afterEdit() {
+      const id = this.getValueOf("id");
+      const isNew = id === "";
+      this.setIdLock(!isNew);
+      this.panel.context = isNew ? "create-oeuvre" : "edit-oeuvre";
+    }
+    async checkItem(item) {
+      const errors = [];
+      let errs;
+      if (this.isNewItem) {
+      }
+      if (item.id === "" || !item.id) {
+        errors.push("Il faut absolument que cet item ait un identifiant.");
+      }
+      if (item.titre_original.trim().length === 0) {
+        errors.push("Il faut fournir le titre de l\u2019\u0153uvre original.");
+      }
+      if (errs = this.checkAuteurs(item)) {
+        errors.push("erreurs trouv\xE9s sur les auteurs : " + errs);
+      }
+      if (errors.length) {
+        console.error("Donn\xE9es invalides", errors);
+        return errors.join(", ").toLowerCase();
+      }
+    }
+    checkAuteurs(item) {
+      let auts = item.auteurs.trim();
+      if (auts.length === 0) {
+        return "Il faut imp\xE9rativement fournir les autrices et auteurs";
+      }
+      auts = auts.split(",").map((a) => a.trim());
+      const errs = [];
+      const genderErrs = this.checkAuteursHaveGender(auts);
+      genderErrs && errs.push(genderErrs);
+      if (errs.length) {
+        return errs.join(", ");
+      }
+    }
+    /**
+     * Vérifie si les auteurs sont bien formatés (sexe au bout)
+     * 
+     * @param auteurs Liste des auteurs de l'œuvre
+     * @returns Liste des erreurs trouvées (liste vide si aucune)
+     */
+    checkAuteursHaveGender(auteurs) {
+      const errs = auteurs.map((aut) => {
+        if (null === aut.match(/\[(H|F)\]$/)) {
+          return aut;
+        } else {
+          return null;
+        }
+      }).filter((e) => e !== null);
+      if (errs.length) {
+        return `Il faut pr\xE9ciser le sexe de ${errs.join(", ")} (en mettant "[H]" ou "[F]" \xE0 la fin)`;
+      }
+    }
+    observeForm() {
+      const btnTMDB = this.obj.querySelector(".btn-get-infos");
+      btnTMDB?.addEventListener("click", this.getOeuvreExternInfo.bind(this));
+    }
+    async getOeuvreExternInfo(ev) {
+      const titre = (this.getValueOf("titre_original") || this.getValueOf("titre_affiche")).trim();
+      if (titre === "") {
+        this.flash("Il faut indiquer le titre de l\u2019\u0153uvre\xA0!", "error");
+      } else {
+        this.flash("Je r\xE9cup\xE8re les informations du film " + titre + "\u2026");
+        const options = {
+          langue: void 0,
+          annee: this.getValueOf("annee"),
+          type: this.getValueOf("type")
+        };
+        if (this.getValueOf("annee") !== "") {
+          Object.assign(options, { annee: Number(this.getValueOf("annee")) });
+        }
+        const infos = await OeuvrePicker.findWithTitle(titre, options, this);
+      }
+      ev && stopEvent(ev);
+    }
+    onChangeAuteurs(ev = void 0) {
+      let auteurs = this.getValueOf("auteurs").trim();
+      if (auteurs !== "") {
+        auteurs = auteurs.split(",").map((au) => au.trim());
+        const errs = this.checkAuteursHaveGender(auteurs);
+        if (errs) {
+          this.flash(errs + ".", "error");
+        }
+      }
+      return ev && stopEvent(ev);
+    }
+    onChangeTitreAffiched(ev = void 0) {
+      const noTitreOriginal = this.getValueOf("titre_original") === "";
+      const titaff = this.getValueOf("titre_affiche");
+      if (this.isNewItem) {
+        if (Oeuvre.doOeuvresExist([titaff]).known.length) {
+          this.flash("Ce titre existe d\xE9j\xE0. Si vous voulez vraiment le conserver, ajoutez un indice.", "error");
+          this.setValueOf("titre_affiche", "");
+          return ev && stopEvent(ev);
+        }
+        if (noTitreOriginal) {
+          this.setTitreOriginalFromTitreAffiched();
+          console.log("Il faut que je demande s'il faut rechercher les information du film sur TMDB");
+        } else {
+          this.flash("Le titre original est d\xE9fini, je ne le touche pas.");
+        }
+      }
+    }
+    flash(message, type = "notice") {
+      Oeuvre.panel.flash(message, type);
+    }
+    REG_TITRE_AFF = /^(Les|Le|La|Une|Un|The|A) (.+)$/;
+    setTitreOriginalFromTitreAffiched() {
+      let titreOriginal = this.getValueOf("titre_affiche");
+      if (titreOriginal.match(this.REG_TITRE_AFF)) {
+        titreOriginal = titreOriginal.replace(this.REG_TITRE_AFF, (tout, article, reste) => {
+          return `${reste} (${article})`;
+        });
+      }
+      this.setValueOf("titre_original", titreOriginal);
+      this.onChangeTitreOriginal();
+    }
+    /**
+     * Méthode appelée quand on modifie le titre original (normalement,
+     * ça n'arrive qu'en cas de nouvelle œuvre).
+     * 
+     * Noter qu'elle est appelée automatiquement quand le titre
+     * original n'était pas défini et qu'on a défini le titre d'affi-
+     * chage de l'œuvre.
+     * 
+     * C'est aussi ici qu'on met un ID automatique s'il n'est pas
+     * défini.
+     * 
+     */
+    onChangeTitreOriginal(ev = void 0) {
+      const idNotDefined = this.getValueOf("id").trim() === "";
+      const titorig = this.getValueOf("titre_original");
+      if (titorig === "") {
+        return;
+      }
+      if (this.isNewItem) {
+        if (Oeuvre.doOeuvresExist([titorig]).known.length) {
+          Oeuvre.panel.flash("Ce titre existe d\xE9j\xE0. Si c'est vraiment une autre \u0153uvre, ajoutez-lui un indice", "error");
+          this.setValueOf("titre_original", "");
+          return;
+        }
+        if (idNotDefined) {
+          this.setValueOf("id", this.idFromTitre(titorig));
+        }
+      }
+      ev && stopEvent(ev);
+    }
+    /**
+     * Compose un ID unique en fonction du titre original de l'œuvre
+     */
+    idFromTitre(titre) {
+      let proposId = "";
+      const mots = titre.split(" ").map((m) => StringNormalizer.rationalize(m));
+      const nbMots = mots.length;
+      if (nbMots >= 3) {
+        const nbLettresFin = nbMots === 3 ? 2 : 1;
+        proposId = mots.map((m, i) => {
+          const isLastMot = i === nbMots - 1;
+          const nbLettres = isLastMot ? nbLettresFin : 1;
+          return m.substring(0, nbLettres).toUpperCase();
+        }).join("");
+        proposId = proposId.substring(0, 5);
+      } else {
+        proposId = titre.substring(0, 5).toUpperCase();
+      }
+      let annee;
+      if (annee = this.getValueOf("annee")) {
+        proposId += String(annee);
+      } else {
+        this.flash("Quand l\u2019ann\xE9e est pr\xE9cis\xE9e, elle est ajout\xE9e \xE0 l\u2019ID");
+      }
+      var iVar = 1;
+      var idTested = String(proposId);
+      while (Oeuvre.doIdExist(idTested)) {
+        idTested = `${proposId}{++iVar}`;
+      }
+      return proposId;
+    }
+    /**
+     * 
+     * @param item L'oeuvre à enregistrer
+     * @returns True si l'enregistrement a pu se faire correctement.
+     */
+    async onSave(item) {
+      console.log("Il faut que j'apprendre \xE0 sauver : ", item);
+      const itemSaver = new ComplexRpc({
+        call: Oeuvre.saveItem.bind(Oeuvre, item)
+      });
+      const res = await itemSaver.run();
+      if (res.ok) {
+        console.log("Je dois apprendre \xE0 actualiser l'affichage de l'oeuvre ou l'ins\xE9rer.");
+        Oeuvre.panel.flash("\u0152uvre enregistr\xE9e avec succ\xE8s.", "notice");
+      } else {
+        console.error("ERREUR LORS DE L'ENREGISTREMENT DE L'OEUVRE", res.errors);
+        Oeuvre.panel.flash("Erreur (enregistrement de l\u2019\u0153uvre (voir la console", "error");
+      }
+      return true;
+    }
+  };
+
+  // src/webviews/models/Oeuvre.ts
+  var Oeuvre = class _Oeuvre extends ClientItem {
+    // Constructor and data access
+    constructor(data) {
+      super(data);
+      this.data = data;
+    }
+    type = "oeuvre";
+    static minName = "oeuvre";
+    static klass = _Oeuvre;
+    static currentItem;
+    // Getters pour accès direct aux propriétés courantes
+    get id() {
+      return this.data.id;
+    }
+    get titre_affiche() {
+      return this.data.dbData.titre_affiche;
+    }
+    get titre_original() {
+      return this.data.dbData.titre_original;
+    }
+    get titre_francais() {
+      return this.data.dbData.titre_francais;
+    }
+    get annee() {
+      return this.data.dbData.annee;
+    }
+    get auteurs() {
+      return this.data.dbData.auteurs;
+    }
+    get notes() {
+      return this.data.dbData.notes;
+    }
+    get resume() {
+      return this.data.dbData.resume;
+    }
+    static setAccessTable(items) {
+      this._accessTable = new AccessTable(_Oeuvre, items);
+    }
+    // retourn le premier item visible après l'item +item+
+    static getFirstVisibleAfter(refItem) {
+      const aT = this.accessTable;
+      return aT.findAfter(
+        (item) => {
+          return aT.getAccKeyById(item.id).visible === true;
+        },
+        refItem.id
+      );
+    }
+    /**
+          ==== MÉTHODES DE CHECK ===
+     */
+    /**
+     * Méthode qui checke l'existence de l'identifiant
+     */
+    static doIdExist(id) {
+      return this.accessTable.existsById(id);
+    }
+    /**
+     * Méthode qui checke l'existence des oeuvres
+     * 
+     * @param oeuvres Liste des oeuvres, désignées par leur identifiant ou un de leurs titres
+     * @return Une table avec les clés :known (oeuvres connues) et :unknown (oeuvres inconnues)
+     */
+    static doOeuvresExist(oeuvres) {
+      const retour = { known: [], unknown: [] };
+      oeuvres.forEach((oeuvre) => {
+        if (this.accessTable.existsById(oeuvre) || this.oeuvreExistsByTitle(oeuvre)) {
+          retour.known.push(oeuvre);
+        } else {
+          retour.unknown.push(oeuvre);
+        }
+      });
+      return retour;
+    }
+    static oeuvreExistsByTitle(title) {
+      title = StringNormalizer.rationalize(title);
+      return !!this.accessTable.find((item) => item.data.cachedData.titresLookUp.includes(title));
+    }
+    /**
+     * 
+     * Méthodes pour enregistrer les oeuvres
+     */
+    static saveItem(item, compRpcId) {
+      RpcOeuvre.notify("save-oeuvre", { CRId: compRpcId, item });
+    }
+    static onSavedOeuvre(params) {
+      console.log("[CLIENT OEUVRE] Retour dans le panneau des oeuvres", params);
+      ComplexRpc.resolveRequest(params.CRId, params);
+    }
+  };
+  var OeuvrePanelClass = class extends PanelClient {
+    get accessTable() {
+      return Oeuvre.accessTable;
+    }
+    searchMatchingItems(searched) {
+      const searchLower = StringNormalizer.toLower(searched);
+      return this.filter(Oeuvre.accessTable, (oeuvre) => {
+        oeuvre = oeuvre;
+        return oeuvre.data.cachedData.titresLookUp.some((titre) => {
+          return titre.substring(0, searchLower.length) === searchLower;
+        });
+      });
+    }
+    // initKeyManager() {
+    //   this._keyManager = new VimLikeManager(document.body as HTMLBodyElement, this, Oeuvre);
+    // }
+  };
+  var OeuvrePanel = new OeuvrePanelClass({
+    minName: "oeuvre",
+    titName: "\u0152uvre",
+    klass: Oeuvre,
+    form: new OeuvreForm()
+  });
+  OeuvrePanel.form.setPanel(OeuvrePanel);
+  Oeuvre.panel = OeuvrePanel;
+  var RpcOeuvre = createRpcClient();
+  RpcOeuvre.on("activate", () => {
+    if (OeuvrePanel.isActif) {
+      return;
+    }
+    console.log("[CLIENT OEUVRE] Je dois marquer le panneau Oeuvre actif");
+    OeuvrePanel.activate();
+  });
+  RpcOeuvre.on("desactivate", () => {
+    if (OeuvrePanel.isInactif) {
+      return;
+    }
+    console.log("[CLIENT OEUVRE] Je dois marquer le panneau Oeuvre comme inactif.");
+    OeuvrePanel.desactivate();
+  });
+  RpcOeuvre.on("populate", (params) => {
+    const items = Oeuvre.deserializeItems(params.data, Oeuvre);
+    OeuvrePanel.populate(Oeuvre.accessTable);
+    OeuvrePanel.initKeyManager();
+  });
+  RpcOeuvre.on("display-oeuvre", (params) => {
+    console.log("[CLIENT Oeuvre] Afficher oeuvre %s", params.oeuvreId);
+    OeuvrePanel.scrollToAndSelect(params.oeuvreId);
+  });
+  RpcOeuvre.on("check-oeuvres", (params) => {
+    console.log("[CLIENT-OEUVRES] V\xE9rification demand\xE9e des \u0153uvres :", params);
+    const resultat = Oeuvre.doOeuvresExist(params.oeuvres);
+    console.log("r\xE9sultat du check", resultat);
+    RpcOeuvre.notify("check-oeuvres-resultat", { CRId: params.CRId, resultat });
+  });
+  RpcOeuvre.on("after-save-oeuvre", (params) => {
+    console.log("[CLIENT Oeuvre] R\xE9ception du after-save-oeuvre", params);
+    Oeuvre.onSavedOeuvre(params);
+  });
+  window.Oeuvre = Oeuvre;
+
+  // src/webviews/services/AccessTable.ts
+  var AccessTable = class {
+    constructor(klass, items) {
+      this.klass = klass;
+      this.populateInTable(items);
+    }
+    keysMap = /* @__PURE__ */ new Map();
+    arrayItems = [];
+    _size;
+    // après un ajout ou une suppression, par exemple
+    reset() {
+      this._size = null;
+    }
+    get size() {
+      return this._size || (this._size = this.keysMap.size);
+    }
+    isVisible(id) {
+      return this.getAccKeyById(id).visible === true;
+    }
+    setVisibility(id, state) {
+      const ak = this.getAccKeyById(id);
+      if (ak.visible !== state) {
+        ak.visible = state;
+        if (ak.obj === void 0) {
+          ak.obj = this.DOMElementOf(id);
+        }
+        const display = state ? "block" : "none";
+        ak.display = display;
+        ak.obj.style.display = display;
+      }
+    }
+    selectNextItem(panel) {
+      const selection = panel.getSelection();
+      let nextId;
+      if (selection) {
+        let nextItemVisible;
+        nextItemVisible = this.getNextVisibleById(selection);
+        if (nextItemVisible) {
+          nextId = nextItemVisible.id;
+        }
+      }
+      const finalNextId = nextId || this.firstItem.id;
+      panel.select(finalNextId);
+    }
+    selectPrevItem(panel) {
+      const selection = panel.getSelection();
+      let prevId;
+      if (selection) {
+        let prevItemVisible;
+        prevItemVisible = this.getPrevVisibleById(selection);
+        if (prevItemVisible) {
+          prevId = prevItemVisible.id;
+        }
+      }
+      const finalPrevId = prevId || this.firstItem.id;
+      panel.select(finalPrevId);
+    }
+    getNextVisibleById(refId) {
+      let ak;
+      let nextAk;
+      while (ak = this.getNextAccKeyById(refId)) {
+        if (ak.visible) {
+          return this.getById(ak.id);
+        }
+      }
+    }
+    getPrevVisibleById(refId) {
+      let ak;
+      let prevAk;
+      while (ak = this.getPrevAccKeyById(refId)) {
+        if (ak.visible) {
+          return this.getById(ak.id);
+        }
+      }
+    }
+    setSelectState(id, state) {
+      this.getAccKeyById(id).selected = state;
+    }
+    traverseAnyTypeWith(value, fnIfId, fnIfIndex, fnIfAccKey, fnIfItem) {
+      switch (typeof value) {
+        case "string":
+          return fnIfId(value);
+        case "number":
+          return fnIfIndex(value);
+        case "object":
+          switch (value.type) {
+            case "accedable-item":
+              return fnIfAccKey(value);
+            case "entry":
+            case "oeuvre":
+            case "exemple":
+              return fnIfItem(value);
+          }
+      }
+    }
+    /**
+     * Retourne l'item d'identifiant +id+ 
+     * 
+     * On peut l'obtenir en envoyant l'identifiant (string), l'index dans
+     * la liste (number), l'accedable-key (AccedableItem) ou l'item 
+     * lui-même.
+     */
+    get(foo) {
+      return this.traverseAnyTypeWith(
+        foo,
+        this.getById.bind(this),
+        this.getByIndex.bind(this),
+        this.getByAccKey.bind(this),
+        (foo2) => {
+          return foo2;
+        }
+      );
+    }
+    // @return true si l'élément d'identifiant +id+ existe.
+    existsById(id) {
+      return this.keysMap.has(id);
+    }
+    getById(id) {
+      return this.arrayItems[this.keysMap.get(id).index];
+    }
+    getByIndex(index) {
+      return this.arrayItems[index];
+    }
+    getByAccKey(ak) {
+      return this.getById(ak.id);
+    }
+    /**
+     * Retourne l'objet DOM de l'item en s'assurant qu'il est défini
+     * dans l'AccKey (ce qui n'est pas fait par défaut)
+     */
+    getObj(id) {
+      const ak = this.getAccKeyById(id);
+      if (!ak) {
+        console.error("Impossible d'obtenir l'AK de l'id '%s'\u2026", id, this.arrayItems);
+      }
+      ak.obj || Object.assign(ak, { obj: this.DOMElementOf(id) });
+      if (!ak.obj) {
+        console.error("Impossible d'obtenir l'objet de l'item '%'\u2026", id);
+      }
+      return ak.obj;
+    }
+    /**
+     *  Retourne l'accKey de l'élément foo
+     * TODO : doit fonctionner pour tout élément (cf. getNextAccKey)
+     */
+    getAccKey(foo) {
+      return this.traverseAnyTypeWith(
+        foo,
+        this.getAccKeyById.bind(this),
+        this.getAccKeyByIndex.bind(this),
+        (foo2) => {
+          return foo2;
+        },
+        this.getAccKeyByItem.bind(this)
+      );
+    }
+    getAccKeyById(itemId) {
+      return this.keysMap.get(itemId);
+    }
+    getAccKeyByIndex(index) {
+      return this.getAccKeyById(this.getByIndex(index).id);
+    }
+    getAccKeyByItem(item) {
+      return this.getAccKeyById(item.id);
+    }
+    /**
+     * Actualise ou Crée le nouvel item Item après son enregistrement.
+     * 
+     * Pour savoir si c'est une création ou une actualisation, il
+     * suffit de voir si l'identifiant est connu de la table (noter
+     * que pour les exemples, il n'y a pas d'identifiant autre que
+     * volatile).
+     * 
+     * Noter que ce sont toujours les données compolètes qui sont
+     * remontées, même pour une actualisation. Car l'actualisation
+     * a pu modifier des données qui servent pour le tri, le formatage,
+     * etc.
+     * 
+     */
+    upsert(item) {
+      console.log("Item re\xE7u par upsert", item);
+      const checkedId = ((ity, item2) => {
+        switch (ity) {
+          case "entry":
+          case "oeuvre":
+            return item2.id;
+          // Now at root level
+          case "exemple":
+            return item2.id;
+        }
+      })(item.cachedData.itemType, item);
+      let cachedItem;
+      if (this.existsById(checkedId)) {
+        console.log("C'est une actualisation de l'item ", checkedId);
+        cachedItem = this.getById(checkedId);
+        console.log("Actualisation de", this.getById(checkedId));
+        Object.assign(cachedItem, { data: item });
+      } else {
+        console.log("C'est une cr\xE9ation de l'item", item);
+        this.createNewAccedableItem(item);
+      }
+      return true;
+    }
+    createNewAccedableItem(item) {
+      let itemKlass;
+      switch (item.cachedData.itemType) {
+        case "entry":
+          itemKlass = Entry;
+          break;
+        case "oeuvre":
+          itemKlass = Oeuvre;
+          break;
+        case "exemple":
+          itemKlass = Exemple;
+          break;
+      }
+      const cachedItem = new itemKlass(item);
+      this.addInTable(cachedItem, 0, void 0, void 0);
+    }
+    /**
+     *  Retourne l'Item (Entry, Oeuvre, Exemple) de l'élément foo
+     */
+    getNextItem(foo) {
+      return this.traverseAnyTypeWith(
+        foo,
+        this.getNextItemById.bind(this),
+        this.getNextItemByIndex.bind(this),
+        this.getNextItemByAccKey.bind(this),
+        this.getNextItemByItem.bind(this)
+      );
+    }
+    getNextItemById(id) {
+      const nextAK = this.getNextAccKeyById(id);
+      return nextAK ? this.getById(nextAK.id) : void 0;
+    }
+    getNextItemByIndex(index) {
+      return this.getNextItemById(this.arrayItems[index].id);
+    }
+    getNextItemByAccKey(ak) {
+      return ak.next ? this.getById(ak.next) : void 0;
+    }
+    getNextItemByItem(item) {
+      return this.getNextItemById(item.id);
+    }
+    /**
+     *  Retourne l'Item (Entry, Oeuvre, Exemple) qui suit l'élément
+     * défini par +foo+ qui peut être l'id, l'index, l'accessKey
+     * {AccedableItem} ou l'item lui-mêmeK
+     */
+    getPrevItem(foo) {
+      return this.traverseAnyTypeWith(
+        foo,
+        this.getPrevItemById.bind(this),
+        this.getPrevItemByIndex.bind(this),
+        this.getPrevItemByAccKey.bind(this),
+        this.getPrevItemByItem.bind(this)
+      );
+    }
+    getPrevItemById(id) {
+      const prevAK = this.getPrevAccKeyById(id);
+      return prevAK ? this.getById(prevAK.id) : void 0;
+    }
+    getPrevItemByIndex(index) {
+      return this.getPrevItemById(this.arrayItems[index].id);
+    }
+    getPrevItemByAccKey(ak) {
+      return ak.prev ? this.getById(ak.prev) : void 0;
+    }
+    getPrevItemByItem(item) {
+      return this.getPrevItemById(item.id);
+    }
+    /**
+     *  Retourne l'accedableKey {AccedableItem} de l'élément désigné
+     * par +foo+ qui peut être l'identifiant, l'index, l'access-key ou
+     * l'item lui-même de l'item de référence. 
+     *
+     * Note : la version LA PLUS RAPIDE (O)1 consiste à fournir l'IDENTIFIANT
+     * 
+     */
+    getNextAccKey(foo) {
+      return this.traverseAnyTypeWith(
+        foo,
+        this.getNextAccKeyById.bind(this),
+        this.getNextAccKeyByIndex.bind(this),
+        this.getNextAccKeyByAccKey.bind(this),
+        this.getNextAccKeyByItem.bind(this)
+      );
+    }
+    getNextAccKeyById(id) {
+      const ak = this.getAccKey(id);
+      return ak.next ? this.getAccKey(ak.next) : void 0;
+    }
+    getNextAccKeyByIndex(index) {
+      return this.getNextAccKeyById(this.arrayItems[index].id);
+    }
+    getNextAccKeyByAccKey(ak) {
+      return ak.next ? this.getNextAccKeyById(ak.next) : void 0;
+    }
+    getNextAccKeyByItem(item) {
+      return this.getNextAccKeyById(item.id);
+    }
+    /**
+     * Retourne l'AccessKey {AccedableItem} précédent de l'élément 
+     * désigné par +foo+ qui peut être l'id, l'index, l'access-key ou
+     * l'item lui-même de l'élément.
+     */
+    getPrevAccKey(foo) {
+      return this.traverseAnyTypeWith(
+        foo,
+        this.getPrevAccKeyById.bind(this),
+        this.getPrevAccKeyByIndex.bind(this),
+        this.getPrevAccKeyByAccKey.bind(this),
+        this.getPrevAccKeyByItem.bind(this)
+      );
+    }
+    getPrevAccKeyById(id) {
+      const ak = this.getAccKey(id);
+      return ak.prev ? this.getAccKey(ak.prev) : void 0;
+    }
+    getPrevAccKeyByIndex(index) {
+      return this.getPrevAccKeyById(this.arrayItems[index].id);
+    }
+    getPrevAccKeyByAccKey(ak) {
+      return ak.prev ? this.getPrevAccKeyById(ak.prev) : void 0;
+    }
+    getPrevAccKeyByItem(item) {
+      return this.getPrevAccKeyById(item.id);
+    }
+    // Boucle sur tous les éléments (sans retour)
+    each(traverseMethod) {
+      this.eachSince(traverseMethod, this.firstItem.data.id);
+    }
+    // Boucle depuis l'élément d'identifiant +id+
+    eachSince(traverseMethod, id) {
+      let item = this.getById(id);
+      do {
+        if (item) {
+          traverseMethod(item);
+          item = this.getNextItemById(item.id);
+        } else {
+          break;
+        }
+      } while (item);
+    }
+    /**
+     * Boucle sur toutes les AcceedableItem (AccKey/ak)
+     */
+    eachAccKey(fnEach) {
+      this.keysMap.forEach(fnEach);
+    }
+    /**
+     * Boucle sur tous les items à partir de l'item d'id +id+ en
+     * collectant une donnée quelconque.
+     */
+    mapSince(traverseMethod, id) {
+      const collected = [];
+      let item = this.getById(id);
+      do {
+        if (item) {
+          let retour = traverseMethod(item);
+          collected.push(retour);
+          item = this.getNextItemById(item.id);
+        } else {
+          break;
+        }
+      } while (item);
+      return collected;
+    }
+    // Boucle sur TOUTES les données en collectant une donnée
+    map(traverseMethod) {
+      return this.mapSince(traverseMethod, this.firstItem.id);
+    }
+    /**
+     * Méthode qui boucle sur tous les éléments depuis l'élément d'id
+     * +itemId+ et retourne une Map avec en clé l'identifiant de
+     * l'item et en valeur la valeur retournée par la méthode
+     * +traverseMethod+
+     */
+    collectSince(traverseMethod, itemId) {
+      const collected = /* @__PURE__ */ new Map();
+      let item = this.getById(itemId);
+      do {
+        if (item) {
+          let retour = traverseMethod(item);
+          collected.set(item.id, retour);
+          item = this.getNextItemById(item.id);
+        } else {
+          break;
+        }
+      } while (item);
+      return collected;
+    }
+    // Boucle sur tous les éléments en récoltant une valeur qu'on met
+    // dans une Map qui a en clé l'identifiant de l'item
+    collect(traverseMethod) {
+      return this.collectSince(traverseMethod, this.firstItem.id);
+    }
+    /**
+     * Retourne le premier item. Par convention, c'est le premier
+     * de la liste.
+     */
+    get firstItem() {
+      return this.arrayItems[0];
+    }
+    /**
+     * Boucle sur les items, depuis l'item d'identifiant +id+ ou depuis le premier et 
+     * retourne le premier qui répond à la condition +condition+
+     */
+    find(condition) {
+      return this.findAfter(condition, void 0);
+    }
+    findAfter(condition, id) {
+      let item;
+      if (id === void 0) {
+        item = this.firstItem;
+      } else {
+        item = this.getNextItemById(id);
+      }
+      let found;
+      do {
+        if (item) {
+          if (condition(item) === true) {
+            found = item;
+            break;
+          }
+          item = this.getNextItemById(item.id);
+        }
+      } while (item);
+      return found;
+    }
+    /**
+     * Recherche dans l'ordre tous les éléments répondant à la condition +condition+
+     * 
+     * @param condition Methode qui doit retourner true pour que l'item soit retenu
+     * @param options   Table d'options {count: nombre attendu} 
+     * @returns 
+     */
+    findAll(condition, options) {
+      return this.findAllAfter(condition, void 0, options);
+    }
+    // Idem que précédente mais permet de spécifier le premier élément
+    findAllAfter(condition, id, options) {
+      const collected = [];
+      let collected_count = 0;
+      let item;
+      if (id === void 0) {
+        item = this.firstItem;
+      } else {
+        item = this.getNextItemById(id);
+      }
+      do {
+        if (item) {
+          if (condition(item) === true) {
+            collected.push(item);
+            collected_count++;
+            if (options.count && collected_count === options.count) {
+              break;
+            }
+          }
+          item = this.getNextItemById(item.id);
+        }
+      } while (item);
+      return collected;
+    }
+    /**
+     * Peuplement de la table d'accès avec création des 'chainedItem'
+     * 
+     * @param items Les éléments transmis, tels que relevés dans les tables (Entry, Oeuvre, Exemple);
+     */
+    // Méthode qui "initie" la table d'accès en transformant chaque
+    // item (Entry, Oeuvre, Exemple) en un AccedableItem, en prenant
+    // son index et son index suivant pour les mettres dans la Map
+    // qui consignes les valeurs d'accès
+    populateInTable(items) {
+      this.keysMap = /* @__PURE__ */ new Map();
+      this.arrayItems = [];
+      for (let i = 0, len = items.length; i < len; ++i) {
+        const item = items[i];
+        const nextItem = items[i + 1] || void 0;
+        const prevItem = items[i - 1] || void 0;
+        this.addInTable(item, i, nextItem, prevItem);
+      }
+    }
+    // Insertion séparée pour pouvoir ajouter en cours de travail
+    addInTable(item, arrayIndex, nextItem, prevItem) {
+      const chained = {
+        type: "accedable-item",
+        id: item.id,
+        obj: void 0,
+        index: arrayIndex,
+        next: nextItem ? nextItem.id : void 0,
+        prev: prevItem ? prevItem.id : void 0,
+        visible: true,
+        display: "block",
+        selected: false,
+        modified: false
+      };
+      this.keysMap.set(item.id, chained);
+      this.arrayItems.push(item);
+    }
+    DOMElementOf(id) {
+      return document.querySelector(`main#items > div[data-id="${id}"]`);
+    }
+  };
+
   // src/webviews/models/ExempleForm.ts
   var ExempleForm = class extends FormManager {
     formId = "exemple-form";
@@ -1849,10 +3214,34 @@
 
   // src/webviews/models/Exemple.ts
   var Exemple = class _Exemple extends ClientItem {
+    // Constructor and data access
+    constructor(data) {
+      super(data);
+      this.data = data;
+    }
     type = "exemple";
     static minName = "exemple";
     static klass = _Exemple;
     static currentItem;
+    // Getters pour accès direct aux propriétés courantes
+    get id() {
+      return this.data.id;
+    }
+    get oeuvre_id() {
+      return this.data.dbData.oeuvre_id;
+    }
+    get indice() {
+      return this.data.dbData.indice;
+    }
+    get entry_id() {
+      return this.data.dbData.entry_id;
+    }
+    get content() {
+      return this.data.dbData.content;
+    }
+    get notes() {
+      return this.data.dbData.notes;
+    }
     static setAccessTable(items) {
       this._accessTable = new AccessTable(_Exemple, items);
     }
@@ -1887,7 +3276,7 @@
     formateProp(ex, prop, value) {
       switch (prop) {
         case "entree_formated":
-          return `<a data-type="entry" data-id="${ex.data.entry_id}">${value}</a>`;
+          return `<a data-type="entry" data-id="${ex.data.dbData.entry_id}">${value}</a>`;
         default:
           return String(value);
       }
@@ -1924,26 +3313,26 @@
       let currentOeuvreId = "";
       accessTable.each((item) => {
         const ditem = item.data;
-        if (ditem.oeuvre_id === currentOeuvreId) {
+        if (ditem.dbData.oeuvre_id === currentOeuvreId) {
           return;
         }
-        currentOeuvreId = ditem.oeuvre_id;
+        currentOeuvreId = ditem.dbData.oeuvre_id;
         const obj = document.createElement("h2");
         obj.dataset.id = currentOeuvreId;
         obj.addEventListener("click", this.onClickLinkToOeuvre.bind(this, obj));
         obj.className = "titre-oeuvre";
         const spanTit = document.createElement("span");
         spanTit.className = "titre";
-        spanTit.innerHTML = ditem.oeuvre_titre;
+        spanTit.innerHTML = ditem.cachedData.oeuvre_titre;
         obj.appendChild(spanTit);
         const titre = {
-          id: ditem.oeuvre_id,
+          id: ditem.dbData.oeuvre_id,
           obj,
-          titre: ditem.oeuvre_titre,
+          titre: ditem.cachedData.oeuvre_titre,
           display: "block"
         };
         this.BlockTitres.set(titre.id, titre);
-        const firstEx = document.querySelector(`main#items > div[data-id="${ditem.id}"]`);
+        const firstEx = document.querySelector(`main#items > div[data-id="${ditem.dbData.id}"]`);
         this.container.insertBefore(obj, firstEx);
       });
     }
@@ -1976,14 +3365,14 @@
         case "by-title":
           exemplesFound = this.filter(Exemple.accessTable, (ex) => {
             ex = ex;
-            return ex.data.titresLookUp.some((titre) => {
+            return ex.data.cachedData.titresLookUp.some((titre) => {
               return titre.substring(0, searchLow.length) === searchLow;
             });
           });
           break;
         case "by-entry":
           exemplesFound = this.filter(Exemple.accessTable, (ex) => {
-            const seg = ex.data.entry4filter.substring(0, searchLow.length);
+            const seg = ex.data.cachedData.entry4filter.substring(0, searchLow.length);
             return seg === searchLow || seg === searchRa;
           });
           break;
@@ -1991,7 +3380,7 @@
           exemplesFound = this.filter(Exemple.accessTable, (ex) => {
             ex = ex;
             console.log("ex", ex.data);
-            return ex.data.content_min.includes(searchLow) || ex.data.content_min_ra.includes(searchRa);
+            return ex.data.cachedData.content_min.includes(searchLow) || ex.data.cachedData.content_min_ra.includes(searchRa);
           });
           break;
         default:
@@ -1999,10 +3388,10 @@
       }
       const titres2aff = /* @__PURE__ */ new Map();
       exemplesFound.forEach((ex) => {
-        if (titres2aff.has(ex.data.oeuvre_id)) {
+        if (titres2aff.has(ex.data.dbData.oeuvre_id)) {
           return;
         }
-        titres2aff.set(ex.data.oeuvre_id, true);
+        titres2aff.set(ex.data.dbData.oeuvre_id, true);
       });
       this.BlockTitres.forEach((btitre) => {
         const dispWanted = titres2aff.has(btitre.id) ? "block" : "none";

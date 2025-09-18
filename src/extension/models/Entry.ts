@@ -1,42 +1,26 @@
-import { UEntry } from '../../bothside/UEntry';
 import { UniversalCacheManager } from '../../bothside/UniversalCacheManager';
+import { UEntry } from '../../bothside/UEntry';
+import { DBEntryType, EntryType, CachedEntryType, DomStateType } from '../../bothside/types';
 import { App } from '../services/App';
 import { StringNormalizer } from '../../bothside/StringUtils';
-import { CanalEntry } from '../services/Rpc';
 import { DBManager } from '../db/db_manager';
+import { CanalEntry } from '../services/Rpc';
 
-// Forme de la donnée persistante (en tout cas celle
-// qui sera envoyée au cache)
-export interface IEntry {
-	id: string;
-	entree: string;
-	genre: string;
-	categorie_id?: string;
-	definition: string;
-}
+// Re-export types for external use
+export { DBEntryType, EntryType } from '../../bothside/types';
 
-// TODO C'est l'interface qui est utilisé aussi côté webview, il
-// faut donc mettre cette donnée dans la partie bothside
-// La donnée cachée, complète
-export interface FullEntry extends IEntry {
-	itemType: 'entry' | 'oeuvre' | 'exemple';
-  entree_min: string;              // Version minuscules pour recherche
-  entree_min_ra: string;           // Version rationalisée (sans accents) 
-  categorie_formated?: string;     // Nom de la catégorie (résolu via Entry.get())
-  genre_formated?: string;
-	definition_formated?: string;
-	selected: boolean;
-	display: 'block' | 'none';
-}
+// Types legacy pour transition - à supprimer après migration complète
+export type IEntry = DBEntryType;
+export type FullEntry = EntryType;
 
-// Classe de la donnée mise en cache
-export class Entry extends UEntry {
+// Classe wrapper autour d'EntryType
+export class Entry {
 	public static panelId: string = 'entries';
 
 	public static cacheDebug() { return this.cache; }
-	protected static _cacheManagerInstance: UniversalCacheManager<IEntry, FullEntry> = new UniversalCacheManager();
+	protected static _cacheManagerInstance: UniversalCacheManager<DBEntryType, EntryType> = new UniversalCacheManager();
   protected static get cache() { return this._cacheManagerInstance; };
-	public static get(entry_id: string): FullEntry { return this.cache.get(entry_id) as FullEntry;}
+	public static get(entry_id: string): EntryType { return this.cache.get(entry_id) as EntryType;}
 
 	public static sortFonction(a: Entry, b: Entry): number {
     return a.entree.localeCompare(b.entree, 'fr', {
@@ -45,11 +29,40 @@ export class Entry extends UEntry {
       caseFirst: 'lower'
     });
 	}
+	
+	// Constructor and data access
+	constructor(public data: EntryType) {}
+	
+	// Getters pour accès direct aux propriétés courantes
+	get id(): string { return this.data.id; }
+	get entree(): string { return this.data.dbData.entree; }
+	get genre(): string { return this.data.dbData.genre; }
+	get categorie_id(): string | undefined { return this.data.dbData.categorie_id; }
+	get definition(): string { return this.data.dbData.definition; }
+	
+	// Méthodes statiques héritées
+	static genre(id: string): string {
+		const GENRES: { [x: string]: string } = {
+			m: "masculin",
+			f: "féminin",
+			n: "neutre"
+		};
+		return GENRES[id] || "inconnu";
+	}
+	
+	static getDataSerialized() {
+		return this.cache.getDataSerialized();
+	}
+	
+	static completeItemForClientAfterSave(item: any) {
+		// Logique de complétion après sauvegarde
+		return item;
+	}
 
 	/**
 	 * Sauvegarde de l'entrée
 	 */
-	public static async saveItem(params: {CRId: string, item: IEntry, ok: boolean, errors: any, [x: string]: any}){
+	public static async saveItem(params: {CRId: string, item: DBEntryType, ok: boolean, errors: any, [x: string]: any}){
 		const dbManager = DBManager.getInstance(App._context);
 		params = await dbManager.saveItemIn('entrees', params.item, params, this);
 		console.log("Params quand on revient dans Entry", params);
@@ -57,16 +70,13 @@ export class Entry extends UEntry {
 		CanalEntry.afterSaveItem(params);
 	}
 
-	constructor(data: IEntry) {
-		super(data);
-	}
 
 	/**
 	 * Méthode pour mettre simplement les données en cache sans aucun
 	 * traitement (parce que pour les traiter, il faut impérativement
 	 * que toutes les données sont en cache).
 	 */
-	public static cacheAllData(items: IEntry[]): void {
+	public static cacheAllData(items: DBEntryType[]): void {
 		this.cache.inject(items, this.prepareItemForCache.bind(this));
 	}
 	/**
@@ -74,36 +84,47 @@ export class Entry extends UEntry {
 	 * ne procède qu'aux préparations qui ne font pas appel aux autres
 	 * données (voir la méthode finalizeCachedData pour ça).
 	 */
-	protected static prepareItemForCache(item: IEntry): FullEntry {
+	protected static prepareItemForCache(item: DBEntryType): EntryType {
     const entreeNormalized    = StringNormalizer.toLower(item.entree);
     const entreeRationalized  = StringNormalizer.rationalize(item.entree);
-	// On finalise la donnée en cache
-		const pItem = Object.assign(item, {
+	
+		const cachedData: CachedEntryType = {
 			itemType: 'entry',
-			display: 'block',
-			selected: false,
 			entree_min: entreeNormalized,
 			entree_min_ra: entreeRationalized,
 			genre_formated: this.genre(item.genre),
-			definition_formated: item.definition // pour le moment
-		}) as FullEntry;
+			definition_formated: item.definition
+		};
+		
+		const domState: DomStateType = {
+			display: 'block',
+			selected: false
+		};
+		
+		const entryType: EntryType = {
+			id: item.id,  // ID at root level for easy access
+			dbData: item,
+			cachedData: cachedData,
+			domState: domState
+		};
  
-		return pItem;
+		return entryType;
 	}
 	
 	public static async finalizeCachedItems(): Promise<void> {
 		await this.cache.traverse(this.finalizeCachedItem.bind(this));
 		App.incAndCheckReadyCounter();
 	}
-	protected static finalizeCachedItem(item: FullEntry): FullEntry {
+	protected static finalizeCachedItem(item: EntryType): EntryType {
 		// Pour trouver la catégorie humaine
 		let cat:string | undefined ;
-		if ( item.categorie_id ) {
-			cat = this.cache.get(item.categorie_id)?.entree_min;
+		if ( item.dbData.categorie_id ) {
+			const categoryEntry = this.cache.get(item.dbData.categorie_id);
+			cat = categoryEntry?.cachedData.entree_min;
 		}
-		item = Object.assign(item, {
-			categorie_format: cat || '',
-		});
+		
+		// Mettre à jour les données cachées
+		item.cachedData.categorie_formated = cat || '';
 	
 		return item;
 	}
@@ -140,9 +161,11 @@ export class Entry extends UEntry {
 	/**
 	 * Create from database row
 	 */
-	static fromRow(row: any): Entry | undefined {
+	static fromRow(row: DBEntryType): Entry | undefined {
 		try {
-			return new Entry(row); 
+			// Il faut créer un EntryType complet depuis les données DB
+			const entryType = this.prepareItemForCache(row);
+			return new Entry(entryType); 
 		} catch(erreur) {
 			console.error("# ERREUR avec L'entrée : %s", erreur, row);
 		}

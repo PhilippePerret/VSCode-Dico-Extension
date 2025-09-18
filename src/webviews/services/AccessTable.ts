@@ -1,59 +1,9 @@
 /**
  * Grande classe qui permet de parcourir très vite les éléments en
  * sachant s'ils sont visibles, sélectionnés, etc.
- * 
- * La class AccessTable<T> fonctionne avec deux éléments principaux :
- * 
- *  arrayItems :  une simple Array des éléments mis les uns au bouts 
- *                des autres. Tous les ajouts se mettront au bout de
- *                la liste. Donc, dans cette liste, des Entry, Oeuvre
- *                et Exemple. Ce sont les valeurs retournées par la
- *                plupart des méthodes API.
- *  keysMap:      Une Map qui consigne en clé l'identifiant de
- *                l'élément et en valeur un type AcceedItem qui con-
- *                signe : l'index de l'élément dans arrayItems,
- *                l'index de l'élément suivant et précédent, pour des
- *                boucles dans les deux sens, ainsi que l'état de 
- *                l'élément (visible, selected, modified, etc.)
- *                Usage interne pour relier le tableau ArrayItems
- *                Noter que cette table consigne aussi l'état courant
- *                des éléments au niveau de leur visibilité et leur
- *                sélection, afin de permettre une gestion plus rapi-
- *                sans avoir à passer par l'item lui-même.
- * 
- * MÉTHODES
- * 
- *  .find(method): AnyElementType
- *      Retourne le premier élément qui répond positivement à +method+
- *  .findAfter(method, id): AnyElementType | undefined
- *      Idem que précédente, mais à partir de +id+ NON compris
- *  .findAll(method): AnyElementType[]
- *      Retourne tous les éléments qui répondent à +method+ par true
- *  .findAllAfter(method, id): AnyElementType[]
- *      Idem que précédente, mais à partir de +id+ NON compris
- *  .each(method): void
- *      Boucle sur tous les éléments en appliquant la méthode +method+
- *  .eachSince(method, id): void
- *      Idem que la précédente, mais à partir de l'élément +id+ compris
- *  .map(method): Array
- *      Boucle sur tous les éléments en collectant dans un tableau le
- *      retour de la méthode +method+
- *  .mapSince(method, id): Array
- *      Idem que précédente mais à partir de l'élément +id+ compris
- *  .collect(method): Map
- *      Boucle sur tous les éléments en collectant le retour de la
- *      méthode +method+ et en le mettant dans une Map avec en clé
- *      l'identifiant de l'item concerné.
- *  .collectSince(method, id): Map
- *      Idem que précédente mais à partir de l'élément +id+ compris.
- *  .selectNextItem(selection)
- *  .selectPrevItem(selection)
- *      Permet de sélectionner l'item suivant ou précédent.
  */
-import { FullEntry } from "../../extension/models/Entry";
-import { FullExemple, IExemple } from "../../extension/models/Exemple";
-import { FullOeuvre } from "../../extension/models/Oeuvre";
-import { AnyElementClass, AnyElementType, AnyFullElementType } from "../models/AnyClientElement";
+import { EntryType, OeuvreType, ExempleType, DBExempleType, AnyItemType } from "../../bothside/types";
+import { AnyElementClass, AnyElementType } from "../models/AnyClientElement";
 import { Entry } from "../models/Entry";
 import { Exemple } from "../models/Exemple";
 import { Oeuvre } from "../models/Oeuvre";
@@ -113,10 +63,10 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
     if ( selection ) {
       let nextItemVisible: AnyElementType | undefined;
       nextItemVisible = this.getNextVisibleById(selection);
-      if ( nextItemVisible ) { nextId = nextItemVisible.data.id ; }
+      if ( nextItemVisible ) { nextId = nextItemVisible.id ; }
     }
-    nextId = nextId || this.firstItem.data.id;
-    panel.select(nextId);
+    const finalNextId = nextId || this.firstItem.id;
+    panel.select(finalNextId);
   }
   selectPrevItem(panel: PanelClient<any, any>): void {
     const selection = panel.getSelection();
@@ -124,10 +74,10 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
     if ( selection ) {
       let prevItemVisible: AnyElementType | undefined ;
       prevItemVisible = this.getPrevVisibleById(selection);
-      if ( prevItemVisible ) { prevId = prevItemVisible.data.id ;}
+      if ( prevItemVisible ) { prevId = prevItemVisible.id ;}
     }
-    prevId = prevId || this.firstItem.data.id;
-    panel.select(prevId);
+    const finalPrevId = prevId || this.firstItem.id;
+    panel.select(finalPrevId);
   }
 
 
@@ -222,8 +172,8 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
     );
   }
   getAccKeyById(itemId: string): AccedableItem { return this.keysMap.get(itemId) as AccedableItem ; }
-  getAccKeyByIndex(index: number): AccedableItem { return this.getAccKeyById(this.getByIndex(index).data.id) ; }
-  getAccKeyByItem(item: Entry | Oeuvre | Exemple): AccedableItem { return this.getAccKeyById(item.data.id);}
+  getAccKeyByIndex(index: number): AccedableItem { return this.getAccKeyById(this.getByIndex(index).id) ; }
+  getAccKeyByItem(item: Entry | Oeuvre | Exemple): AccedableItem { return this.getAccKeyById(item.id);}
 
   /**
    * Actualise ou Crée le nouvel item Item après son enregistrement.
@@ -239,18 +189,17 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
    * etc.
    * 
    */
-  public upsert(item: AnyFullElementType): boolean {
+  public upsert(item: AnyItemType): boolean {
     console.log("Item reçu par upsert", item);
     const checkedId: string = ((ity, item) => {
       switch(ity){
         case 'entry':
         case 'oeuvre':
-          return item.id;
+          return item.id;  // Now at root level
         case 'exemple':
-          const ite = item as any as IExemple;
-          return `${ite.oeuvre_id}-${ite.indice}`;
+          return item.id;  // Composite ID already calculated
       }
-    })(item.itemType, item);
+    })(item.cachedData.itemType, item);
 
     let cachedItem;
     if ( this.existsById(checkedId)) {
@@ -267,18 +216,22 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
     return true; // en cas de succès
   }
 
-  private createNewAccedableItem(item: AnyFullElementType) {
-    let itemKlass;
-    switch(item.itemType){
+  private createNewAccedableItem(item: AnyItemType) {
+    let cachedItem: T;
+    switch(item.cachedData.itemType){
       case 'entry': 
-        itemKlass = Entry; 
+        cachedItem = new Entry(item as EntryType) as T;
         break;
-      case 'oeuvre': itemKlass = Oeuvre; break;
-      case 'exemple': itemKlass = Exemple; break;
+      case 'oeuvre': 
+        cachedItem = new Oeuvre(item as OeuvreType) as T;
+        break;
+      case 'exemple': 
+        cachedItem = new Exemple(item as ExempleType) as T;
+        break;
+      default:
+        throw new Error(`Type d'item inconnu: ${(item as any).cachedData.itemType}`);
     }
-    // const cachedItem = new itemKlass(item as FullEntry & FullOeuvre & FullExemple);
-    const cachedItem: T = new itemKlass(item as FullEntry);
-    this.addInTable(cachedItem, 0, undefined, undefined);
+    this.addInTable(cachedItem, 0, undefined, undefined);  // <===== TODO : LE ZÉRO EST À CALCULER !
 
   }
   /**
@@ -298,13 +251,13 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
     return nextAK ? this.getById(nextAK.id) : undefined ;
   }
   getNextItemByIndex(index: number): T | undefined {
-    return this.getNextItemById(this.arrayItems[index].data.id);
+    return this.getNextItemById(this.arrayItems[index].id);
   }
   getNextItemByAccKey(ak: AccedableItem) : T | undefined {
     return ak.next ? this.getById(ak.next) : undefined ;
   }
   getNextItemByItem(item: Entry | Oeuvre | Exemple) : T | undefined {
-    return this.getNextItemById(item.data.id);
+    return this.getNextItemById(item.id);
   }
 
   /**
@@ -326,13 +279,13 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
     return prevAK ? this.getById(prevAK.id) : undefined ;
   }
   getPrevItemByIndex(index: number): T | undefined {
-    return this.getPrevItemById(this.arrayItems[index].data.id);
+    return this.getPrevItemById(this.arrayItems[index].id);
   }
   getPrevItemByAccKey(ak: AccedableItem) : T | undefined {
     return ak.prev ? this.getById(ak.prev) : undefined ;
   }
   getPrevItemByItem(item: Entry | Oeuvre | Exemple) : T | undefined {
-    return this.getPrevItemById(item.data.id);
+    return this.getPrevItemById(item.id);
   }
 
 
@@ -360,13 +313,13 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
     return ak.next ? this.getAccKey(ak.next) : undefined;
   }
   getNextAccKeyByIndex(index: number): AccedableItem | undefined {
-    return this.getNextAccKeyById(this.arrayItems[index].data.id);
+    return this.getNextAccKeyById(this.arrayItems[index].id);
   }
   getNextAccKeyByAccKey(ak: AccedableItem): AccedableItem | undefined {
     return ak.next ? this.getNextAccKeyById(ak.next) : undefined ;
   }
   getNextAccKeyByItem(item: AnyElementType): AccedableItem | undefined {
-   return this.getNextAccKeyById(item.data.id); 
+   return this.getNextAccKeyById(item.id); 
   }
   
   /**
@@ -390,13 +343,13 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
     return ak.prev ? this.getAccKey(ak.prev) : undefined;
   }
   getPrevAccKeyByIndex(index: number): AccedableItem | undefined {
-    return this.getPrevAccKeyById(this.arrayItems[index].data.id);
+    return this.getPrevAccKeyById(this.arrayItems[index].id);
   }
   getPrevAccKeyByAccKey(ak: AccedableItem): AccedableItem | undefined {
     return ak.prev ? this.getPrevAccKeyById(ak.prev) : undefined ;
   }
   getPrevAccKeyByItem(item: AnyElementType): AccedableItem | undefined {
-   return this.getPrevAccKeyById(item.data.id); 
+   return this.getPrevAccKeyById(item.id); 
   }
  
 
@@ -414,7 +367,7 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
     do {
       if ( item ) {
         traverseMethod(item);
-        item = this.getNextItemById(item.data.id);
+        item = this.getNextItemById(item.id);
       } else { break ;}
     } while ( item ); 
   }
@@ -440,16 +393,16 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
       if ( item ) {
         let retour: any = traverseMethod(item);
         collected.push(retour);
-        item = this.getNextItemById(item.data.id);
+        item = this.getNextItemById(item.id);
       } else { break ;}
-    } while ( item ); 
+    } while ( item );
     return collected;
   }
   // Boucle sur TOUTES les données en collectant une donnée
   map(
     traverseMethod: (item: T) => any
   ): any[] {
-    return this.mapSince(traverseMethod, this.firstItem.data.id);
+    return this.mapSince(traverseMethod, this.firstItem.id);
   }
 
   /**
@@ -467,16 +420,16 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
     do {
       if ( item ) {
         let retour: any = traverseMethod(item);
-        collected.set(item.data.id, retour);
-        item = this.getNextItemById(item.data.id);
+        collected.set(item.id, retour);
+        item = this.getNextItemById(item.id);
       } else { break ;}
-    } while ( item ); 
+    } while ( item );
     return collected;
   }
   // Boucle sur tous les éléments en récoltant une valeur qu'on met
   // dans une Map qui a en clé l'identifiant de l'item
   collect(traverseMethod: (item: T) => any): Map<string, any> {
-    return this.collectSince(traverseMethod, this.firstItem.data.id);
+    return this.collectSince(traverseMethod, this.firstItem.id);
   }
  
 
@@ -514,7 +467,7 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
           found = item;
           break ;
         }
-        item = this.getNextItemById(item.data.id);
+        item = this.getNextItemById(item.id);
       }
     } while ( item ); 
     return found ; 
@@ -553,7 +506,7 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
           collected_count ++ ;
           if ( options.count && collected_count === options.count) { break ;}
         }
-        item = this.getNextItemById(item.data.id);
+        item = this.getNextItemById(item.id);
       }
     } while ( item ); 
     return collected ; 
@@ -583,18 +536,18 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
   addInTable(item: T, arrayIndex:number, nextItem: T | undefined, prevItem: T | undefined) {
     const chained: AccedableItem = {
       type: 'accedable-item',
-      id: item.data.id,
+      id: item.id,
       obj: undefined,
       index: arrayIndex,
-      next: nextItem ? nextItem.data.id : undefined,
-      prev: prevItem ? prevItem.data.id : undefined,
+      next: nextItem ? nextItem.id : undefined,
+      prev: prevItem ? prevItem.id : undefined,
       visible: true,
       display: 'block',
       selected: false,
       modified: false
     };
      // console.log("[POPULATE ACCESSTABLE] ak = ", chained);
-    this.keysMap.set(item.data.id, chained);
+    this.keysMap.set(item.id, chained);
     this.arrayItems.push(item);
   }
 

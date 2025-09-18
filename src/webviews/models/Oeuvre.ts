@@ -2,7 +2,7 @@ import { UOeuvre } from '../../bothside/UOeuvre';
 import { RpcChannel } from '../../bothside/RpcChannel';
 import { createRpcClient } from '../RpcClient';
 import { ClientItem } from '../ClientItem';
-import { FullOeuvre, IOeuvre } from '../../extension/models/Oeuvre';
+import { OeuvreType, DBOeuvreType } from '../../bothside/types';
 import { StringNormalizer } from '../../bothside/StringUtils';
 import { VimLikeManager } from '../services/VimLikeManager';
 import { AnyElementType } from './AnyClientElement';
@@ -11,12 +11,26 @@ import { AccessTable } from '../services/AccessTable';
 import { OeuvreForm } from './OeuvreForm';
 import { ComplexRpc } from '../services/ComplexRpc';
 
-export class Oeuvre extends ClientItem<UOeuvre, FullOeuvre> {
-  declare public data: FullOeuvre;
+export class Oeuvre extends ClientItem<DBOeuvreType, OeuvreType> {
   readonly type = 'oeuvre';
   static readonly minName = 'oeuvre';
   static readonly klass = Oeuvre;
   static currentItem: Oeuvre;
+  
+  // Constructor and data access
+  constructor(public data: OeuvreType) {
+    super(data);
+  }
+  
+  // Getters pour accès direct aux propriétés courantes
+  get id(): string { return this.data.id; }
+  get titre_affiche(): string { return this.data.dbData.titre_affiche; }
+  get titre_original(): string | undefined { return this.data.dbData.titre_original; }
+  get titre_francais(): string | undefined { return this.data.dbData.titre_francais; }
+  get annee(): number | undefined { return this.data.dbData.annee; }
+  get auteurs(): string | undefined { return this.data.dbData.auteurs; }
+  get notes(): string | undefined { return this.data.dbData.notes; }
+  get resume(): string | undefined { return this.data.dbData.resume; }
 
   static setAccessTable(items: Oeuvre[]) {
     this._accessTable = new AccessTable<Oeuvre>(Oeuvre, items);
@@ -27,8 +41,8 @@ export class Oeuvre extends ClientItem<UOeuvre, FullOeuvre> {
   static getFirstVisibleAfter(refItem: Oeuvre): AnyElementType | undefined {
     const aT = this.accessTable ;
     return aT.findAfter(
-      (item: AnyElementType) => { return aT.getAccKeyById(item.data.id).visible === true; },
-      refItem.data.id
+      (item: AnyElementType) => { return aT.getAccKeyById(item.id).visible === true; },
+      refItem.id
     );
   }
   /**
@@ -60,24 +74,20 @@ export class Oeuvre extends ClientItem<UOeuvre, FullOeuvre> {
   }
   private static oeuvreExistsByTitle(title: string): boolean {
     title = StringNormalizer.rationalize(title);
-    return !!this.accessTable.find(item => item.data.titresLookUp.includes(title));
+    return !!this.accessTable.find(item => item.data.cachedData.titresLookUp.includes(title));
   }
 
   /**
    * 
    * Méthodes pour enregistrer les oeuvres
    */
-  public static saveItem(item: IOeuvre, compRpcId: string) {
+  public static saveItem(item: DBOeuvreType, compRpcId: string) {
     RpcOeuvre.notify('save-oeuvre', {CRId: compRpcId, item: item});
   }
 
-  public static onSavedOeuvre(params: {CRId: string, ok: boolean, errors: any, item: IOeuvre}){
+  public static onSavedOeuvre(params: {CRId: string, ok: boolean, errors: any, item: DBOeuvreType}){
     console.log("[CLIENT OEUVRE] Retour dans le panneau des oeuvres", params);
     ComplexRpc.resolveRequest(params.CRId, params);
-  }
-
-  constructor(data: FullOeuvre) {
-    super(data);
   }
 }
 
@@ -89,7 +99,7 @@ class OeuvrePanelClass extends PanelClient<Oeuvre, typeof Oeuvre> {
     const searchLower = StringNormalizer.toLower(searched);
     return this.filter(Oeuvre.accessTable, (oeuvre: AnyElementType) => {
       oeuvre = oeuvre as Oeuvre;
-      return oeuvre.data.titresLookUp.some((titre: string) => {
+      return oeuvre.data.cachedData.titresLookUp.some((titre: string) => {
         return titre.substring(0, searchLower.length) === searchLower;
       });
     }) as Oeuvre[];

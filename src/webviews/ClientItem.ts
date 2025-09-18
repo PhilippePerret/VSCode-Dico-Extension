@@ -1,16 +1,18 @@
 import { Entry } from "./models/Entry";
 import { Exemple } from "./models/Exemple";
 import { Oeuvre } from "./models/Oeuvre";
-import { FullEntry } from "../extension/models/Entry";
-import { FullOeuvre } from "../extension/models/Oeuvre";
-import { FullExemple } from "../extension/models/Exemple";
+import { EntryType, OeuvreType, ExempleType } from "../bothside/types";
 import { AccessTable } from "./services/AccessTable";
 import { AnyElementType } from "../extension/models/AnyElement";
 import { SelectionManager } from "./services/SelectionManager";
 import { PanelClient } from "./PanelClient";
 
-type Tel_u = FullEntry | FullOeuvre | FullExemple;
-type Tel = typeof Entry | typeof Oeuvre | typeof Exemple;
+type ItemDataType = EntryType | OeuvreType | ExempleType;
+type ItemClassType = typeof Entry | typeof Oeuvre | typeof Exemple;
+
+// Types legacy pour transition - à supprimer après migration complète
+type Tel_u = ItemDataType;
+type Tel = ItemClassType;
 
 
 /**
@@ -44,7 +46,11 @@ export abstract class ClientItem<Tel, Tel_u> {
   static selectFirstItem() { this.panel.select(this.accessTable.firstItem);}
 
   static editItem(itemId: string): void { this.panel.form.editItem(this.get(itemId)); }
-  static createNewItem(){ this.panel.form.editItem(new this.klass({id: ''})); }
+  static createNewItem(){ 
+    // Créer un objet DB vide pour nouveau item
+    const emptyDbData = { id: '' }; // Les autres champs seront initialisés dans le formulaire
+    this.panel.form.editItem(new this.klass(emptyDbData)); 
+  }
 
   toRow(){ return {};}
   /**

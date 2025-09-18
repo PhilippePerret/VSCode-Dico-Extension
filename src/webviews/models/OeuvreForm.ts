@@ -1,5 +1,5 @@
 import { StringNormalizer } from "../../bothside/StringUtils";
-import { IOeuvre } from "../../extension/models/Oeuvre";
+import { DBOeuvreType } from "../../bothside/types";
 import { ComplexRpc } from "../services/ComplexRpc";
 import { stopEvent } from "../services/DomUtils";
 import { FormManager, FormProperty } from "../services/FormManager";

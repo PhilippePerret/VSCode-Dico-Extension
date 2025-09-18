@@ -4,38 +4,41 @@ import { UniversalCacheManager } from '../../bothside/UniversalCacheManager';
 import { DBManager } from '../db/db_manager';
 import { App } from '../services/App';
 import { CanalExemple } from '../services/Rpc';
-import { Entry, FullEntry } from './Entry';
-import { Oeuvre, FullOeuvre } from './Oeuvre';
+import { DBExempleType, ExempleType, EntryType, OeuvreType } from '../../bothside/types';
+import { Entry } from './Entry';
+import { Oeuvre } from './Oeuvre';
 
-// La donnée persistante
-export interface IExemple {
-	id: string;
-	oeuvre_id: string;
-	indice: number;
-	entry_id: string;
-	content: string;
-	notes?: string;
-}
- 
-export interface FullExemple extends IExemple {
-	itemType: 'entry' | 'oeuvre' | 'exemple';
-	content_formated: string;
-  content_min: string;             // Version minuscules pour recherche
-  content_min_ra: string;          // Version rationalisée (sans accents)
-  oeuvre_titre: string;            // Titre de l'oeuvre
-	entree_formated: string;
-	titresLookUp: string[];			// pour le filtrage par titre d'oeuvre
-	entry4filter: string;				// version optimisée pour le filtrage
-}
+// Re-export types for external use
+export { DBExempleType, ExempleType } from '../../bothside/types';
 
-// La donnée telle qu'elle sera en cache
-export class Exemple extends UExemple {
+// Classe wrapper autour d'ExempleType
+export class Exemple {
 	public static panelId = 'exemples';
 
 	public static cacheDebug() { return this.cache; } // Pour les tests
-	protected static _cacheManagerInstance: UniversalCacheManager<IExemple, FullExemple> = new UniversalCacheManager();
+	protected static _cacheManagerInstance: UniversalCacheManager<DBExempleType, ExempleType> = new UniversalCacheManager();
   protected static get cache() { return this._cacheManagerInstance; };
 
+	// Constructor and data access
+	constructor(public data: ExempleType) {}
+	
+	// Getters pour accès direct aux propriétés courantes
+	get id(): string { return this.data.id; }
+	get oeuvre_id(): string { return this.data.dbData.oeuvre_id; }
+	get indice(): number { return this.data.dbData.indice; }
+	get entry_id(): string { return this.data.dbData.entry_id; }
+	get content(): string { return this.data.dbData.content; }
+	get notes(): string | undefined { return this.data.dbData.notes; }
+	
+	// Méthodes statiques héritées
+	static getDataSerialized() {
+		return this.cache.getDataSerialized();
+	}
+	
+	static completeItemForClientAfterSave(item: any) {
+		// Logique de complétion après sauvegarde
+		return item;
+	}
 
 	public static sortFonction(a: Exemple, b: Exemple): number {
     // First sort by oeuvre ID (oeuvre_id)
@@ -50,54 +53,64 @@ export class Exemple extends UExemple {
 	 * 
 	 * Sauvegarde de l'exemple 
 	 */
-	public static async saveExemple(params: {CRId: string, item: IExemple, ok: boolean, errors: any, [x: string]: any}){
+	public static async saveExemple(params: {CRId: string, item: DBExempleType, ok: boolean, errors: any, [x: string]: any}){
 		const dbManager = DBManager.getInstance(App._context);
 		params = await dbManager.saveItemIn('exemples', params.item, params, this);
 		CanalExemple.afterSaveItem(params);
 	}
 
 
-	constructor(data: IExemple) {
-		super(data);
-		this.id = `${this.oeuvre_id}-${this.indice}`;
-	}
 
-	public static cacheAllData(items: IExemple[]): void {
+	public static cacheAllData(items: DBExempleType[]): void {
 		this.cache.inject(items, this.prepareItemForCache.bind(this));
 	}
-	protected static prepareItemForCache(item: IExemple): FullExemple {
-		const preparedItem = item as FullExemple;
-		Object.assign(preparedItem, {
-			itemType: 'exemple',
-		});
-		return preparedItem;
+	protected static prepareItemForCache(item: DBExempleType): ExempleType {
+		return {
+			id: `${item.oeuvre_id}-${item.indice}`,  // ID composite at root level
+			dbData: item,
+			cachedData: {
+				itemType: 'exemple',
+				content_formated: '',
+				content_min: '',
+				content_min_ra: '',
+				oeuvre_titre: '',
+				entree_formated: '',
+				titresLookUp: [],
+				entry4filter: ''
+			},
+			domState: {
+				selected: false,
+				display: 'block'
+			}
+		};
 	}
 
 	public static async finalizeCachedItems(): Promise<void> {
 		await this.cache.traverse(this.finalizeCachedItem.bind(this));
 		App.incAndCheckReadyCounter();
 	}
-	protected static finalizeCachedItem(item: FullExemple): FullExemple {
-		const entry = Entry.get(item.entry_id);
-		const entree = entry.entree_min;
-		const oeuvre = Oeuvre.get(item.oeuvre_id);
-		const titre_oeuvre = oeuvre.titre_affiche;
+	protected static finalizeCachedItem(item: ExempleType): ExempleType {
+		const entry = Entry.get(item.dbData.entry_id);
+		const entree = entry.cachedData.entree_min;
+		const oeuvre = Oeuvre.get(item.dbData.oeuvre_id);
+		const titre_oeuvre = oeuvre.dbData.titre_affiche;
 		// On remplace 'TITRE' dans le texte de l'exemple
 		let content_formated: string;
-		if (item.content.match(/TITRE/) ){
-			content_formated = item.content.replace(/TITRE/g, titre_oeuvre);
+		if (item.dbData.content.match(/TITRE/) ){
+			content_formated = item.dbData.content.replace(/TITRE/g, titre_oeuvre);
 		} else {
-			content_formated = `dans ${titre_oeuvre}, ${item.content}`;
+			content_formated = `dans ${titre_oeuvre}, ${item.dbData.content}`;
 		} 
-		return Object.assign(item, {
-			oeuvre_titre: titre_oeuvre,
-			entree_formated: entree,
-			content_formated: content_formated,
-			content_min: StringNormalizer.toLower(content_formated),
-			content_min_ra: StringNormalizer.rationalize(content_formated),
-			titresLookUp: oeuvre.titresLookUp,
-			entry4filter: entry.entree_min 
-		});
+		
+		item.cachedData.oeuvre_titre = titre_oeuvre;
+		item.cachedData.entree_formated = entree;
+		item.cachedData.content_formated = content_formated;
+		item.cachedData.content_min = StringNormalizer.toLower(content_formated);
+		item.cachedData.content_min_ra = StringNormalizer.rationalize(content_formated);
+		item.cachedData.titresLookUp = oeuvre.cachedData.titresLookUp;
+		item.cachedData.entry4filter = entry.cachedData.entree_min;
+
+		return item;
 	}
 
 	/**
@@ -117,13 +130,14 @@ export class Exemple extends UExemple {
 	/**
 	 * Create from database row
 	 */
-	static fromRow(row: IExemple): Exemple | undefined {
+	static fromRow(row: DBExempleType): Exemple | undefined {
 		try {
-			return new Exemple(row);
+			// Il faut créer un ExempleType complet depuis les données DB
+			const exempleType = this.prepareItemForCache(row);
+			return new Exemple(exempleType);
 		} catch(erreur) {
 			console.error("# ERREUR avec l'EXEMPLE : %s", erreur, row);
 		}
-	
 	}
 
 	/**

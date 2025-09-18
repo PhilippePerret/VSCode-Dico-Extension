@@ -1,14 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Entry = void 0;
-const UEntry_1 = require("../../bothside/UEntry");
 const UniversalCacheManager_1 = require("../../bothside/UniversalCacheManager");
 const App_1 = require("../services/App");
 const StringUtils_1 = require("../../bothside/StringUtils");
-const Rpc_1 = require("../services/Rpc");
 const db_manager_1 = require("../db/db_manager");
-// Classe de la donnée mise en cache
-class Entry extends UEntry_1.UEntry {
+const Rpc_1 = require("../services/Rpc");
+// Classe wrapper autour d'EntryType
+class Entry {
+    data;
     static panelId = 'entries';
     static cacheDebug() { return this.cache; }
     static _cacheManagerInstance = new UniversalCacheManager_1.UniversalCacheManager();
@@ -22,6 +22,32 @@ class Entry extends UEntry_1.UEntry {
             caseFirst: 'lower'
         });
     }
+    // Constructor and data access
+    constructor(data) {
+        this.data = data;
+    }
+    // Getters pour accès direct aux propriétés courantes
+    get id() { return this.data.id; }
+    get entree() { return this.data.dbData.entree; }
+    get genre() { return this.data.dbData.genre; }
+    get categorie_id() { return this.data.dbData.categorie_id; }
+    get definition() { return this.data.dbData.definition; }
+    // Méthodes statiques héritées
+    static genre(id) {
+        const GENRES = {
+            m: "masculin",
+            f: "féminin",
+            n: "neutre"
+        };
+        return GENRES[id] || "inconnu";
+    }
+    static getDataSerialized() {
+        return this.cache.getDataSerialized();
+    }
+    static completeItemForClientAfterSave(item) {
+        // Logique de complétion après sauvegarde
+        return item;
+    }
     /**
      * Sauvegarde de l'entrée
      */
@@ -31,9 +57,6 @@ class Entry extends UEntry_1.UEntry {
         console.log("Params quand on revient dans Entry", params);
         // On retourne le résultat au panneau
         Rpc_1.CanalEntry.afterSaveItem(params);
-    }
-    constructor(data) {
-        super(data);
     }
     /**
      * Méthode pour mettre simplement les données en cache sans aucun
@@ -51,17 +74,24 @@ class Entry extends UEntry_1.UEntry {
     static prepareItemForCache(item) {
         const entreeNormalized = StringUtils_1.StringNormalizer.toLower(item.entree);
         const entreeRationalized = StringUtils_1.StringNormalizer.rationalize(item.entree);
-        // On finalise la donnée en cache
-        const pItem = Object.assign(item, {
+        const cachedData = {
             itemType: 'entry',
-            display: 'block',
-            selected: false,
             entree_min: entreeNormalized,
             entree_min_ra: entreeRationalized,
             genre_formated: this.genre(item.genre),
-            definition_formated: item.definition // pour le moment
-        });
-        return pItem;
+            definition_formated: item.definition
+        };
+        const domState = {
+            display: 'block',
+            selected: false
+        };
+        const entryType = {
+            id: item.id, // ID at root level for easy access
+            dbData: item,
+            cachedData: cachedData,
+            domState: domState
+        };
+        return entryType;
     }
     static async finalizeCachedItems() {
         await this.cache.traverse(this.finalizeCachedItem.bind(this));
@@ -70,12 +100,12 @@ class Entry extends UEntry_1.UEntry {
     static finalizeCachedItem(item) {
         // Pour trouver la catégorie humaine
         let cat;
-        if (item.categorie_id) {
-            cat = this.cache.get(item.categorie_id)?.entree_min;
+        if (item.dbData.categorie_id) {
+            const categoryEntry = this.cache.get(item.dbData.categorie_id);
+            cat = categoryEntry?.cachedData.entree_min;
         }
-        item = Object.assign(item, {
-            categorie_format: cat || '',
-        });
+        // Mettre à jour les données cachées
+        item.cachedData.categorie_formated = cat || '';
         return item;
     }
     /**
@@ -111,7 +141,9 @@ class Entry extends UEntry_1.UEntry {
      */
     static fromRow(row) {
         try {
-            return new Entry(row);
+            // Il faut créer un EntryType complet depuis les données DB
+            const entryType = this.prepareItemForCache(row);
+            return new Entry(entryType);
         }
         catch (erreur) {
             console.error("# ERREUR avec L'entrée : %s", erreur, row);

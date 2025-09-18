@@ -6,8 +6,8 @@ exports.UniversalCacheManager = void 0;
  * (ce module est donc chargé par les deux côté client/server)
  *
  * Toutes les méthodes partagées sont définies ici.
- * Voir les classes ExtensionCacheManager et WebviewCacheManager qui
- * servent à l'extension ou au webview.
+ * TDb = types DB (DBEntryType, DBOeuvreType, DBExempleType)
+ * TItem = types complets (EntryType, OeuvreType, ExempleType)
  */
 class UniversalCacheManager {
     _cache = new Map();

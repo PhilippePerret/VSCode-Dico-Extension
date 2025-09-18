@@ -1,10 +1,10 @@
 import { StringNormalizer } from '../../bothside/StringUtils';
 import { Constants } from '../../bothside/UConstants';
-import { IEntry } from '../../extension/models/Entry';
+import { DBEntryType } from '../../bothside/types';
 import { PanelClassEntry } from '../../extension/services/panels/panelClassEntry';
 import { ComplexRpc } from '../services/ComplexRpc';
 import { FormManager, FormProperty } from "../services/FormManager";
-import { AnyElementType, AnyFullElementType } from './AnyClientElement';
+import { AnyElementType } from './AnyClientElement';
 import { Entry, RpcEntry } from "./Entry";
 
 class FEntry extends Entry {

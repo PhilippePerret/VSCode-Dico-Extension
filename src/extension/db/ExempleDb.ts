@@ -1,5 +1,5 @@
 import { DatabaseService } from '../services/db/DatabaseService';
-import { Exemple, IExemple } from '../models/Exemple';
+import { Exemple, DBExempleType } from '../models/Exemple';
 
 export class ExempleDb {
     private dbService: DatabaseService;
