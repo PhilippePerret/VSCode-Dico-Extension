@@ -1,14 +1,8 @@
 # Todo list
 
 * J'EN SUIS À :
-  - [BUG] Apparemment une dépendance circulaire qui fait tout planter…
   - Procédure d'ajout ou d'actualisation d'une donnée dans accessTable + Panneau
-
-
-
- - [si update]
-  
-   
+  - [si update]
       - actualisation de l'affichage
       - actualisation de la donnée dans accessTable
     - [Si create]

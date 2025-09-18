@@ -1,5 +1,5 @@
 export class Constants {
-  static readonly ENTRIES_GENRES = {
+  static readonly ENTRIES_GENRES: Record<string, string> = {
     'nm': 'n.m.',
     'nmp': 'n.m.pl.',
     'nf': 'n.f.',
@@ -8,6 +8,9 @@ export class Constants {
     'adj': 'adj.',
     'adv': 'adv.'
   }; 
+  static genreNotExists(genre: string): boolean {
+    return !this.ENTRIES_GENRES[genre];
+  }
 
   /**
    * Les préfixes/marques qui introduisent des index dans les définitions

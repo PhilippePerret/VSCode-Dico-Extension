@@ -133,7 +133,7 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
     // Le genre doit être donné
     if ( item.genre === '') {
       errors.push("Le genre de l'entrée doit être donné");
-    } else if (item.changeset.has('genre') && Object.keys(Constants.ENTRIES_GENRES).includes(item.genre)) {
+    } else if (item.changeset.has('genre') && !Constants.ENTRIES_GENRES[item.genre]) {
       errors.push(`bizarrement, le genre "${item.genre} est inconnu…`);
     }
     
@@ -269,10 +269,10 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
       call: Entry.saveItem.bind(Entry, item as unknown as IEntry)
     });
     const res = await itemSaver.run() as {ok: boolean, errors: any, item: IEntry};
-    console.log("res dans onSave", res);
+    // console.log("res dans onSave", res);
     if (res.ok) {
-      console.log("Après l'enregistrement de l'item, je dois apprendre à updater l'item (plutôt en méthode générale ?)");
       Entry.panel.flash("Item enregistré avec succès.", 'notice');
+      Entry.accessTable.upsert(item);
     } else {
       console.error("ERREURS LORS DE L'ENREGISTREMENT DE L'ITEM", res.errors);
       Entry.panel.flash('Erreur (enregistrement de l’entrée (voir la console', 'error');

@@ -50,6 +50,7 @@
  *  .selectPrevItem(selection)
  *      Permet de sélectionner l'item suivant ou précédent.
  */
+import { FullExemple, IExemple } from "../../extension/models/Exemple";
 import { AnyElementClass, AnyElementType } from "../models/AnyClientElement";
 import { Entry } from "../models/Entry";
 import { Exemple } from "../models/Exemple";
@@ -222,6 +223,28 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
   getAccKeyByIndex(index: number): AccedableItem { return this.getAccKeyById(this.getByIndex(index).data.id) ; }
   getAccKeyByItem(item: Entry | Oeuvre | Exemple): AccedableItem { return this.getAccKeyById(item.data.id);}
 
+  /**
+   * Actualise ou Crée le nouvel item Item après son enregistrement.
+   * 
+   * Pour savoir si c'est une création ou une actualisation, il
+   * suffit de voir si l'identifiant est connu de la table (noter
+   * que pour les exemples, il n'y a pas d'identifiant autre que
+   * volatile).
+   * 
+   */
+  public upsert(item: AnyElementType): boolean {
+    const checkedId: string = (item as any)['id'] || `${(item as any as IExemple).oeuvre_id}-${(item as any as IExemple)['indice']}`;
+
+    if ( this.getById(checkedId)) {
+      // Update
+      console.log("C'est une actualisation de l'item ", checkedId);
+    } else {
+      // Create
+      console.log("C'est une création de l'item", item);
+    }
+
+    return true; // en cas de succès
+  }
   /**
    *  Retourne l'Item (Entry, Oeuvre, Exemple) de l'élément foo
    */

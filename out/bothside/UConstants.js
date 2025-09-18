@@ -11,6 +11,9 @@ class Constants {
         'adj': 'adj.',
         'adv': 'adv.'
     };
+    static genreNotExists(genre) {
+        return !this.ENTRIES_GENRES[genre];
+    }
     /**
      * Les préfixes/marques qui introduisent des index dans les définitions
      * principalement. Permet, par exemple dans le check des valeurs des

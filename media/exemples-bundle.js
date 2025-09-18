@@ -583,6 +583,24 @@
       return this.getAccKeyById(item.data.id);
     }
     /**
+     * Actualise ou Crée le nouvel item Item après son enregistrement.
+     * 
+     * Pour savoir si c'est une création ou une actualisation, il
+     * suffit de voir si l'identifiant est connu de la table (noter
+     * que pour les exemples, il n'y a pas d'identifiant autre que
+     * volatile).
+     * 
+     */
+    upsert(item) {
+      const checkedId = item["id"] || `${item.oeuvre_id}-${item["indice"]}`;
+      if (this.getById(checkedId)) {
+        console.log("C'est une actualisation de l'item ", checkedId);
+      } else {
+        console.log("C'est une cr\xE9ation de l'item", item);
+      }
+      return true;
+    }
+    /**
      *  Retourne l'Item (Entry, Oeuvre, Exemple) de l'élément foo
      */
     getNextItem(foo) {
