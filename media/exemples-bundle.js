@@ -434,10 +434,6 @@
 
   // src/webviews/services/AccessTable.ts
   var AccessTable = class {
-    constructor(klass, items) {
-      this.klass = klass;
-      this.populateInTable(items);
-    }
     // Table des pointeurs de données
     keysMap = /* @__PURE__ */ new Map();
     // Table de toutes les données des items, dans un ordre
@@ -445,6 +441,9 @@
     arrayItems = [];
     // Table de la table (pour vérification)
     _size;
+    constructor(items) {
+      this.populateInTable(items);
+    }
     // après un ajout ou une suppression, par exemple
     reset() {
       this._size = null;
@@ -1751,7 +1750,7 @@
       return this.data.dbData.notes;
     }
     static setAccessTable(items) {
-      this._accessTable = new AccessTable(_Exemple, items);
+      this._accessTable = new AccessTable(items);
     }
     static doExemplesExist(exemples) {
       const resultat = { known: [], unknown: [] };
@@ -1767,7 +1766,7 @@
       return resultat;
     }
     static exempleExists(oeuvreId, exIndice) {
-      return !!this.accessTable.existsById(`${oeuvreId}-${exIndice}`);
+      return !!this.accessTable.exists(`${oeuvreId}-${exIndice}`);
     }
   };
   var ExemplePanelClass = class extends PanelClient {
@@ -1820,7 +1819,7 @@
     afterDisplayItems(accessTable) {
       let currentOeuvreId = "";
       accessTable.each((item) => {
-        const ditem = item.data;
+        const ditem = item;
         if (ditem.dbData.oeuvre_id === currentOeuvreId) {
           return;
         }

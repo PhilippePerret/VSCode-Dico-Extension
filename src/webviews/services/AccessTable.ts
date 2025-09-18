@@ -2,8 +2,7 @@
  * Grande classe qui permet de parcourir très vite les éléments en
  * sachant s'ils sont visibles, sélectionnés, etc.
  */
-import { EntryType, OeuvreType, ExempleType, DBExempleType, AnyItemType } from "../../bothside/types";
-import { AnyElementClass, AnyElementType } from "../models/AnyClientElement";
+import { EntryType, OeuvreType, ExempleType, AnyItemType } from "../../bothside/types";
 import { PanelClient } from "../PanelClient";
 
 /**
@@ -33,7 +32,6 @@ export class AccessTable<T extends EntryType | OeuvreType | ExempleType> {
   _size!: number | null ;
 
   constructor(
-    private klass: AnyElementClass, 
     items: T[]
   ) {
     this.populateInTable(items);

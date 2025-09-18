@@ -4,7 +4,6 @@ import { createRpcClient } from '../RpcClient';
 import { ClientItem } from '../ClientItem';
 import { OeuvreType, DBOeuvreType } from '../../bothside/types';
 import { StringNormalizer } from '../../bothside/StringUtils';
-import { VimLikeManager } from '../services/VimLikeManager';
 import { AnyElementType } from './AnyClientElement';
 import { PanelClient } from '../PanelClient';
 import { AccessTable } from '../services/AccessTable';
@@ -32,16 +31,15 @@ export class Oeuvre extends ClientItem<DBOeuvreType, OeuvreType> {
   get notes(): string | undefined { return this.data.dbData.notes; }
   get resume(): string | undefined { return this.data.dbData.resume; }
 
-  static setAccessTable(items: Oeuvre[]) {
-    this._accessTable = new AccessTable<Oeuvre>(Oeuvre, items);
+  static setAccessTable(items: OeuvreType[]) {
+    this._accessTable = new AccessTable<OeuvreType>(items);
   }
-
 
   // retourn le premier item visible après l'item +item+
   static getFirstVisibleAfter(refItem: Oeuvre): AnyElementType | undefined {
     const aT = this.accessTable ;
     return aT.findAfter(
-      (item: AnyElementType) => { return aT.getAccKeyById(item.id).visible === true; },
+      (item: AnyElementType) => { return aT.getAccKey(item.id).visible === true; },
       refItem.id
     );
   }
@@ -53,7 +51,7 @@ export class Oeuvre extends ClientItem<DBOeuvreType, OeuvreType> {
    * Méthode qui checke l'existence de l'identifiant
    */
   public static doIdExist(id: string): boolean {
-    return this.accessTable.existsById(id);
+    return this.accessTable.exists(id);
   }
   /**
    * Méthode qui checke l'existence des oeuvres
@@ -64,7 +62,7 @@ export class Oeuvre extends ClientItem<DBOeuvreType, OeuvreType> {
   public static doOeuvresExist(oeuvres: string[]): {known: string[], unknown: string[]} {
     const retour: {known: string[], unknown: string[]} = {known: [], unknown: []};
     oeuvres.forEach(oeuvre => {
-      if (this.accessTable.existsById(oeuvre) || this.oeuvreExistsByTitle(oeuvre) ) {
+      if (this.accessTable.exists(oeuvre) || this.oeuvreExistsByTitle(oeuvre) ) {
         retour.known.push(oeuvre);
       } else {
         retour.unknown.push(oeuvre);

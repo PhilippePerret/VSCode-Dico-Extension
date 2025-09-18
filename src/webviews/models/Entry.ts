@@ -10,8 +10,7 @@
  *     pour enregistrer des informations ou obtenir des données des autres
  *     panneaux.
  */
-import { UEntry } from '../../bothside/UEntry';
-import { DBEntryType, EntryType, CachedEntryType, DomStateType } from '../../bothside/types';
+import { DBEntryType, EntryType, DomStateType } from '../../bothside/types';
 import { StringNormalizer } from '../../bothside/StringUtils';
 import { ClientItem } from '../ClientItem';
 import { createRpcClient } from '../RpcClient';
@@ -20,10 +19,6 @@ import { AccessTable } from '../services/AccessTable';
 import { PanelClient } from '../PanelClient';
 import { EntryForm } from './EntryForm';
 import { ComplexRpc } from '../services/ComplexRpc';
-
-// Types legacy pour transition - à supprimer après migration complète
-export type FullEntry = EntryType;
-export type IEntry = DBEntryType;
 
 
 export class Entry extends ClientItem<DBEntryType, EntryType> {
@@ -44,15 +39,15 @@ export class Entry extends ClientItem<DBEntryType, EntryType> {
   get categorie_id(): string | undefined { return this.data.dbData.categorie_id; }
   get definition(): string { return this.data.dbData.definition; }
 
-  static setAccessTable(items: Entry[]) {
-    this._accessTable = new AccessTable<Entry>(Entry, items);
+  static setAccessTable(items: EntryType[]) {
+    this._accessTable = new AccessTable<EntryType>(items);
   }
 
   // retourn le premier item visible après l'item +item+
   static getFirstVisibleAfter(refItem: Entry): AnyElementType | undefined {
     const aT = this.accessTable ;
     return aT.findAfter(
-      (item: AnyElementType) => { return aT.getAccKeyById(item.data.id).visible === true; },
+      (item: AnyElementType) => { return aT.getAccKey(item.data.id).visible === true; },
       refItem.data.id
     );
   }
@@ -67,7 +62,7 @@ export class Entry extends ClientItem<DBEntryType, EntryType> {
   }
   // @return true si l'identifiant +id+ existe déjà
   public static doesIdExist(id: string): boolean {
-    if (this.accessTable.existsById(id)) { return true; }
+    if (this.accessTable.exists(id)) { return true; }
     return false;
   }
 

@@ -966,10 +966,6 @@
 
   // src/webviews/services/AccessTable.ts
   var AccessTable = class {
-    constructor(klass, items) {
-      this.klass = klass;
-      this.populateInTable(items);
-    }
     // Table des pointeurs de données
     keysMap = /* @__PURE__ */ new Map();
     // Table de toutes les données des items, dans un ordre
@@ -977,6 +973,9 @@
     arrayItems = [];
     // Table de la table (pour vérification)
     _size;
+    constructor(items) {
+      this.populateInTable(items);
+    }
     // après un ajout ou une suppression, par exemple
     reset() {
       this._size = null;
@@ -2517,14 +2516,14 @@
       return this.data.dbData.resume;
     }
     static setAccessTable(items) {
-      this._accessTable = new AccessTable(_Oeuvre, items);
+      this._accessTable = new AccessTable(items);
     }
     // retourn le premier item visible après l'item +item+
     static getFirstVisibleAfter(refItem) {
       const aT = this.accessTable;
       return aT.findAfter(
         (item) => {
-          return aT.getAccKeyById(item.id).visible === true;
+          return aT.getAccKey(item.id).visible === true;
         },
         refItem.id
       );
@@ -2536,7 +2535,7 @@
      * Méthode qui checke l'existence de l'identifiant
      */
     static doIdExist(id) {
-      return this.accessTable.existsById(id);
+      return this.accessTable.exists(id);
     }
     /**
      * Méthode qui checke l'existence des oeuvres
@@ -2547,7 +2546,7 @@
     static doOeuvresExist(oeuvres) {
       const retour = { known: [], unknown: [] };
       oeuvres.forEach((oeuvre) => {
-        if (this.accessTable.existsById(oeuvre) || this.oeuvreExistsByTitle(oeuvre)) {
+        if (this.accessTable.exists(oeuvre) || this.oeuvreExistsByTitle(oeuvre)) {
           retour.known.push(oeuvre);
         } else {
           retour.unknown.push(oeuvre);

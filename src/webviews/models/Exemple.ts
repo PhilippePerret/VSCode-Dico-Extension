@@ -29,8 +29,9 @@ export class Exemple extends ClientItem<DBExempleType, ExempleType> {
   get entry_id(): string { return this.data.dbData.entry_id; }
   get content(): string { return this.data.dbData.content; }
   get notes(): string | undefined { return this.data.dbData.notes; }
-  static setAccessTable(items: Exemple[]) {
-    this._accessTable = new AccessTable<Exemple>(Exemple, items);
+
+  static setAccessTable(items: ExempleType[]) {
+    this._accessTable = new AccessTable<ExempleType>(items);
   }
 
   static doExemplesExist(exemples: string[][]): {known: string[], unknown: string[]} {
@@ -47,7 +48,7 @@ export class Exemple extends ClientItem<DBExempleType, ExempleType> {
     return resultat;
   }
   static exempleExists(oeuvreId: string, exIndice: number) {
-    return !!this.accessTable.existsById(`${oeuvreId}-${exIndice}`);
+    return !!this.accessTable.exists(`${oeuvreId}-${exIndice}`);
   }
 
 
@@ -118,13 +119,13 @@ class ExemplePanelClass extends PanelClient<Exemple, typeof Exemple> {
    * Appelée après l'affichage des exemples, principalement pour
    * afficher les titres des oeuvres dans le DOM.
    */
-  protected afterDisplayItems(accessTable: AccessTable<Exemple>){
+  protected afterDisplayItems(accessTable: AccessTable<ExempleType>){
     // Principe : on boucle sur tous les éléments (qui sont forcément 
     // classés par oeuvre) et dès qu'on passe à une autre oeuvre on
     // crée un nouveau titre.
     let currentOeuvreId: string = ''; // le titre couramment affiché
-    accessTable.each((item: Exemple): undefined => {
-      const ditem = item.data;
+    accessTable.each((item: ExempleType): undefined => {
+      const ditem = item;
       if ( ditem.dbData.oeuvre_id === currentOeuvreId ) { return ; }
       // --- NOUVEAU TITRE ---
       currentOeuvreId = ditem.dbData.oeuvre_id;

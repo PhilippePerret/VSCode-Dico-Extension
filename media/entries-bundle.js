@@ -163,10 +163,6 @@
 
   // src/webviews/services/AccessTable.ts
   var AccessTable = class {
-    constructor(klass, items) {
-      this.klass = klass;
-      this.populateInTable(items);
-    }
     // Table des pointeurs de données
     keysMap = /* @__PURE__ */ new Map();
     // Table de toutes les données des items, dans un ordre
@@ -174,6 +170,9 @@
     arrayItems = [];
     // Table de la table (pour vérification)
     _size;
+    constructor(items) {
+      this.populateInTable(items);
+    }
     // après un ajout ou une suppression, par exemple
     reset() {
       this._size = null;
@@ -2029,14 +2028,14 @@
       return this.data.dbData.definition;
     }
     static setAccessTable(items) {
-      this._accessTable = new AccessTable(_Entry, items);
+      this._accessTable = new AccessTable(items);
     }
     // retourn le premier item visible après l'item +item+
     static getFirstVisibleAfter(refItem) {
       const aT = this.accessTable;
       return aT.findAfter(
         (item) => {
-          return aT.getAccKeyById(item.data.id).visible === true;
+          return aT.getAccKey(item.data.id).visible === true;
         },
         refItem.data.id
       );
@@ -2051,7 +2050,7 @@
     }
     // @return true si l'identifiant +id+ existe déjà
     static doesIdExist(id) {
-      if (this.accessTable.existsById(id)) {
+      if (this.accessTable.exists(id)) {
         return true;
       }
       return false;
