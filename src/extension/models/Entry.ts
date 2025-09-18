@@ -48,9 +48,10 @@ export class Entry extends UEntry {
 	/**
 	 * Sauvegarde de l'entrée
 	 */
-	public  static async saveItem(params: {CRId: string, item: IEntry, ok: boolean, errors: any, [x: string]: any}){
+	public static async saveItem(params: {CRId: string, item: IEntry, ok: boolean, errors: any, [x: string]: any}){
 		const dbManager = DBManager.getInstance(App._context);
-		await dbManager.saveItemIn('entrees', params.item, params);
+		params = await dbManager.saveItemIn('entrees', params.item, params, this);
+		console.log("Params quand on revient dans Entry", params);
 		// On retourne le résultat au panneau
 		CanalEntry.afterSaveItem(params);
 	}
@@ -72,7 +73,7 @@ export class Entry extends UEntry {
 	 * ne procède qu'aux préparations qui ne font pas appel aux autres
 	 * données (voir la méthode finalizeCachedData pour ça).
 	 */
-	private static prepareItemForCache(item: IEntry): FullEntry {
+	protected static prepareItemForCache(item: IEntry): FullEntry {
     const entreeNormalized    = StringNormalizer.toLower(item.entree);
     const entreeRationalized  = StringNormalizer.rationalize(item.entree);
 	// On finalise la donnée en cache
@@ -92,7 +93,7 @@ export class Entry extends UEntry {
 		await this.cache.traverse(this.finalizeCachedItem.bind(this));
 		App.incAndCheckReadyCounter();
 	}
-	private static finalizeCachedItem(item: FullEntry): FullEntry {
+	protected static finalizeCachedItem(item: FullEntry): FullEntry {
 		// Pour trouver la catégorie humaine
 		let cat:string | undefined ;
 		if ( item.categorie_id ) {

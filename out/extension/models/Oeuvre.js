@@ -31,8 +31,8 @@ class Oeuvre extends UOeuvre_1.UOeuvre {
      */
     static async saveOeuvre(params) {
         const dbManager = db_manager_1.DBManager.getInstance(App_1.App._context);
-        await dbManager.saveItemIn('oeuvres', params.item, params);
-        Rpc_1.CanalOeuvre.afterSaveOeuvre(params);
+        params = await dbManager.saveItemIn('oeuvres', params.item, params, this);
+        Rpc_1.CanalOeuvre.afterSaveItem(params);
     }
     constructor(data) {
         super(data);

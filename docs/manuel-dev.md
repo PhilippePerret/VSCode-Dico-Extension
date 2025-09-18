@@ -10,6 +10,14 @@ Les trois consoles en bas de chaque panneau permet d’évaluer du code dans le 
 
 On peut définir n’importe quelle fonction dans la class `App` (celle côté webviews) et l’appeler en citant simplement son nom (si elle n’a pas besoin d’arguments) dans la console. On peut par exemple taper simplement `exportAllData` dans la console pour appeler l’export des données.
 
+## Touches et raccourcis clavier
+
+L’interface est pensée pour être entièrement contrôlée par des touches clavier (zéro mouse).
+
+La plupart des choses sont gérées dans le module `src/webviews/services/VimLikeManager.ts`.
+
+Ce module contient notamment une fonction `universelKeyboardCapture` qui est toujours appelée en premier et permet, notamment, de gérer les `flashAction` qui interrompent tout autre touche que les touches attendues (typiquement, les boites de dialogue « Confirmez-vous cette opération | Non | OUI ») ou permettant de gérer les `select` avec les flèches.
+
 ## Communication RPC inter-panneau
 
 Les trois panneaux sont isolés. Pour communiquer de l'un à l'autre, on doit utiliser leur canal RPC en passant par l'extension.

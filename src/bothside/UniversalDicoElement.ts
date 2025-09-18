@@ -1,4 +1,4 @@
-import { AnyElementClass } from "../extension/models/AnyElement";
+import { AnyElementClass, AnyElementType } from "../extension/models/AnyElement";
 import { UniversalCacheManager } from "./UniversalCacheManager";
 import { TypeUnionElement } from "./UnversalConstants";
 
@@ -25,7 +25,15 @@ export interface CachedItem {
  */
 export abstract class UniversalDicoElement {
   [key: string]: any; // autorise `this[k]' dans le constructeur
-protected static cache: UniversalCacheManager<any, any>; 
+  protected static cache: UniversalCacheManager<any, any>; 
+  protected static prepareItemForCache(item: any): any {};
+  protected static finalizeCachedItem(item: any): any {};
+
+  public static completeItemForClientAfterSave(item: any){
+    let pItem = this.prepareItemForCache(item);
+    pItem = this.finalizeCachedItem(pItem);
+    return pItem;
+  }
 
   // Le constructeur reçoit toujours un objet contenant
   // Les données. Dans un cas (extension) ce sont les données

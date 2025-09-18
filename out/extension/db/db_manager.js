@@ -64,6 +64,7 @@ class DBManager {
     async initialize() {
         await this.dbService.initialize();
     }
+    // Pour faire un backup de la base (pour le moment, à chaque changement)
     async createBackup() {
         const context = App_1.App._context;
         const backupDir = path_1.default.join(App_1.App.supportFolder, 'backups');
@@ -85,12 +86,13 @@ class DBManager {
      * @param item Les données de l'item (entrée, exemple, oeuvre)
      * @param params Les paramètres de suivi
      */
-    async saveItemIn(table, item, params) {
+    async saveItemIn(table, item, params, classItem) {
         params.errors = []; // pour mettre les éventuels erreurs
         params.ok = true; // soyons optimistes
         try {
             await this.createBackup();
             const exists = await this.checkIfExists(item.id, table);
+            Object.assign(params, { isNewItem: !exists }); // pour indiquer que c'est une création
             // Prendre le nombre d'entrées et déterminer le nouveau nombre attendu
             const countBefore = await this.getRowCountIn(table);
             await this.doSave(table, item, exists);
@@ -100,11 +102,19 @@ class DBManager {
             if (countAfter !== (countBefore + diffCount)) {
                 throw new SaveError(`Après enregistrement de l'item ${item.id}, le nombre de données dans ${table} ne correspond pas au résultat attendu.`, 3);
             }
+            // Si c'est un nouvel élément, il faut le compléter de toutes
+            // les propriétés utiles à l'affichage et la gestion rapide
+            // côté client
+            if (params.isNewItem) {
+                params.item = classItem.completeItemForClientAfterSave(params.item);
+            }
+            console.log("params en fin de saveItemin", params.item);
         }
         catch (error) {
             params.ok = false;
             params.errors.push(error.message);
         }
+        return params;
     }
     // Procède véritablement à l'enregistrement
     async doSave(table, data, exists) {

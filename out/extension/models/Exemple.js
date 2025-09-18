@@ -4,7 +4,9 @@ exports.Exemple = void 0;
 const StringUtils_1 = require("../../bothside/StringUtils");
 const UExemple_1 = require("../../bothside/UExemple");
 const UniversalCacheManager_1 = require("../../bothside/UniversalCacheManager");
+const db_manager_1 = require("../db/db_manager");
 const App_1 = require("../services/App");
+const Rpc_1 = require("../services/Rpc");
 const Entry_1 = require("./Entry");
 const Oeuvre_1 = require("./Oeuvre");
 // La donnée telle qu'elle sera en cache
@@ -21,6 +23,16 @@ class Exemple extends UExemple_1.UExemple {
             return oeuvreComparison;
         }
         return a.indice - b.indice;
+    }
+    /**
+     * @api
+     *
+     * Sauvegarde de l'exemple
+     */
+    static async saveExemple(params) {
+        const dbManager = db_manager_1.DBManager.getInstance(App_1.App._context);
+        params = await dbManager.saveItemIn('exemples', params.item, params, this);
+        Rpc_1.CanalExemple.afterSaveItem(params);
     }
     constructor(data) {
         super(data);

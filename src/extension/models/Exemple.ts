@@ -1,7 +1,9 @@
 import { StringNormalizer } from '../../bothside/StringUtils';
 import { UExemple } from '../../bothside/UExemple';
 import { UniversalCacheManager } from '../../bothside/UniversalCacheManager';
+import { DBManager } from '../db/db_manager';
 import { App } from '../services/App';
+import { CanalExemple } from '../services/Rpc';
 import { Entry, FullEntry } from './Entry';
 import { Oeuvre, FullOeuvre } from './Oeuvre';
 
@@ -42,6 +44,17 @@ export class Exemple extends UExemple {
     }
     return a.indice - b.indice;
 	}
+	/**
+	 * @api
+	 * 
+	 * Sauvegarde de l'exemple 
+	 */
+	public static async saveExemple(params: {CRId: string, item: IExemple, ok: boolean, errors: any, [x: string]: any}){
+		const dbManager = DBManager.getInstance(App._context);
+		params = await dbManager.saveItemIn('exemples', params.item, params, this);
+		CanalExemple.afterSaveItem(params);
+	}
+
 
 	constructor(data: IExemple) {
 		super(data);
@@ -51,7 +64,7 @@ export class Exemple extends UExemple {
 	public static cacheAllData(items: IExemple[]): void {
 		this.cache.inject(items, this.prepareItemForCache.bind(this));
 	}
-	private static prepareItemForCache(item: IExemple): FullExemple {
+	protected static prepareItemForCache(item: IExemple): FullExemple {
 		const preparedItem = item as FullExemple;
 		return preparedItem;
 	}
@@ -60,7 +73,7 @@ export class Exemple extends UExemple {
 		await this.cache.traverse(this.finalizeCachedItem.bind(this));
 		App.incAndCheckReadyCounter();
 	}
-	private static finalizeCachedItem(item: FullExemple): FullExemple {
+	protected static finalizeCachedItem(item: FullExemple): FullExemple {
 		const entry = Entry.get(item.entry_id);
 		const entree = entry.entree_min;
 		const oeuvre = Oeuvre.get(item.oeuvre_id);

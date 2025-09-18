@@ -10,6 +10,14 @@ abstract class Rpc {
   protected rpc: any;
   protected abstract panelName: string;
 
+  // Appelée après l'enregistrement de l'item, pour confirmation ou 
+  // signalement d'une erreur
+  afterSaveItem(params: {CRId: string, ok: boolean, errors: any, item: any}){
+    // console.log("[ENTENSIONS] Remontée au panneau après sauvegarde Item", params);
+    this.rpc.notify('after-saved-item', params);
+  }
+
+
   // C'est ici qu'on détermine le panneau, quand il est fait
   initialize(panel: vscode.WebviewPanel) {
     this.panel = panel;
@@ -60,12 +68,12 @@ class RpcEntry extends Rpc {
     this.rpc.notify('check-exemples-resultat', params);
   }
 
-  // Appelée après l'enregistrement de l'item, pour confirmation ou 
-  // signalement d'une erreur
-  afterSaveItem(params: {CRId: string, ok: boolean, errors: any, item: any}){
-    // console.log("[ENTENSIONS] Remontée au panneau après sauvegarde Item", params);
-    this.rpc.notify('after-saved-item', params);
-  }
+  // // Appelée après l'enregistrement de l'item, pour confirmation ou 
+  // // signalement d'une erreur
+  // afterSaveItem(params: {CRId: string, ok: boolean, errors: any, item: any}){
+  //   // console.log("[ENTENSIONS] Remontée au panneau après sauvegarde Item", params);
+  //   this.rpc.notify('after-saved-item', params);
+  // }
 
 
   initialize(panel: vscode.WebviewPanel): void {
@@ -111,11 +119,10 @@ class RpcOeuvre extends Rpc {
     this.rpc.notify('display-oeuvre', param);
   }
 
-  afterSaveOeuvre(params: {CRId: string, ok: boolean, errors: any, item: any}){
-    // console.log("[EXTENSION RpcOeuvre] Remontée au panneau après save", params);
-    this.rpc.notify('after-save-oeuvre', params);
-  }
-
+  // afterSaveOeuvre(params: {CRId: string, ok: boolean, errors: any, item: any}){
+  //   // console.log("[EXTENSION RpcOeuvre] Remontée au panneau après save", params);
+  //   this.rpc.notify('after-save-oeuvre', params);
+  // }
 
   // Définition des récepteurs on
   initialize(panel: vscode.WebviewPanel): void {
@@ -147,6 +154,14 @@ class RpcExemple extends Rpc {
   checkExemples(params: {CRId: string, exemples: string[][]}) {
     this.rpc.notify('check-exemples', params);
   }
+
+  // Appelée après l'enregistrement de l'item, pour confirmation ou 
+  // signalement d'une erreur
+  afterSaveItem(params: {CRId: string, ok: boolean, errors: any, item: any}){
+    // console.log("[ENTENSIONS] Remontée au panneau après sauvegarde Item", params);
+    this.rpc.notify('after-saved-item', params);
+  }
+
 
   initialize(panel: vscode.WebviewPanel) {
     super.initialize(panel);

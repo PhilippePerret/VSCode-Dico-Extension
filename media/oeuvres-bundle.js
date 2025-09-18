@@ -503,6 +503,20 @@
       if (ev.key === "?") {
         this.panel.activateContextualHelp();
         return stopEvent(ev);
+      } else if (ev.target.tagName.toLowerCase() === "select") {
+        console.log("Sur select", ev.key);
+        const select = ev.target;
+        switch (ev.key) {
+          case "j":
+          case "ArrowDown":
+            select.selectedIndex += 1;
+            break;
+          case "k":
+          case "ArrowUp":
+            select.selectedIndex -= 1;
+            break;
+        }
+        return true;
       } else if (this.keyboardBypass) {
         if (this.keyboardBypass.has(ev.key)) {
           const methodBypass = this.keyboardBypass.get(ev.key);
@@ -1124,8 +1138,9 @@
      * 
      */
     upsert(item) {
+      console.log("Item re\xE7u par upsert", item);
       const checkedId = item["id"] || `${item.oeuvre_id}-${item["indice"]}`;
-      if (this.getById(checkedId)) {
+      if (this.existsById(checkedId)) {
         console.log("C'est une actualisation de l'item ", checkedId);
       } else {
         console.log("C'est une cr\xE9ation de l'item", item);
@@ -1665,6 +1680,10 @@
             break;
           case "textarea":
             dprop.field.value = "";
+            break;
+          case "select":
+            dprop.field.selectedIndex = 0;
+            break;
           default:
             dprop.field.value = dprop.default || "";
         }
@@ -1732,7 +1751,6 @@
       if (!dproperty) {
         return;
       }
-      console.log("[focusField] Focus dans le champ %i (%s)", indice, dproperty.propName, dproperty.field);
       dproperty.field.focus();
     }
     // S'il y a un champ d'identifiant, cette fonction permet de le déloquer

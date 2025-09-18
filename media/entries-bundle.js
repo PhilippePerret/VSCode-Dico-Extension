@@ -335,8 +335,9 @@
      * 
      */
     upsert(item) {
+      console.log("Item re\xE7u par upsert", item);
       const checkedId = item["id"] || `${item.oeuvre_id}-${item["indice"]}`;
-      if (this.getById(checkedId)) {
+      if (this.existsById(checkedId)) {
         console.log("C'est une actualisation de l'item ", checkedId);
       } else {
         console.log("C'est une cr\xE9ation de l'item", item);
@@ -968,6 +969,20 @@
       if (ev.key === "?") {
         this.panel.activateContextualHelp();
         return stopEvent(ev);
+      } else if (ev.target.tagName.toLowerCase() === "select") {
+        console.log("Sur select", ev.key);
+        const select = ev.target;
+        switch (ev.key) {
+          case "j":
+          case "ArrowDown":
+            select.selectedIndex += 1;
+            break;
+          case "k":
+          case "ArrowUp":
+            select.selectedIndex -= 1;
+            break;
+        }
+        return true;
       } else if (this.keyboardBypass) {
         if (this.keyboardBypass.has(ev.key)) {
           const methodBypass = this.keyboardBypass.get(ev.key);
@@ -1695,6 +1710,10 @@
             break;
           case "textarea":
             dprop.field.value = "";
+            break;
+          case "select":
+            dprop.field.selectedIndex = 0;
+            break;
           default:
             dprop.field.value = dprop.default || "";
         }
@@ -1762,7 +1781,6 @@
       if (!dproperty) {
         return;
       }
-      console.log("[focusField] Focus dans le champ %i (%s)", indice, dproperty.propName, dproperty.field);
       dproperty.field.focus();
     }
     // S'il y a un champ d'identifiant, cette fonction permet de le déloquer
@@ -1876,10 +1894,14 @@
     onChangeEntree() {
       const itemIsNew = this.getValueOf("id") === "";
       if (itemIsNew) {
-        console.log("C'est un nouvel item, il faut calculer son ID d'apr\xE8s son entr\xE9e.");
+        let proposId = this.getValueOf("entree");
+        if (proposId !== "") {
+          proposId = StringNormalizer.rationalize(proposId);
+          this.setValueOf("id", proposId);
+        }
       }
     }
-    // À faire après l'édition d'une Entrée
+    // À faire juste après la mise en édition d'une Entrée
     afterEdit() {
       const id = this.field("id").value;
       const isNewItem = id === "";
@@ -1950,7 +1972,7 @@
       }
       if (item.genre === "") {
         errors.push("Le genre de l'entr\xE9e doit \xEAtre donn\xE9");
-      } else if (item.changeset.has("genre") && !Constants.ENTRIES_GENRES[item.genre]) {
+      } else if (item.changeset.has("genre") && Constants.genreNotExists(item.genre)) {
         errors.push(`bizarrement, le genre "${item.genre} est inconnu\u2026`);
       }
       if (item.categorie_id !== "" && item.changeset.has("categorie_id")) {
@@ -2062,9 +2084,10 @@
         call: Entry.saveItem.bind(Entry, item)
       });
       const res = await itemSaver.run();
+      console.log("res dans onSave", res);
       if (res.ok) {
         Entry.panel.flash("Item enregistr\xE9 avec succ\xE8s.", "notice");
-        Entry.accessTable.upsert(item);
+        Entry.accessTable.upsert(res.item);
       } else {
         console.error("ERREURS LORS DE L'ENREGISTREMENT DE L'ITEM", res.errors);
         Entry.panel.flash("Erreur (enregistrement de l\u2019entr\xE9e (voir la console", "error");

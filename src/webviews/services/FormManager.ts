@@ -247,6 +247,10 @@ export abstract class FormManager<C, T extends ConcreteElement> {
           break;
         case 'textarea':
           dprop.field.value = '';
+          break;
+        case 'select':
+          dprop.field.selectedIndex = 0;
+          break;
         default: 
           dprop.field.value = dprop.default || '';
       }
@@ -331,7 +335,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   focusField(indice: number) {
     const dproperty = this.properties[indice - 1];
     if (!dproperty) { return; }
-    console.log("[focusField] Focus dans le champ %i (%s)", indice, dproperty.propName, dproperty.field);
+    // console.log("[focusField] Focus dans le champ %i (%s)", indice, dproperty.propName, dproperty.field);
     dproperty.field.focus();
   }
 

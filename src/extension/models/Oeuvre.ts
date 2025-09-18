@@ -53,13 +53,9 @@ export class Oeuvre extends UOeuvre {
 	 */
 	public static async saveOeuvre(params: {CRId: string, item: IOeuvre, ok: boolean, errors: any, [x: string]: any}){
 		const dbManager = DBManager.getInstance(App._context);
-		await dbManager.saveItemIn('oeuvres', params.item, params);
-		CanalOeuvre.afterSaveOeuvre(params);
+		params = await dbManager.saveItemIn('oeuvres', params.item, params, this);
+		CanalOeuvre.afterSaveItem(params);
 	}
-
-
-
-
 
 	constructor(data: IOeuvre) {
 		super(data);
@@ -73,7 +69,7 @@ export class Oeuvre extends UOeuvre {
 	/**
 	 * Méthode de préparation de la donnée pour le cache
 	 */
-	private static prepareItemForCache(item: IOeuvre): FullOeuvre {
+	protected static prepareItemForCache(item: IOeuvre): FullOeuvre {
 		const preparedItem = item as FullOeuvre;
 		preparedItem.titres = ["Un titre", "un autre titre", "et encore un"];
 		return preparedItem;
@@ -83,7 +79,7 @@ export class Oeuvre extends UOeuvre {
 		await this.cache.traverse(this.finalizeCachedItem.bind(this));
 		App.incAndCheckReadyCounter();
 	}
-	private static finalizeCachedItem(oeuvre: FullOeuvre): FullOeuvre {
+	protected static finalizeCachedItem(oeuvre: FullOeuvre): FullOeuvre {
 		    // Créer un array avec tous les titres disponibles
     const titres: string[] = [];
 

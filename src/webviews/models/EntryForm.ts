@@ -1,8 +1,10 @@
+import { StringNormalizer } from '../../bothside/StringUtils';
 import { Constants } from '../../bothside/UConstants';
 import { IEntry } from '../../extension/models/Entry';
 import { PanelClassEntry } from '../../extension/services/panels/panelClassEntry';
 import { ComplexRpc } from '../services/ComplexRpc';
 import { FormManager, FormProperty } from "../services/FormManager";
+import { AnyElementType } from './AnyClientElement';
 import { Entry, RpcEntry } from "./Entry";
 
 class FEntry extends Entry {
@@ -35,10 +37,15 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
     // console.log("Le champ Entrée a changé");
     const itemIsNew = this.getValueOf('id') === '';
     if ( itemIsNew ) {
-      console.log("C'est un nouvel item, il faut calculer son ID d'après son entrée.");
+      let proposId = this.getValueOf('entree') as string;
+      if ( proposId !== '') {
+        proposId = StringNormalizer.rationalize(proposId);
+        this.setValueOf('id', proposId);
+      }
     }
   }
-  // À faire après l'édition d'une Entrée
+
+  // À faire juste après la mise en édition d'une Entrée
   afterEdit(): void {
     const id = this.field('id').value ;
     const isNewItem = id === '' ;
@@ -133,7 +140,7 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
     // Le genre doit être donné
     if ( item.genre === '') {
       errors.push("Le genre de l'entrée doit être donné");
-    } else if (item.changeset.has('genre') && !Constants.ENTRIES_GENRES[item.genre]) {
+    } else if (item.changeset.has('genre') && Constants.genreNotExists(item.genre)) {
       errors.push(`bizarrement, le genre "${item.genre} est inconnu…`);
     }
     
@@ -269,10 +276,10 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
       call: Entry.saveItem.bind(Entry, item as unknown as IEntry)
     });
     const res = await itemSaver.run() as {ok: boolean, errors: any, item: IEntry};
-    // console.log("res dans onSave", res);
+    console.log("res dans onSave", res);
     if (res.ok) {
       Entry.panel.flash("Item enregistré avec succès.", 'notice');
-      Entry.accessTable.upsert(item);
+      Entry.accessTable.upsert(res.item as any as AnyElementType);
     } else {
       console.error("ERREURS LORS DE L'ENREGISTREMENT DE L'ITEM", res.errors);
       Entry.panel.flash('Erreur (enregistrement de l’entrée (voir la console', 'error');

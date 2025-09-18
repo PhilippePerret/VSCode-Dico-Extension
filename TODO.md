@@ -2,6 +2,7 @@
 
 * J'EN SUIS À :
   - Procédure d'ajout ou d'actualisation d'une donnée dans accessTable + Panneau
+    - [BUG] On doit pouvoir utiliser les touches pour gérer les menus des formulaires
   - [si update]
       - actualisation de l'affichage
       - actualisation de la donnée dans accessTable
@@ -13,6 +14,9 @@
   - quand je filtre et que je fais "f", ça ne sélectionne pas un des éléments affichés (avec la console, obtenir la valeur de l'item sélectionné)
   - quand je clique sur l'erreur, elle ne se ferme pas
 
+* Quand un mot n'est pas encore créé et qu'on y fait référence dans une nouvelle définition, on l'écrit avec `todo(le nouveau mot`)
+  - demander s'il faut le créer tout de suite
+  - pouvoir chercher dans toutes les définitions les todo(....)
 * Traiter l'affichage de la définition
   - dim(…)
   - toutes les marques d'appel/index de définition (cf MARK_ENTRIES)

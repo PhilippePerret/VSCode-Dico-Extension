@@ -116,6 +116,20 @@ export class VimLikeManager {
       //    (même quand on est dans l'ide circonstantielle)
       this.panel.activateContextualHelp();
       return stopEvent(ev); 
+    } else if ((ev.target as HTMLElement).tagName.toLowerCase() === 'select') {
+      console.log("Sur select", ev.key);
+      const select = ev.target as HTMLSelectElement;
+      switch(ev.key) {
+        case 'j':
+        case 'ArrowDown':
+          select.selectedIndex += 1;
+          break;
+        case 'k':
+        case 'ArrowUp':
+          select.selectedIndex -= 1;
+          break;
+      }
+      return true;
     } else if (this.keyboardBypass) {
       // <= Un bypass existe (bloquant toutes les touches)
       // => Il faut voir si la touche est connue

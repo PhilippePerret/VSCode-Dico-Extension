@@ -11,6 +11,15 @@ exports.UniversalDicoElement = void 0;
  */
 class UniversalDicoElement {
     static cache;
+    static prepareItemForCache(item) { }
+    ;
+    static finalizeCachedItem(item) { }
+    ;
+    static completeItemForClientAfterSave(item) {
+        let pItem = this.prepareItemForCache(item);
+        pItem = this.finalizeCachedItem(pItem);
+        return pItem;
+    }
     // Le constructeur reçoit toujours un objet contenant
     // Les données. Dans un cas (extension) ce sont les données
     // provenant de la base de données, dans l'autre cas (webview)

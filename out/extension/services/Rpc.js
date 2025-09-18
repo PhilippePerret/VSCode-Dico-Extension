@@ -9,6 +9,12 @@ const child_process_1 = require("child_process");
 class Rpc {
     panel;
     rpc;
+    // Appelée après l'enregistrement de l'item, pour confirmation ou 
+    // signalement d'une erreur
+    afterSaveItem(params) {
+        // console.log("[ENTENSIONS] Remontée au panneau après sauvegarde Item", params);
+        this.rpc.notify('after-saved-item', params);
+    }
     // C'est ici qu'on détermine le panneau, quand il est fait
     initialize(panel) {
         this.panel = panel;
@@ -51,12 +57,12 @@ class RpcEntry extends Rpc {
         // console.log("[EXTENSION] Envoi des résultats du check des exemples au panneau Entrées");
         this.rpc.notify('check-exemples-resultat', params);
     }
-    // Appelée après l'enregistrement de l'item, pour confirmation ou 
-    // signalement d'une erreur
-    afterSaveItem(params) {
-        // console.log("[ENTENSIONS] Remontée au panneau après sauvegarde Item", params);
-        this.rpc.notify('after-saved-item', params);
-    }
+    // // Appelée après l'enregistrement de l'item, pour confirmation ou 
+    // // signalement d'une erreur
+    // afterSaveItem(params: {CRId: string, ok: boolean, errors: any, item: any}){
+    //   // console.log("[ENTENSIONS] Remontée au panneau après sauvegarde Item", params);
+    //   this.rpc.notify('after-saved-item', params);
+    // }
     initialize(panel) {
         super.initialize(panel);
         this.rpc.on('check-oeuvres', async (params) => {
@@ -93,10 +99,10 @@ class RpcOeuvre extends Rpc {
     displayOeuvre(param) {
         this.rpc.notify('display-oeuvre', param);
     }
-    afterSaveOeuvre(params) {
-        // console.log("[EXTENSION RpcOeuvre] Remontée au panneau après save", params);
-        this.rpc.notify('after-save-oeuvre', params);
-    }
+    // afterSaveOeuvre(params: {CRId: string, ok: boolean, errors: any, item: any}){
+    //   // console.log("[EXTENSION RpcOeuvre] Remontée au panneau après save", params);
+    //   this.rpc.notify('after-save-oeuvre', params);
+    // }
     // Définition des récepteurs on
     initialize(panel) {
         super.initialize(panel);
@@ -121,6 +127,12 @@ class RpcExemple extends Rpc {
     // Définir ici les méthodes messages avec le panneau des exemples
     checkExemples(params) {
         this.rpc.notify('check-exemples', params);
+    }
+    // Appelée après l'enregistrement de l'item, pour confirmation ou 
+    // signalement d'une erreur
+    afterSaveItem(params) {
+        // console.log("[ENTENSIONS] Remontée au panneau après sauvegarde Item", params);
+        this.rpc.notify('after-saved-item', params);
     }
     initialize(panel) {
         super.initialize(panel);

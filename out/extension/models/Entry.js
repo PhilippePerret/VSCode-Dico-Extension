@@ -27,7 +27,8 @@ class Entry extends UEntry_1.UEntry {
      */
     static async saveItem(params) {
         const dbManager = db_manager_1.DBManager.getInstance(App_1.App._context);
-        await dbManager.saveItemIn('entrees', params.item, params);
+        params = await dbManager.saveItemIn('entrees', params.item, params, this);
+        console.log("Params quand on revient dans Entry", params);
         // On retourne le résultat au panneau
         Rpc_1.CanalEntry.afterSaveItem(params);
     }

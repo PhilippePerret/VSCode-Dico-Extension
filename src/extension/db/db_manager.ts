@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import path from 'path';
 import { DatabaseService } from "../services/db/DatabaseService";
 import { App } from '../services/App';
-import { ExtensionContext } from 'vscode';
+import { AnyElementClass } from '../models/AnyElement';
 
 class SaveError extends Error {
   public severity: number | undefined;
@@ -33,6 +33,7 @@ export class DBManager {
     await this.dbService.initialize();
   }
 
+  // Pour faire un backup de la base (pour le moment, à chaque changement)
   async createBackup(): Promise<string> {
     const context = App._context;
      const backupDir = path.join(App.supportFolder, 'backups');
@@ -54,12 +55,13 @@ export class DBManager {
    * @param item Les données de l'item (entrée, exemple, oeuvre)
    * @param params Les paramètres de suivi
    */
-  async saveItemIn(table: string, item: any, params: any){
+  async saveItemIn(table: string, item: any, params: any, classItem: AnyElementClass){
     params.errors = []; // pour mettre les éventuels erreurs
     params.ok = true ; // soyons optimistes
     try {
       await this.createBackup();
       const exists = await this.checkIfExists(item.id, table);      
+      Object.assign(params, {isNewItem: !exists}); // pour indiquer que c'est une création
       // Prendre le nombre d'entrées et déterminer le nouveau nombre attendu
       const countBefore = await this.getRowCountIn(table);
       await this.doSave(table, item, exists);
@@ -72,10 +74,18 @@ export class DBManager {
           3
         );
       }
+      // Si c'est un nouvel élément, il faut le compléter de toutes
+      // les propriétés utiles à l'affichage et la gestion rapide
+      // côté client
+      if (params.isNewItem){
+        params.item = classItem.completeItemForClientAfterSave(params.item);
+      }
+      console.log("params en fin de saveItemin", params.item);
     } catch(error: any){
       params.ok = false;
       params.errors.push(error.message);
     }
+    return params;
   }
 
   // Procède véritablement à l'enregistrement

@@ -233,9 +233,10 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
    * 
    */
   public upsert(item: AnyElementType): boolean {
+    console.log("Item reçu par upsert", item);
     const checkedId: string = (item as any)['id'] || `${(item as any as IExemple).oeuvre_id}-${(item as any as IExemple)['indice']}`;
 
-    if ( this.getById(checkedId)) {
+    if ( this.existsById(checkedId)) {
       // Update
       console.log("C'est une actualisation de l'item ", checkedId);
     } else {
