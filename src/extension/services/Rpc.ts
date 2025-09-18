@@ -89,6 +89,7 @@ class RpcEntry extends Rpc {
 
     this.rpc.on('export-all-data', async (params: any) => {
       console.log("[EXTENSION] Demande de sauvegarde des données");
+      execSync(`ruby ${App._context.extensionPath}/src/data/export-data.rb`);
       this.notify('flash', {message: "Toutes les données ont été backupées dans des fichiers."});
     });
 

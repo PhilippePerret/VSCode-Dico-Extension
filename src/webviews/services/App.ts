@@ -1,4 +1,3 @@
-// Utiliser RpcEntry existant au lieu de créer un nouveau canal
 
 export class App {
   /**
@@ -7,21 +6,25 @@ export class App {
    */
 
   private static async openSupport() {
-    console.log("je dois apprendre à ouvrir le dossier support");
-    const RpcEntry = (window as any).RpcEntry;
-    if (RpcEntry) {
-      RpcEntry.notify('open-support-folder');
-    }
+   App.notify('open-support-folder');
     return "Ouverture du dossier Support";
   }
 
   private static async exportAllData(){
-    console.log("Je dois apprendre à backuper les données dans les fichiers.");
+   App.notify('export-all-data');
+    return "Exportation des données demandée.";
+  }
+
+
+  private static async notify(message: string, params: any | undefined = undefined) {
     const RpcEntry = (window as any).RpcEntry;
     if (RpcEntry) {
-      RpcEntry.notify('export-all-data');
+      if ( params) {
+        RpcEntry.notify(message, params);
+      } else {
+        RpcEntry.notify(message);
+      }
     }
-    return "Exportation des données demandée.";
   }
 
 

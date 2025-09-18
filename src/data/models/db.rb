@@ -59,7 +59,7 @@ class DB
     end
     
     def expath(name:, extension:) 
-      File.join(db_folder, 'exports', "#{name}-#{now_str}.#{extension}")
+      File.join(db_folder, 'exports', "#{now_str}-#{name}.#{extension}")
     end
     def now_str
       @now_str ||= begin

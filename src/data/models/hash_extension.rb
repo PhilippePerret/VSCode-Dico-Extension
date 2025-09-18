@@ -22,9 +22,8 @@ class Hash
     'indice' => 'i',
     'entry_id' => 'e',
     'content' => 'c',
-    'notes' => 'n'
-
   }
+
   def to_text
     self.map do |k, v|
         (LONGKEY_TO_SHORTKEY[k] || k) + ':' + v.to_s

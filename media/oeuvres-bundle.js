@@ -161,26 +161,28 @@
   };
 
   // src/webviews/services/App.ts
-  var App = class {
+  var App = class _App {
     /**
      * Les méthodes suivantes peuvent s'appeler en tapant simplement leur
      * nom en console (bas des panneaux — 'c' pour rejoindre la console)
      */
     static async openSupport() {
-      console.log("je dois apprendre \xE0 ouvrir le dossier support");
-      const RpcEntry = window.RpcEntry;
-      if (RpcEntry) {
-        RpcEntry.notify("open-support-folder");
-      }
+      _App.notify("open-support-folder");
       return "Ouverture du dossier Support";
     }
     static async exportAllData() {
-      console.log("Je dois apprendre \xE0 backuper les donn\xE9es dans les fichiers.");
+      _App.notify("export-all-data");
+      return "Exportation des donn\xE9es demand\xE9e.";
+    }
+    static async notify(message, params = void 0) {
       const RpcEntry = window.RpcEntry;
       if (RpcEntry) {
-        RpcEntry.notify("export-all-data");
+        if (params) {
+          RpcEntry.notify(message, params);
+        } else {
+          RpcEntry.notify(message);
+        }
       }
-      return "Exportation des donn\xE9es demand\xE9e.";
     }
     /**
      * 
