@@ -30,11 +30,14 @@ export class AccessTable<T extends EntryType | OeuvreType | ExempleType> {
   arrayItems: T[] = [];
   // Table de la table (pour vérification)
   _size!: number | null ;
+  // Le premier item, qui doit forcément être le premier chargé
+  firstItem: T;
 
   constructor(
     items: T[]
   ) {
     this.populateInTable(items);
+    this.firstItem = this.arrayItems[0];
   }
   
   // après un ajout ou une suppression, par exemple
@@ -283,14 +286,6 @@ export class AccessTable<T extends EntryType | OeuvreType | ExempleType> {
     return this.collectSince(traverseMethod, this.firstItem.id);
   }
  
-
-  /**
-   * Retourne le premier item. Par convention, c'est le premier
-   * de la liste.
-   */
-  get firstItem(): T { return this.arrayItems[0]; }
-
-
  /**
   * Boucle sur les items, depuis l'item d'identifiant +id+ ou depuis le premier et 
   * retourne le premier qui répond à la condition +condition+
