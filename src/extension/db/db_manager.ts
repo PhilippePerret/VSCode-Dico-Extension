@@ -74,12 +74,10 @@ export class DBManager {
           3
         );
       }
-      // Si c'est un nouvel élément, il faut le compléter de toutes
+      // Que ce soit un nouvel élément ou pas, il faut le compléter de toutes
       // les propriétés utiles à l'affichage et la gestion rapide
       // côté client
-      if (params.isNewItem){
-        params.item = classItem.completeItemForClientAfterSave(params.item);
-      }
+      params.item = classItem.completeItemForClientAfterSave(params.item);
       console.log("params en fin de saveItemin", params.item);
     } catch(error: any){
       params.ok = false;

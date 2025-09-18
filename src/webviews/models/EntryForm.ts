@@ -4,7 +4,7 @@ import { IEntry } from '../../extension/models/Entry';
 import { PanelClassEntry } from '../../extension/services/panels/panelClassEntry';
 import { ComplexRpc } from '../services/ComplexRpc';
 import { FormManager, FormProperty } from "../services/FormManager";
-import { AnyElementType } from './AnyClientElement';
+import { AnyElementType, AnyFullElementType } from './AnyClientElement';
 import { Entry, RpcEntry } from "./Entry";
 
 class FEntry extends Entry {
@@ -279,7 +279,7 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
     console.log("res dans onSave", res);
     if (res.ok) {
       Entry.panel.flash("Item enregistré avec succès.", 'notice');
-      Entry.accessTable.upsert(res.item as any as AnyElementType);
+      Entry.accessTable.upsert(res.item as any as AnyFullElementType);
     } else {
       console.error("ERREURS LORS DE L'ENREGISTREMENT DE L'ITEM", res.errors);
       Entry.panel.flash('Erreur (enregistrement de l’entrée (voir la console', 'error');

@@ -102,12 +102,10 @@ class DBManager {
             if (countAfter !== (countBefore + diffCount)) {
                 throw new SaveError(`Après enregistrement de l'item ${item.id}, le nombre de données dans ${table} ne correspond pas au résultat attendu.`, 3);
             }
-            // Si c'est un nouvel élément, il faut le compléter de toutes
+            // Que ce soit un nouvel élément ou pas, il faut le compléter de toutes
             // les propriétés utiles à l'affichage et la gestion rapide
             // côté client
-            if (params.isNewItem) {
-                params.item = classItem.completeItemForClientAfterSave(params.item);
-            }
+            params.item = classItem.completeItemForClientAfterSave(params.item);
             console.log("params en fin de saveItemin", params.item);
         }
         catch (error) {

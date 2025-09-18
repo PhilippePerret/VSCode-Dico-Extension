@@ -19,6 +19,7 @@ export interface IEntry {
 // faut donc mettre cette donnée dans la partie bothside
 // La donnée cachée, complète
 export interface FullEntry extends IEntry {
+	itemType: 'entry' | 'oeuvre' | 'exemple';
   entree_min: string;              // Version minuscules pour recherche
   entree_min_ra: string;           // Version rationalisée (sans accents) 
   categorie_formated?: string;     // Nom de la catégorie (résolu via Entry.get())
@@ -78,6 +79,7 @@ export class Entry extends UEntry {
     const entreeRationalized  = StringNormalizer.rationalize(item.entree);
 	// On finalise la donnée en cache
 		const pItem = Object.assign(item, {
+			itemType: 'entry',
 			display: 'block',
 			selected: false,
 			entree_min: entreeNormalized,

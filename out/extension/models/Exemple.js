@@ -43,6 +43,9 @@ class Exemple extends UExemple_1.UExemple {
     }
     static prepareItemForCache(item) {
         const preparedItem = item;
+        Object.assign(preparedItem, {
+            itemType: 'exemple',
+        });
         return preparedItem;
     }
     static async finalizeCachedItems() {

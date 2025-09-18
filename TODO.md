@@ -2,7 +2,7 @@
 
 * J'EN SUIS À :
   - Procédure d'ajout ou d'actualisation d'une donnée dans accessTable + Panneau
-    - [BUG] On doit pouvoir utiliser les touches pour gérer les menus des formulaires
+    [BUG] Réussir à faire passer les choses (demander à Clause)
   - [si update]
       - actualisation de l'affichage
       - actualisation de la donnée dans accessTable

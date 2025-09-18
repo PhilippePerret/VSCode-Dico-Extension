@@ -17,6 +17,7 @@ export interface IOeuvre {
 }
 
 export interface FullOeuvre extends IOeuvre {
+	itemType: 'entry' | 'oeuvre' | 'exemple';
   resume_formated?: string;
   titre_original?: string;
   titre_francais?: string;
@@ -71,7 +72,10 @@ export class Oeuvre extends UOeuvre {
 	 */
 	protected static prepareItemForCache(item: IOeuvre): FullOeuvre {
 		const preparedItem = item as FullOeuvre;
-		preparedItem.titres = ["Un titre", "un autre titre", "et encore un"];
+		Object.assign(preparedItem, {
+			itemType: 'oeuvre',
+			titres: ["Un titre", "un autre titre", "et encore un"],
+		});
 		return preparedItem;
 	}
 

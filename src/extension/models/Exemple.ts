@@ -18,6 +18,7 @@ export interface IExemple {
 }
  
 export interface FullExemple extends IExemple {
+	itemType: 'entry' | 'oeuvre' | 'exemple';
 	content_formated: string;
   content_min: string;             // Version minuscules pour recherche
   content_min_ra: string;          // Version rationalisée (sans accents)
@@ -66,6 +67,9 @@ export class Exemple extends UExemple {
 	}
 	protected static prepareItemForCache(item: IExemple): FullExemple {
 		const preparedItem = item as FullExemple;
+		Object.assign(preparedItem, {
+			itemType: 'exemple',
+		});
 		return preparedItem;
 	}
 

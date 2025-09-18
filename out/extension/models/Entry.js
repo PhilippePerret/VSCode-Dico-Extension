@@ -53,6 +53,7 @@ class Entry extends UEntry_1.UEntry {
         const entreeRationalized = StringUtils_1.StringNormalizer.rationalize(item.entree);
         // On finalise la donnée en cache
         const pItem = Object.assign(item, {
+            itemType: 'entry',
             display: 'block',
             selected: false,
             entree_min: entreeNormalized,

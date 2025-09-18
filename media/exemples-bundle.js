@@ -604,14 +604,33 @@
      * que pour les exemples, il n'y a pas d'identifiant autre que
      * volatile).
      * 
+     * Noter que ce sont toujours les données compolètes qui sont
+     * remontées, même pour une actualisation. Car l'actualisation
+     * a pu modifier des données qui servent pour le tri, le formatage,
+     * etc.
+     * 
      */
     upsert(item) {
       console.log("Item re\xE7u par upsert", item);
-      const checkedId = item["id"] || `${item.oeuvre_id}-${item["indice"]}`;
+      const checkedId = ((ity, item2) => {
+        switch (ity) {
+          case "entry":
+          case "oeuvre":
+            return item2.id;
+          case "exemple":
+            const ite = item2;
+            return `${ite.oeuvre_id}-${ite.indice}`;
+        }
+      })(item.itemType, item);
       if (this.existsById(checkedId)) {
         console.log("C'est une actualisation de l'item ", checkedId);
+        console.log("Actualisation de", this.getById(checkedId));
       } else {
         console.log("C'est une cr\xE9ation de l'item", item);
+        const fullItem = Object.assign({}, {
+          data: item,
+          type: "entry"
+        });
       }
       return true;
     }

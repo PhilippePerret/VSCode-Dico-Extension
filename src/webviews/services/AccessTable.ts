@@ -50,8 +50,10 @@
  *  .selectPrevItem(selection)
  *      Permet de sélectionner l'item suivant ou précédent.
  */
+import { FullEntry } from "../../extension/models/Entry";
 import { FullExemple, IExemple } from "../../extension/models/Exemple";
-import { AnyElementClass, AnyElementType } from "../models/AnyClientElement";
+import { FullOeuvre } from "../../extension/models/Oeuvre";
+import { AnyElementClass, AnyElementType, AnyFullElementType } from "../models/AnyClientElement";
 import { Entry } from "../models/Entry";
 import { Exemple } from "../models/Exemple";
 import { Oeuvre } from "../models/Oeuvre";
@@ -231,20 +233,53 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
    * que pour les exemples, il n'y a pas d'identifiant autre que
    * volatile).
    * 
+   * Noter que ce sont toujours les données compolètes qui sont
+   * remontées, même pour une actualisation. Car l'actualisation
+   * a pu modifier des données qui servent pour le tri, le formatage,
+   * etc.
+   * 
    */
-  public upsert(item: AnyElementType): boolean {
+  public upsert(item: AnyFullElementType): boolean {
     console.log("Item reçu par upsert", item);
-    const checkedId: string = (item as any)['id'] || `${(item as any as IExemple).oeuvre_id}-${(item as any as IExemple)['indice']}`;
+    const checkedId: string = ((ity, item) => {
+      switch(ity){
+        case 'entry':
+        case 'oeuvre':
+          return item.id;
+        case 'exemple':
+          const ite = item as any as IExemple;
+          return `${ite.oeuvre_id}-${ite.indice}`;
+      }
+    })(item.itemType, item);
 
+    let cachedItem;
     if ( this.existsById(checkedId)) {
       // Update
       console.log("C'est une actualisation de l'item ", checkedId);
+      cachedItem = this.getById(checkedId);
+      console.log("Actualisation de", this.getById(checkedId));
+      Object.assign(cachedItem, {data: item});
     } else {
       // Create
       console.log("C'est une création de l'item", item);
-    }
-
+      this.createNewAccedableItem(item);
+   }
     return true; // en cas de succès
+  }
+
+  private createNewAccedableItem(item: AnyFullElementType) {
+    let itemKlass;
+    switch(item.itemType){
+      case 'entry': 
+        itemKlass = Entry; 
+        break;
+      case 'oeuvre': itemKlass = Oeuvre; break;
+      case 'exemple': itemKlass = Exemple; break;
+    }
+    // const cachedItem = new itemKlass(item as FullEntry & FullOeuvre & FullExemple);
+    const cachedItem: T = new itemKlass(item as FullEntry);
+    this.addInTable(cachedItem, 0, undefined, undefined);
+
   }
   /**
    *  Retourne l'Item (Entry, Oeuvre, Exemple) de l'élément foo
@@ -540,23 +575,29 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
       const item = items[i];
       const nextItem = items[i + 1] || undefined;
       const prevItem = items[i - 1] || undefined;
-      const chained: AccedableItem = {
-        type: 'accedable-item',
-        id: item.data.id,
-        obj: undefined,
-        index: i, 
-        next: nextItem ? nextItem.data.id : undefined,
-        prev: prevItem ? prevItem.data.id : undefined,
-        visible: true,
-        display: 'block',
-        selected: false,
-        modified: false
-      } ;
-      // console.log("[POPULATE ACCESSTABLE] ak = ", chained);
-      this.keysMap.set(item.data.id, chained);
-      this.arrayItems.push(item);
+      this.addInTable(item, i, nextItem, prevItem);
     }
   }
+
+  // Insertion séparée pour pouvoir ajouter en cours de travail
+  addInTable(item: T, arrayIndex:number, nextItem: T | undefined, prevItem: T | undefined) {
+    const chained: AccedableItem = {
+      type: 'accedable-item',
+      id: item.data.id,
+      obj: undefined,
+      index: arrayIndex,
+      next: nextItem ? nextItem.data.id : undefined,
+      prev: prevItem ? prevItem.data.id : undefined,
+      visible: true,
+      display: 'block',
+      selected: false,
+      modified: false
+    };
+     // console.log("[POPULATE ACCESSTABLE] ak = ", chained);
+    this.keysMap.set(item.data.id, chained);
+    this.arrayItems.push(item);
+  }
+
   DOMElementOf(id: string) {
     return document.querySelector(`main#items > div[data-id="${id}"]`) as HTMLDivElement;
   }

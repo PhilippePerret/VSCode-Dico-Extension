@@ -48,7 +48,10 @@ class Oeuvre extends UOeuvre_1.UOeuvre {
      */
     static prepareItemForCache(item) {
         const preparedItem = item;
-        preparedItem.titres = ["Un titre", "un autre titre", "et encore un"];
+        Object.assign(preparedItem, {
+            itemType: 'oeuvre',
+            titres: ["Un titre", "un autre titre", "et encore un"],
+        });
         return preparedItem;
     }
     static async finalizeCachedItems() {
