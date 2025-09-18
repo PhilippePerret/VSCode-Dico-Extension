@@ -8,7 +8,7 @@ import { PanelClassExemple } from './panelClassExemple';
 import { UOeuvre } from '../../../bothside/UOeuvre';
 import { UExemple } from '../../../bothside/UExemple';
 import { App } from '../App';
-import { CanalEntry, CanalExemple, CanalOeuvre } from '../Rpc';
+import { CanalEntry, CanalOeuvre, CanalExemple } from '../Rpc';
 
 export class PanelManager {
 	private static _panels: PanelClass[] = [];

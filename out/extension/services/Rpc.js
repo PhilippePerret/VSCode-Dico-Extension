@@ -74,12 +74,12 @@ class RpcEntry extends Rpc {
         });
         this.rpc.on('export-all-data', async (params) => {
             console.log("[EXTENSION] Demande de sauvegarde des données");
-            exports.CanalEntry.rpc.notify('flash', { message: "Toutes les données ont été backupées dans des fichiers." });
+            this.notify('flash', { message: "Toutes les données ont été backupées dans des fichiers." });
         });
         this.rpc.on('open-support-folder', async (params) => {
             console.log("[EXTENTION] Ouverture du dossier support");
             (0, child_process_1.execSync)(`open -a Finder "${App_1.App.supportFolder}"`, { encoding: 'utf8' });
-            exports.CanalEntry.rpc.notify('flash', { message: "Dossier support ouvert dans le finder" });
+            this.notify('flash', { message: "Dossier support ouvert dans le finder" });
         });
     }
 }

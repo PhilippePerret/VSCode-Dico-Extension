@@ -1,32 +1,26 @@
-import { RpcChannel } from "../../bothside/RpcChannel";
-
-// import { RpcEntry } from "../models/Entry"; // BUG Crée un cycle à 3 éléments
-
+// Utiliser RpcEntry existant au lieu de créer un nouveau canal
 
 export class App {
-  private static Rpc:RpcChannel;
-
-  public static async init() {
-     const { RpcEntry } = await import("../models/Entry");
-     this.Rpc = RpcEntry;
-     console.log("this rpc", this.Rpc);
-  }
-
   /**
-   * 
    * Les méthodes suivantes peuvent s'appeler en tapant simplement leur
    * nom en console (bas des panneaux — 'c' pour rejoindre la console)
    */
 
   private static async openSupport() {
     console.log("je dois apprendre à ouvrir le dossier support");
-    this.Rpc.notify('open-support-folder');
+    const RpcEntry = (window as any).RpcEntry;
+    if (RpcEntry) {
+      RpcEntry.notify('open-support-folder');
+    }
     return "Ouverture du dossier Support";
   }
 
   private static async exportAllData(){
     console.log("Je dois apprendre à backuper les données dans les fichiers.");
-    this.Rpc.notify('export-all-data');
+    const RpcEntry = (window as any).RpcEntry;
+    if (RpcEntry) {
+      RpcEntry.notify('export-all-data');
+    }
     return "Exportation des données demandée.";
   }
 
@@ -60,5 +54,3 @@ export class App {
   }
 
 }
-
-App.init();

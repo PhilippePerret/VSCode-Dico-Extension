@@ -170,3 +170,4 @@ RpcEntry.on('after-saved-item', (params) => {
 
 // Pour exposer globalement
 (window as any).Entry = Entry ;
+(window as any).RpcEntry = RpcEntry;
