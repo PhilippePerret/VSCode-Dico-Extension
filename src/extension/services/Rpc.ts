@@ -91,6 +91,7 @@ class RpcEntry extends Rpc {
       console.log("[EXTENSION] Demande de sauvegarde des données");
       CanalEntry.rpc.notify('flash', {message: "Toutes les données ont été backupées dans des fichiers."});
     });
+
     this.rpc.on('open-support-folder', async (params: any) => {
       console.log("[EXTENTION] Ouverture du dossier support");
       execSync(`open -a Finder "${App.supportFolder}"`, {encoding: 'utf8'});

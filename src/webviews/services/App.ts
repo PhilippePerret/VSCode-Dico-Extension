@@ -1,6 +1,17 @@
-import { RpcEntry } from "../models/Entry";
+import { RpcChannel } from "../../bothside/RpcChannel";
+
+// import { RpcEntry } from "../models/Entry"; // BUG Crée un cycle à 3 éléments
+
 
 export class App {
+  private static Rpc:RpcChannel;
+
+  public static async init() {
+     const { RpcEntry } = await import("../models/Entry");
+     this.Rpc = RpcEntry;
+     console.log("this rpc", this.Rpc);
+  }
+
   /**
    * 
    * Les méthodes suivantes peuvent s'appeler en tapant simplement leur
@@ -9,13 +20,13 @@ export class App {
 
   private static async openSupport() {
     console.log("je dois apprendre à ouvrir le dossier support");
-    RpcEntry.notify('open-support-folder');
+    this.Rpc.notify('open-support-folder');
     return "Ouverture du dossier Support";
   }
 
   private static async exportAllData(){
     console.log("Je dois apprendre à backuper les données dans les fichiers.");
-    RpcEntry.notify('export-all-data');
+    this.Rpc.notify('export-all-data');
     return "Exportation des données demandée.";
   }
 
@@ -49,3 +60,5 @@ export class App {
   }
 
 }
+
+App.init();
