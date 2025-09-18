@@ -4,11 +4,11 @@
  */
 import { EntryType, OeuvreType, ExempleType, DBExempleType, AnyItemType } from "../../bothside/types";
 import { AnyElementClass, AnyElementType } from "../models/AnyClientElement";
-import { Entry } from "../models/Entry";
-import { Exemple } from "../models/Exemple";
-import { Oeuvre } from "../models/Oeuvre";
 import { PanelClient } from "../PanelClient";
 
+/**
+ * Le type propre aux données enregistrées dans les AccessTables de chaque élément.
+ */
 export interface AccedableItem {
   readonly type: 'accedable-item';
   id: string;         // Identifiant absolu de l'élément, quel qu'il soit
@@ -23,11 +23,13 @@ export interface AccedableItem {
   // On pourra ajouter ici d'autres données volatiles
 }
 
-type AnyAccParam = string | number | Entry | Oeuvre | Exemple | AccedableItem ;
-
-export class AccessTable<T extends Entry | Oeuvre | Exemple> {
+export class AccessTable<T extends EntryType | OeuvreType | ExempleType> {
+  // Table des pointeurs de données
   keysMap: Map<string, AccedableItem> = new Map();
+  // Table de toutes les données des items, dans un ordre
+  // d'arrivée jamais changé.
   arrayItems: T[] = [];
+  // Table de la table (pour vérification)
   _size!: number | null ;
 
   constructor(
@@ -44,9 +46,9 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
 
   get size(){ return this._size || (this._size = this.keysMap.size);}
 
-  isVisible(id: string) { return this.getAccKeyById(id).visible === true ;}
+  isVisible(id: string) { return this.getAccKey(id).visible === true ;}
   setVisibility(id: string, state: boolean) {
-    const ak = this.getAccKeyById(id);
+    const ak = this.getAccKey(id);
     if ( ak.visible !== state ) {
       // <= L'état change => Il faut le changer dans la donnée et le DOM
       ak.visible = state;
@@ -61,8 +63,8 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
     const selection = panel.getSelection();
     let nextId: string | undefined ;
     if ( selection ) {
-      let nextItemVisible: AnyElementType | undefined;
-      nextItemVisible = this.getNextVisibleById(selection);
+      let nextItemVisible: AnyItemType | undefined;
+      nextItemVisible = this.getNextVisible(selection);
       if ( nextItemVisible ) { nextId = nextItemVisible.id ; }
     }
     const finalNextId = nextId || this.firstItem.id;
@@ -72,8 +74,8 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
     const selection = panel.getSelection();
     let prevId: string | undefined;
     if ( selection ) {
-      let prevItemVisible: AnyElementType | undefined ;
-      prevItemVisible = this.getPrevVisibleById(selection);
+      let prevItemVisible: AnyItemType | undefined ;
+      prevItemVisible = this.getPrevVisible(selection);
       if ( prevItemVisible ) { prevId = prevItemVisible.id ;}
     }
     const finalPrevId = prevId || this.firstItem.id;
@@ -81,74 +83,37 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
   }
 
 
-  getNextVisibleById(refId: string): AnyElementType | undefined {
+  getNextVisible(refId: string): AnyItemType | undefined {
     let ak: AccedableItem | undefined;
     let nextAk: AccedableItem | undefined;
-    while (ak = this.getNextAccKeyById(refId)) {
-      if (ak.visible) {return this.getById(ak.id);}
+    while (ak = this.getNextAccKey(refId)) {
+      if (ak.visible) {return this.get(ak.id);}
     }
   }
-  getPrevVisibleById(refId: string): AnyElementType | undefined {
+  getPrevVisible(refId: string): AnyItemType | undefined {
     let ak: AccedableItem | undefined;
     let prevAk: AccedableItem | undefined;
-    while (ak = this.getPrevAccKeyById(refId)) {
-      if (ak.visible) {return this.getById(ak.id);}
+    while (ak = this.getPrevAccKey(refId)) {
+      if (ak.visible) {return this.get(ak.id);}
     }
   }
 
   setSelectState(id: string, state: boolean) {
-    this.getAccKeyById(id).selected = state;
+    this.getAccKey(id).selected = state;
   }
 
-  traverseAnyTypeWith(
-    value: AnyAccParam,
-    fnIfId: (id: string) => any | undefined,
-    fnIfIndex: (index: number) => any | undefined,
-    fnIfAccKey: (accKey: AccedableItem) => any | undefined,
-    fnIfItem: (item: Entry | Oeuvre | Exemple) => any | undefined
-  ): any {
-    switch(typeof value) {
-      case 'string': return fnIfId(value);
-      case 'number': return fnIfIndex(value);
-      case 'object':
-        switch(value.type) {
-          case 'accedable-item': return fnIfAccKey(value as AccedableItem);
-          case 'entry':
-          case 'oeuvre':
-          case 'exemple': return fnIfItem(value);
-        }
-    }
-  }
-
-  /**
-   * Retourne l'item d'identifiant +id+ 
-   * 
-   * On peut l'obtenir en envoyant l'identifiant (string), l'index dans
-   * la liste (number), l'accedable-key (AccedableItem) ou l'item 
-   * lui-même.
-   */
-  get( foo: AnyAccParam ){ 
-    return this.traverseAnyTypeWith(
-      foo,
-      this.getById.bind(this),
-      this.getByIndex.bind(this),
-      this.getByAccKey.bind(this),
-      (foo: Entry | Oeuvre | Exemple) => { return foo ; }
-    );
-  }
   // @return true si l'élément d'identifiant +id+ existe.
-  existsById(id: string): boolean { return this.keysMap.has(id); }
+  exists(id: string): boolean { return this.keysMap.has(id); }
 
-  getById(id: string): T { return this.arrayItems[(this.keysMap.get(id) as AccedableItem).index]; }
-  getByIndex(index: number): T { return this.arrayItems[index]; }
-  getByAccKey(ak: AccedableItem): T { return this.getById(ak.id); }
+  get(id: string): T { return this.arrayItems[(this.keysMap.get(id) as AccedableItem).index]; }
+  getByAccKey(ak: AccedableItem): T { return this.get(ak.id); }
 
   /**
    * Retourne l'objet DOM de l'item en s'assurant qu'il est défini
    * dans l'AccKey (ce qui n'est pas fait par défaut)
    */
   getObj(id: string): HTMLDivElement {
-    const ak = this.getAccKeyById(id);
+    const ak = this.getAccKey(id);
     if ( ! ak ) {
       console.error("Impossible d'obtenir l'AK de l'id '%s'…", id, this.arrayItems);
     }
@@ -158,22 +123,8 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
     }
     return ak.obj as HTMLDivElement;
   }
-  /**
-   *  Retourne l'accKey de l'élément foo
-   * TODO : doit fonctionner pour tout élément (cf. getNextAccKey)
-   */
-  getAccKey( foo: AnyAccParam ) {
-    return this.traverseAnyTypeWith(
-      foo,
-      this.getAccKeyById.bind(this),
-      this.getAccKeyByIndex.bind(this),
-      (foo: AccedableItem) => { return foo ; },
-      this.getAccKeyByItem.bind(this)
-    );
-  }
-  getAccKeyById(itemId: string): AccedableItem { return this.keysMap.get(itemId) as AccedableItem ; }
-  getAccKeyByIndex(index: number): AccedableItem { return this.getAccKeyById(this.getByIndex(index).id) ; }
-  getAccKeyByItem(item: Entry | Oeuvre | Exemple): AccedableItem { return this.getAccKeyById(item.id);}
+  
+  getAccKey(itemId: string): AccedableItem { return this.keysMap.get(itemId) as AccedableItem ; }
 
   /**
    * Actualise ou Crée le nouvel item Item après son enregistrement.
@@ -202,12 +153,12 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
     })(item.cachedData.itemType, item);
 
     let cachedItem;
-    if ( this.existsById(checkedId)) {
+    if ( this.exists(checkedId)) {
       // Update
       console.log("C'est une actualisation de l'item ", checkedId);
-      cachedItem = this.getById(checkedId);
-      console.log("Actualisation de", this.getById(checkedId));
-      Object.assign(cachedItem, {data: item});
+      cachedItem = this.get(checkedId);
+      console.log("Actualisation de", this.get(checkedId));
+      Object.assign(cachedItem, item);
     } else {
       // Create
       console.log("C'est une création de l'item", item);
@@ -217,145 +168,47 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
   }
 
   private createNewAccedableItem(item: AnyItemType) {
-    let cachedItem: T;
-    switch(item.cachedData.itemType){
-      case 'entry': 
-        cachedItem = new Entry(item as EntryType) as T;
-        break;
-      case 'oeuvre': 
-        cachedItem = new Oeuvre(item as OeuvreType) as T;
-        break;
-      case 'exemple': 
-        cachedItem = new Exemple(item as ExempleType) as T;
-        break;
-      default:
-        throw new Error(`Type d'item inconnu: ${(item as any).cachedData.itemType}`);
-    }
+    let cachedItem: T = item as T;
     this.addInTable(cachedItem, 0, undefined, undefined);  // <===== TODO : LE ZÉRO EST À CALCULER !
-
   }
-  /**
-   *  Retourne l'Item (Entry, Oeuvre, Exemple) de l'élément foo
-   */
-  getNextItem( foo: AnyAccParam ) {
-    return this.traverseAnyTypeWith(
-      foo,
-      this.getNextItemById.bind(this),
-      this.getNextItemByIndex.bind(this),
-      this.getNextItemByAccKey.bind(this),
-      this.getNextItemByItem.bind(this)
-    );
+  
+  getNextItem(id: string): T | undefined {
+    const nextAK = this.getNextAccKey(id);
+    return nextAK ? this.get(nextAK.id) : undefined ;
   }
-  getNextItemById(id: string): T | undefined {
-    const nextAK = this.getNextAccKeyById(id);
-    return nextAK ? this.getById(nextAK.id) : undefined ;
-  }
-  getNextItemByIndex(index: number): T | undefined {
-    return this.getNextItemById(this.arrayItems[index].id);
-  }
+  
   getNextItemByAccKey(ak: AccedableItem) : T | undefined {
-    return ak.next ? this.getById(ak.next) : undefined ;
-  }
-  getNextItemByItem(item: Entry | Oeuvre | Exemple) : T | undefined {
-    return this.getNextItemById(item.id);
+    return ak.next ? this.get(ak.next) : undefined ;
   }
 
-  /**
-   *  Retourne l'Item (Entry, Oeuvre, Exemple) qui suit l'élément
-   * défini par +foo+ qui peut être l'id, l'index, l'accessKey
-   * {AccedableItem} ou l'item lui-mêmeK
-   */
-  getPrevItem( foo: AnyAccParam ) {
-    return this.traverseAnyTypeWith(
-      foo,
-      this.getPrevItemById.bind(this),
-      this.getPrevItemByIndex.bind(this),
-      this.getPrevItemByAccKey.bind(this),
-      this.getPrevItemByItem.bind(this)
-    );
-  }
-  getPrevItemById(id: string): T | undefined {
-    const prevAK = this.getPrevAccKeyById(id);
-    return prevAK ? this.getById(prevAK.id) : undefined ;
-  }
-  getPrevItemByIndex(index: number): T | undefined {
-    return this.getPrevItemById(this.arrayItems[index].id);
+ getPrevItem(id: string): T | undefined {
+    const prevAK = this.getPrevAccKey(id);
+    return prevAK ? this.get(prevAK.id) : undefined ;
   }
   getPrevItemByAccKey(ak: AccedableItem) : T | undefined {
-    return ak.prev ? this.getById(ak.prev) : undefined ;
+    return ak.prev ? this.get(ak.prev) : undefined ;
   }
-  getPrevItemByItem(item: Entry | Oeuvre | Exemple) : T | undefined {
-    return this.getPrevItemById(item.id);
-  }
-
-
-  /**
-   *  Retourne l'accedableKey {AccedableItem} de l'élément désigné
-   * par +foo+ qui peut être l'identifiant, l'index, l'access-key ou
-   * l'item lui-même de l'item de référence. 
-   *
-   * Note : la version LA PLUS RAPIDE (O)1 consiste à fournir l'IDENTIFIANT
-   * 
-   */
-  getNextAccKey(
-    foo: AnyAccParam,
-  ) {
-    return this.traverseAnyTypeWith(
-      foo,
-      this.getNextAccKeyById.bind(this),
-      this.getNextAccKeyByIndex.bind(this),
-      this.getNextAccKeyByAccKey.bind(this),
-      this.getNextAccKeyByItem.bind(this)
-    );
-  }
-  getNextAccKeyById(id: string): AccedableItem | undefined {
+  
+ getNextAccKey(id: string): AccedableItem | undefined {
     const ak = this.getAccKey(id);
     return ak.next ? this.getAccKey(ak.next) : undefined;
   }
-  getNextAccKeyByIndex(index: number): AccedableItem | undefined {
-    return this.getNextAccKeyById(this.arrayItems[index].id);
+ getNextAccKeyByAccKey(ak: AccedableItem): AccedableItem | undefined {
+    return ak.next ? this.getNextAccKey(ak.next) : undefined ;
   }
-  getNextAccKeyByAccKey(ak: AccedableItem): AccedableItem | undefined {
-    return ak.next ? this.getNextAccKeyById(ak.next) : undefined ;
-  }
-  getNextAccKeyByItem(item: AnyElementType): AccedableItem | undefined {
-   return this.getNextAccKeyById(item.id); 
-  }
-  
-  /**
-   * Retourne l'AccessKey {AccedableItem} précédent de l'élément 
-   * désigné par +foo+ qui peut être l'id, l'index, l'access-key ou
-   * l'item lui-même de l'élément.
-   */
-  getPrevAccKey(
-    foo: AnyAccParam,
-  ) {
-    return this.traverseAnyTypeWith(
-      foo,
-      this.getPrevAccKeyById.bind(this),
-      this.getPrevAccKeyByIndex.bind(this),
-      this.getPrevAccKeyByAccKey.bind(this),
-      this.getPrevAccKeyByItem.bind(this)
-    );
-  }
-  getPrevAccKeyById(id: string): AccedableItem | undefined {
+ 
+ getPrevAccKey(id: string): AccedableItem | undefined {
     const ak = this.getAccKey(id);
     return ak.prev ? this.getAccKey(ak.prev) : undefined;
   }
-  getPrevAccKeyByIndex(index: number): AccedableItem | undefined {
-    return this.getPrevAccKeyById(this.arrayItems[index].id);
+ getPrevAccKeyByAccKey(ak: AccedableItem): AccedableItem | undefined {
+    return ak.prev ? this.getPrevAccKey(ak.prev) : undefined ;
   }
-  getPrevAccKeyByAccKey(ak: AccedableItem): AccedableItem | undefined {
-    return ak.prev ? this.getPrevAccKeyById(ak.prev) : undefined ;
-  }
-  getPrevAccKeyByItem(item: AnyElementType): AccedableItem | undefined {
-   return this.getPrevAccKeyById(item.id); 
-  }
- 
+
 
   // Boucle sur tous les éléments (sans retour)
   each(traverseMethod: (item: T) => void){
-    this.eachSince(traverseMethod, this.firstItem.data.id);
+    this.eachSince(traverseMethod, this.firstItem.dbData.id);
   }
 
   // Boucle depuis l'élément d'identifiant +id+
@@ -363,11 +216,11 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
     traverseMethod: (item: T) => any,
     id: string 
   ){
-    let item: T | undefined = this.getById(id);
+    let item: T | undefined = this.get(id);
     do {
       if ( item ) {
         traverseMethod(item);
-        item = this.getNextItemById(item.id);
+        item = this.getNextItem(item.id);
       } else { break ;}
     } while ( item ); 
   }
@@ -388,12 +241,12 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
     id: string 
   ): any[] {
     const collected = [];
-    let item: T | undefined = this.getById(id);
+    let item: T | undefined = this.get(id);
     do {
       if ( item ) {
         let retour: any = traverseMethod(item);
         collected.push(retour);
-        item = this.getNextItemById(item.id);
+        item = this.getNextItem(item.id);
       } else { break ;}
     } while ( item );
     return collected;
@@ -416,12 +269,12 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
     itemId: string 
   ): Map<string, any> {
     const collected: Map<string, any> = new Map() ;
-    let item: T | undefined = this.getById(itemId);
+    let item: T | undefined = this.get(itemId);
     do {
       if ( item ) {
         let retour: any = traverseMethod(item);
         collected.set(item.id, retour);
-        item = this.getNextItemById(item.id);
+        item = this.getNextItem(item.id);
       } else { break ;}
     } while ( item );
     return collected;
@@ -458,7 +311,7 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
     if ( id === undefined ) {
       item = this.firstItem ;
     } else {
-      item = this.getNextItemById(id);
+      item = this.getNextItem(id);
     }
     let found: T | undefined ;
     do {
@@ -467,7 +320,7 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
           found = item;
           break ;
         }
-        item = this.getNextItemById(item.id);
+        item = this.getNextItem(item.id);
       }
     } while ( item ); 
     return found ; 
@@ -497,7 +350,7 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
     if ( id === undefined ) {
       item = this.firstItem;
     } else {
-      item = this.getNextItemById(id);
+      item = this.getNextItem(id);
     }
     do {
       if ( item ) {
@@ -506,7 +359,7 @@ export class AccessTable<T extends Entry | Oeuvre | Exemple> {
           collected_count ++ ;
           if ( options.count && collected_count === options.count) { break ;}
         }
-        item = this.getNextItemById(item.id);
+        item = this.getNextItem(item.id);
       }
     } while ( item ); 
     return collected ; 
