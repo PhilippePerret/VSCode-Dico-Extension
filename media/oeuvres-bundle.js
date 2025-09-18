@@ -2239,19 +2239,20 @@
       return true;
     }
     createNewAccedableItem(item) {
-      let itemKlass;
+      let cachedItem;
       switch (item.cachedData.itemType) {
         case "entry":
-          itemKlass = Entry;
+          cachedItem = new Entry(item);
           break;
         case "oeuvre":
-          itemKlass = Oeuvre;
+          cachedItem = new Oeuvre(item);
           break;
         case "exemple":
-          itemKlass = Exemple;
+          cachedItem = new Exemple(item);
           break;
+        default:
+          throw new Error(`Type d'item inconnu: ${item.cachedData.itemType}`);
       }
-      const cachedItem = new itemKlass(item);
       this.addInTable(cachedItem, 0, void 0, void 0);
     }
     /**
