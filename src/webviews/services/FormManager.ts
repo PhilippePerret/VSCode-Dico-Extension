@@ -26,14 +26,17 @@ interface EditedEntryType /* pour "Type de l'item édité */ extends DBEntryType
   changeset: ChangeSetType;
   // Pour mettre les données initiales de l'item
   original: DBEntryType;
+  data2save?: DBEntryType;
 }
 interface EditedOeuvreType extends DBOeuvreType {
   changeset : ChangeSetType;
   original: DBOeuvreType;
+  data2save?: DBOeuvreType;
 }
 interface EditedExempleType extends DBExempleType {
   changeset: ChangeSetType;
   original: DBExempleType;
+  data2save?: DBExempleType;
 }
 type EditedIType = EditedEntryType | EditedOeuvreType | EditedExempleType; 
 
@@ -49,7 +52,7 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
   abstract tableKeys: {[x: string]: Function}; // table des raccourcis propres
   private tablePropertiesByPropName!: Map<string, FormProperty>;
   abstract afterEdit(): void; // à faire après l'édition d'un élément
-  abstract onSaveEditedItem(): Promise<boolean>; // Fonction pour sauver (appelée quand on sauve la donnée)
+  abstract onSaveEditedItem(data: Tdb): Promise<boolean>; // Fonction pour sauver (appelée quand on sauve la donnée)
   async checkEditedItem(): Promise<string | undefined> { return undefined ; }; // Pour checker les données 
   onCancel?(): void; // Fonction appelée en cas d'annulation
   abstract observeForm(): void; // fonction d'observation propre du formulaire
@@ -97,6 +100,8 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
   public async saveItem(andQuit: boolean): Promise<void> {
     const res = await this.itemIsNotSavable();
     if (res) { return ;}
+    let data2save = structuredClone(this.editedItem.changeset) as any as Tdb;
+    this.editedItem.data2save = data2save;
     const map = new Map();
     map.set('o', this.onConfirmSave.bind(this, andQuit));
     map.set('n', this.cancelEdit.bind(this));
@@ -140,7 +145,10 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
   public async onConfirmSave(andQuit: boolean): Promise<void> {
     console.log("Sauvegarde confirmée");
     const fakeItem = this.collectValues();
-   await this.onSaveEditedItem();
+    // Données persistantes
+    const data2save: Tdb = structuredClone(this.editedItem.original) as Tdb;
+    Object.assign(data2save, this.editedItem.data2save);
+    await this.onSaveEditedItem(data2save);
     this.saving = false;
     if (andQuit) { this.closeForm(); }
   }

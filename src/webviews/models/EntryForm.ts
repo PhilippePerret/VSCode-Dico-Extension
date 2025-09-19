@@ -65,7 +65,7 @@ export class EntryForm extends FormManager<EntryType, DBEntryType> {
 
     // Vérification de l'existence des oeuvres dans la
     // définition
-    if (item.changeset.definiition) {
+    if (item.changeset.definiition !== undefined) {
       const unknownOeuvres: string[] = await this.checkExistenceOeuvres(item.changeset.definition);
       if (unknownOeuvres.length) {
         errors.push(`des œuvres sont introuvables : ${unknownOeuvres.map(t => `"${t}"`).join(', ')}`);
@@ -98,26 +98,27 @@ export class EntryForm extends FormManager<EntryType, DBEntryType> {
 
   diverseChecks(changeset: ChangeSetType, errors: string[]): string[] {
     
-    if (changeset.entree && changeset.entree === '') {
+    if (changeset.entree !== undefined && changeset.entree === '') {
       // L'entrée ne doit pas être vide 
       if (changeset.entree === '') { errors.push("L'entrée doit être définie");}
       // L'entrée doit être unique (si elle a changée)
       if ( Entry.doesEntreeExist(changeset.entree)) { errors.push(`L'entrée "${changeset.entree}" existe déjà…`); }
     }
-    if (changeset.id) {
+    if (changeset.id !== undefined) {
       // L'identifiant ne doit pas être vide
       if (changeset.id === '') { errors.push("L'identifiant doit absoluement être défini"); }
       // L'identifiant doit être unique (si nouveau)
       if (Entry.doesIdExist(changeset.id)) { errors.push(`L'identifiant "${changeset.id}" existe déjà. Je ne peux le réattribuer`); }
     }
-    if (changeset.definition) {
+    const def: string = changeset.definition;
+    if (def !== undefined) {
       // La définition ne doit pas être vide 
-      changeset.definition === '' && errors.push("La définition du mot doit être donnée");
+      def === '' && errors.push("La définition du mot doit être donnée");
       // Définition trop courte, sans justifications
-      if (changeset.definition.length < 50 && null === changeset.definition.match(EntryForm.REG_SHORT_DEF)) {
+      if (def !== '' && def.length < 50 && null === def.match(EntryForm.REG_SHORT_DEF)) {
         errors.push("La définition est courte, sans justification…");
       }
-      const unknownEntries = this.searchUnknownEntriesIn(changeset.definition);
+      const unknownEntries = this.searchUnknownEntriesIn(def);
       if ( unknownEntries.length > 0) {
         errors.push(`entrées inconnues dans la défintion (${unknownEntries.join(', ')})`);
       }
@@ -125,11 +126,11 @@ export class EntryForm extends FormManager<EntryType, DBEntryType> {
       console.log("La définition n'a pas été modifiée.");
     }
 
-    if (changeset.genre ) {
+    if (changeset.genre !== undefined) {
       // Le genre doit être donné
       changeset.genre !== '' || errors.push("Le genre de l'entrée doit être donné");
       // Le genre doit exister
-      if (changeset.changeset.has('genre') && Constants.genreNotExists(changeset.genre)) {
+      if (Constants.genreNotExists(changeset.genre)) {
         errors.push(`bizarrement, le genre "${changeset.genre} est inconnu…`);
       }
     }
@@ -138,7 +139,7 @@ export class EntryForm extends FormManager<EntryType, DBEntryType> {
     // Rappel : Une "catégorie", c'est simplement l'ID d'une entrée
     // (c'est la particularité du dictionnaire, mais ça tombe sous le
     // sens) 
-    if (changeset.categorie_id) {
+    if (changeset.categorie_id !== undefined && changeset.categorie_id !== '') {
       const unknownCategorie = this.checkUnknownCategoriesIn(changeset.categorie_id);
       if (unknownCategorie.length) {
         errors.push(`des catégories sont inconnues : ${unknownCategorie.join(', ')}`);
@@ -261,12 +262,8 @@ export class EntryForm extends FormManager<EntryType, DBEntryType> {
    * -------------------------- 
    * Procédure complexe (ComplexRpc)
    */
-  async onSaveEditedItem(): Promise<boolean> {
+  async onSaveEditedItem(data2save: DBEntryType): Promise<boolean> {
     console.info("Item à sauvegarder", this.editedItem);
-    // Données persistantes
-    const data2save: DBEntryType = structuredClone(this.editedItem.original) as DBEntryType;
-    Object.assign(data2save, this.editedItem.changeset);
-    
     console.info("Données à sauvegarder", data2save);
     console.warn("Mais je ne sauve rien pour le moment");
     return false ;

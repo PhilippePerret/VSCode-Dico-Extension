@@ -1375,6 +1375,8 @@
       if (res) {
         return;
       }
+      let data2save = structuredClone(this.editedItem.changeset);
+      this.editedItem.data2save = data2save;
       const map = /* @__PURE__ */ new Map();
       map.set("o", this.onConfirmSave.bind(this, andQuit));
       map.set("n", this.cancelEdit.bind(this));
@@ -1389,7 +1391,6 @@
       const item = this.editedItem;
       this.properties.forEach((dproperty) => {
         const prop = dproperty.propName;
-        console.log("Propri\xE9t\xE9 '%s' | Original: '%s' | New: '%s'", prop, item.original[prop], item[prop]);
         if (item[prop] !== item.original[prop]) {
           Object.assign(this.editedItem.changeset, {
             [prop]: item[prop],
@@ -1712,11 +1713,11 @@
       // <touche>: <fonction bindée>, par exemple
       // 'i': this.showInfo.bind(this)
     };
-    async checkItem(item) {
+    async checkEditedItem() {
       return "Les donn\xE9es ne sont pas check\xE9s";
     }
-    async onSave(item) {
-      console.log("Il faut que j'apprendre \xE0 sauver l'exemple : ", item);
+    async onSaveEditedItem() {
+      console.log("Il faut que j'apprendre \xE0 sauver l'exemple : ", this.editedItem);
       return true;
     }
     observeForm() {

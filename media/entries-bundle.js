@@ -1440,6 +1440,8 @@
       if (res) {
         return;
       }
+      let data2save = structuredClone(this.editedItem.changeset);
+      this.editedItem.data2save = data2save;
       const map = /* @__PURE__ */ new Map();
       map.set("o", this.onConfirmSave.bind(this, andQuit));
       map.set("n", this.cancelEdit.bind(this));
@@ -1454,7 +1456,6 @@
       const item = this.editedItem;
       this.properties.forEach((dproperty) => {
         const prop = dproperty.propName;
-        console.log("Propri\xE9t\xE9 '%s' | Original: '%s' | New: '%s'", prop, item.original[prop], item[prop]);
         if (item[prop] !== item.original[prop]) {
           Object.assign(this.editedItem.changeset, {
             [prop]: item[prop],
@@ -1810,12 +1811,12 @@
      * Grand méthode de check de la validité de l'item. On ne l'envoie
      * en enregistrement que s'il est parfaitement conforme. 
      */
-    async checkItem() {
+    async checkEditedItem() {
       const item = this.editedItem;
       const isNew = item.changeset.isNew;
       const errors = [];
       this.diverseChecks(item.changeset, errors);
-      if (item.changeset.definiition) {
+      if (item.changeset.definiition !== void 0) {
         const unknownOeuvres = await this.checkExistenceOeuvres(item.changeset.definition);
         if (unknownOeuvres.length) {
           errors.push(`des \u0153uvres sont introuvables : ${unknownOeuvres.map((t) => `"${t}"`).join(", ")}`);
@@ -1840,7 +1841,7 @@
       return res.unknown;
     }
     diverseChecks(changeset, errors) {
-      if (changeset.entree && changeset.entree === "") {
+      if (changeset.entree !== void 0 && changeset.entree === "") {
         if (changeset.entree === "") {
           errors.push("L'entr\xE9e doit \xEAtre d\xE9finie");
         }
@@ -1848,7 +1849,7 @@
           errors.push(`L'entr\xE9e "${changeset.entree}" existe d\xE9j\xE0\u2026`);
         }
       }
-      if (changeset.id) {
+      if (changeset.id !== void 0) {
         if (changeset.id === "") {
           errors.push("L'identifiant doit absoluement \xEAtre d\xE9fini");
         }
@@ -1856,25 +1857,26 @@
           errors.push(`L'identifiant "${changeset.id}" existe d\xE9j\xE0. Je ne peux le r\xE9attribuer`);
         }
       }
-      if (changeset.definition) {
-        changeset.definition === "" && errors.push("La d\xE9finition du mot doit \xEAtre donn\xE9e");
-        if (changeset.definition.length < 50 && null === changeset.definition.match(_EntryForm.REG_SHORT_DEF)) {
+      const def = changeset.definition;
+      if (def !== void 0) {
+        def === "" && errors.push("La d\xE9finition du mot doit \xEAtre donn\xE9e");
+        if (def !== "" && def.length < 50 && null === def.match(_EntryForm.REG_SHORT_DEF)) {
           errors.push("La d\xE9finition est courte, sans justification\u2026");
         }
-        const unknownEntries = this.searchUnknownEntriesIn(changeset.definition);
+        const unknownEntries = this.searchUnknownEntriesIn(def);
         if (unknownEntries.length > 0) {
           errors.push(`entr\xE9es inconnues dans la d\xE9fintion (${unknownEntries.join(", ")})`);
         }
       } else {
         console.log("La d\xE9finition n'a pas \xE9t\xE9 modifi\xE9e.");
       }
-      if (changeset.genre) {
+      if (changeset.genre !== void 0) {
         changeset.genre !== "" || errors.push("Le genre de l'entr\xE9e doit \xEAtre donn\xE9");
-        if (changeset.changeset.has("genre") && Constants.genreNotExists(changeset.genre)) {
+        if (Constants.genreNotExists(changeset.genre)) {
           errors.push(`bizarrement, le genre "${changeset.genre} est inconnu\u2026`);
         }
       }
-      if (changeset.categorie_id) {
+      if (changeset.categorie_id !== void 0 && changeset.categorie_id !== "") {
         const unknownCategorie = this.checkUnknownCategoriesIn(changeset.categorie_id);
         if (unknownCategorie.length) {
           errors.push(`des cat\xE9gories sont inconnues : ${unknownCategorie.join(", ")}`);
@@ -1981,7 +1983,7 @@
     async onSaveEditedItem() {
       console.info("Item \xE0 sauvegarder", this.editedItem);
       const data2save = structuredClone(this.editedItem.original);
-      Object.assign(data2save, this.editedItem.changeset);
+      Object.assign(data2save, this.editedItem.data2save);
       console.info("Donn\xE9es \xE0 sauvegarder", data2save);
       console.warn("Mais je ne sauve rien pour le moment");
       return false;

@@ -6,7 +6,7 @@ import { FormManager, FormProperty } from "../services/FormManager";
 import { OeuvrePicker, OptionsOeuvre } from "../services/OeuvreFinder";
 import { Oeuvre } from "./Oeuvre";
 
-export class OeuvreForm extends FormManager<OeuvreType> {
+export class OeuvreForm extends FormManager<OeuvreType, DBOeuvreType> {
   prefix = 'oeuvre';
   formId = 'oeuvre-form';
   properties: FormProperty[] = [
@@ -34,7 +34,7 @@ export class OeuvreForm extends FormManager<OeuvreType> {
     this.panel.context = isNew ? 'create-oeuvre' : 'edit-oeuvre';
   }
 
-  async checkItem(item: OeuvreType): Promise<string | undefined> {
+  async checkEditedItem(): Promise<string | undefined> {
     const errors: string[] = [];
     let errs:string | undefined; // Pour mettre les erreurs provisoires
 
@@ -240,7 +240,8 @@ export class OeuvreForm extends FormManager<OeuvreType> {
    * @param item L'oeuvre à enregistrer
    * @returns True si l'enregistrement a pu se faire correctement.
    */
-  async onSave(item: OeuvreType): Promise<boolean> {
+  async onSaveEditedItem(data2save: DBOeuvreType): Promise<boolean> {
+    const item = this.editedItem;
     console.log("Il faut que j'apprendre à sauver : ", item);
     console.log("Pour le moment je ne fais rien");
     return false;

@@ -1,8 +1,8 @@
-import { ExempleType } from "../../bothside/types";
+import { DBExempleType, ExempleType } from "../../bothside/types";
 import { FormManager, FormProperty } from "../services/FormManager";
 import { Exemple } from "./Exemple";
 
-export class ExempleForm extends FormManager<ExempleType> {
+export class ExempleForm extends FormManager<ExempleType, DBExempleType> {
   formId = 'exemple-form';
   prefix = 'exemple';
   properties: FormProperty[] = [
@@ -15,12 +15,13 @@ export class ExempleForm extends FormManager<ExempleType> {
 
 
 
-  async checkItem(item: ExempleType): Promise<string | undefined> {
+  async checkEditedItem(): Promise<string | undefined> {
     return 'Les données ne sont pas checkés';
   }
 
-  async onSave(item: ExempleType): Promise<boolean> {
-    console.log("Il faut que j'apprendre à sauver l'exemple : ", item);
+  async onSaveEditedItem(data2save: DBExempleType): Promise<boolean> {
+    console.log("Il faut que j'apprendre à sauver l'exemple : ", this.editedItem);
+    console.log("Données à sauver", data2save);
     return true;
   }
 
