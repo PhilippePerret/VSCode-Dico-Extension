@@ -60,6 +60,9 @@ export class Entry {
 	public static async saveItem(params: {CRId: string, item: DBEntryType, ok: boolean, errors: any, [x: string]: any}){
 		const dbManager = DBManager.getInstance(App._context);
 		params = await dbManager.saveItemIn('entrees', params.item, params, this);
+		let itemPrepared: EntryType = this.prepareItemForCache(params.item);
+		itemPrepared = this.finalizeCachedItem(itemPrepared);
+		Object.assign(params, {itemPrepared: itemPrepared});
 		// console.log("Params quand on revient dans Entry", params);
 		// On retourne le résultat au panneau
 		CanalEntry.afterSaveItem(params);

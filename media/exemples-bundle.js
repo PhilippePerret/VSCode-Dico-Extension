@@ -559,16 +559,7 @@
      */
     upsert(item) {
       console.log("Item re\xE7u par upsert", item);
-      const checkedId = ((ity, item2) => {
-        switch (ity) {
-          case "entry":
-          case "oeuvre":
-            return item2.id;
-          // Now at root level
-          case "exemple":
-            return item2.id;
-        }
-      })(item.cachedData.itemType, item);
+      const checkedId = item.id;
       let cachedItem;
       if (this.exists(checkedId)) {
         console.log("C'est une actualisation de l'item ", checkedId);
@@ -581,9 +572,28 @@
       }
       return true;
     }
-    createNewAccedableItem(item) {
-      let cachedItem = item;
-      this.addInTable(cachedItem, 0, void 0, void 0);
+    createNewAccedableItem(newItem) {
+      let nextItem = this.find((compItem) => {
+        return compItem.id > newItem.id;
+      });
+      console.log("Item apr\xE8s", nextItem);
+      let nextItemId, prevItemId, prevItem;
+      let nextAccKey;
+      if (nextItem) {
+        nextItemId = nextItem.id;
+        nextAccKey = this.getAccKey(nextItemId);
+        const prevAccKey = this.getAccKey(nextAccKey.prev);
+        prevItemId = nextAccKey.prev;
+        if (prevItemId) {
+          Object.assign(prevAccKey, { next: newItem.id });
+          Object.assign(nextAccKey, { prev: newItem.id });
+          console.log("Item avant le nouuveau", this.get(prevItemId), prevAccKey);
+        }
+      }
+      const arrayIndex = this.arrayItems.length;
+      const newAccKey = this.addInTable(newItem, arrayIndex, nextItemId, prevItemId);
+      console.log("Item nouveau", newItem, newAccKey);
+      console.log("Item apr\xE8s le nouveau", nextItem, nextAccKey);
     }
     getNextItem(id) {
       const nextAK = this.getNextAccKey(id);
@@ -756,20 +766,20 @@
       this.arrayItems = [];
       for (let i = 0, len = items.length; i < len; ++i) {
         const item = items[i];
-        const nextItem = items[i + 1] || void 0;
-        const prevItem = items[i - 1] || void 0;
-        this.addInTable(item, i, nextItem, prevItem);
+        const nextItemId = items[i + 1]?.id || void 0;
+        const prevItemId = items[i - 1]?.id || void 0;
+        this.addInTable(item, i, nextItemId, prevItemId);
       }
     }
     // Insertion séparée pour pouvoir ajouter en cours de travail
-    addInTable(item, arrayIndex, nextItem, prevItem) {
+    addInTable(item, arrayIndex, nextItemId, prevItemId) {
       const chained = {
         type: "accedable-item",
         id: item.id,
         obj: void 0,
         index: arrayIndex,
-        next: nextItem ? nextItem.id : void 0,
-        prev: prevItem ? prevItem.id : void 0,
+        next: nextItemId,
+        prev: prevItemId,
         visible: true,
         display: "block",
         selected: false,
@@ -777,6 +787,7 @@
       };
       this.keysMap.set(item.id, chained);
       this.arrayItems.push(item);
+      return chained;
     }
     DOMElementOf(id) {
       return document.querySelector(`main#items > div[data-id="${id}"]`);

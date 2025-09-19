@@ -268,11 +268,11 @@ export class EntryForm extends FormManager<EntryType, DBEntryType> {
     const itemSaver = new ComplexRpc({
       call: Entry.saveItem.bind(Entry, data2save)
     });
-    const res = await itemSaver.run() as {ok: boolean, errors: any, item: DBEntryType};
+    const res = await itemSaver.run() as {ok: boolean, errors: any, item: DBEntryType, itemPrepared: EntryType};
     console.log("res dans onSave", res);
     if (res.ok) {
       Entry.panel.flash("Item enregistré avec succès.", 'notice');
-      Entry.accessTable.upsert(res.item);
+      Entry.accessTable.upsert(res.itemPrepared);
     } else {
       console.error("ERREURS LORS DE L'ENREGISTREMENT DE L'ITEM", res.errors);
       Entry.panel.flash('Erreur (enregistrement de l’entrée (voir la console', 'error');

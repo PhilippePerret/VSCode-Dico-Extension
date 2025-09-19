@@ -2,7 +2,7 @@
  * Grande classe qui permet de parcourir très vite les éléments en
  * sachant s'ils sont visibles, sélectionnés, etc.
  */
-import { EntryType, OeuvreType, ExempleType, AnyItemType } from "../../bothside/types";
+import { EntryType, OeuvreType, ExempleType, AnyItemType, AnyDbType } from "../../bothside/types";
 import { PanelClient } from "../PanelClient";
 
 /**
@@ -144,16 +144,7 @@ export class AccessTable<T extends EntryType | OeuvreType | ExempleType> {
    */
   public upsert(item: AnyItemType): boolean {
     console.log("Item reçu par upsert", item);
-    const checkedId: string = ((ity, item) => {
-      switch(ity){
-        case 'entry':
-        case 'oeuvre':
-          return item.id;  // Now at root level
-        case 'exemple':
-          return item.id;  // Composite ID already calculated
-      }
-    })(item.cachedData.itemType, item);
-
+    const checkedId: string = item.id; 
     let cachedItem;
     if ( this.exists(checkedId)) {
       // Update
@@ -164,14 +155,35 @@ export class AccessTable<T extends EntryType | OeuvreType | ExempleType> {
     } else {
       // Create
       console.log("C'est une création de l'item", item);
-      this.createNewAccedableItem(item);
+      this.createNewAccedableItem(item as T);
    }
     return true; // en cas de succès
   }
 
-  private createNewAccedableItem(item: AnyItemType) {
-    let cachedItem: T = item as T;
-    this.addInTable(cachedItem, 0, undefined, undefined);  // <===== TODO : LE ZÉRO EST À CALCULER !
+  private createNewAccedableItem(newItem: T) {
+    // On cherche sa place en fonction de son identifiant
+    let nextItem: T | undefined = this.find((compItem: T) => { return compItem.id > newItem.id; });
+    console.log("Item après", nextItem);
+    let nextItemId: string | undefined, prevItemId: string | undefined, prevItem: T | undefined;
+    let nextAccKey: AccedableItem | undefined;
+    if (nextItem)  {
+      nextItemId = nextItem.id;
+      nextAccKey = this.getAccKey(nextItemId);
+      const prevAccKey: AccedableItem = this.getAccKey(nextAccKey.prev as string);
+      prevItemId = nextAccKey.prev;
+      if (prevItemId) {
+        // Un élément précédent existait, il faut décrocher le précédent
+        // et le suivant pour insérer le nouvel item
+        Object.assign(prevAccKey, {next: newItem.id});
+        Object.assign(nextAccKey, {prev: newItem.id});
+        console.log("Item avant le nouuveau", this.get(prevItemId), prevAccKey);
+      }
+    }
+   const arrayIndex = this.arrayItems.length; // car l'item n'a pas encore été inséré
+    const newAccKey: AccedableItem = this.addInTable(newItem, arrayIndex, nextItemId, prevItemId);  // <===== TODO : LE ZÉRO EST À CALCULER !
+    console.log("Item nouveau", newItem, newAccKey);
+    console.log("Item après le nouveau", nextItem, nextAccKey);
+    // TODO il faut l'ajouter dans le DOM
   }
   
   getNextItem(id: string): T | undefined {
@@ -373,21 +385,26 @@ export class AccessTable<T extends EntryType | OeuvreType | ExempleType> {
     this.arrayItems = [];
     for (let i: number = 0, len = items.length; i < len; ++i) {
       const item = items[i];
-      const nextItem = items[i + 1] || undefined;
-      const prevItem = items[i - 1] || undefined;
-      this.addInTable(item, i, nextItem, prevItem);
+      const nextItemId: string | undefined = items[i + 1]?.id || undefined;
+      const prevItemId: string | undefined = items[i - 1]?.id || undefined;
+      this.addInTable(item, i, nextItemId, prevItemId);
     }
   }
 
   // Insertion séparée pour pouvoir ajouter en cours de travail
-  addInTable(item: T, arrayIndex:number, nextItem: T | undefined, prevItem: T | undefined) {
+  addInTable(
+    item: T, 
+    arrayIndex:number, 
+    nextItemId: string | undefined, 
+    prevItemId: string | undefined
+  ): AccedableItem {
     const chained: AccedableItem = {
       type: 'accedable-item',
       id: item.id,
       obj: undefined,
       index: arrayIndex,
-      next: nextItem ? nextItem.id : undefined,
-      prev: prevItem ? prevItem.id : undefined,
+      next: nextItemId,
+      prev: prevItemId,
       visible: true,
       display: 'block',
       selected: false,
@@ -396,6 +413,7 @@ export class AccessTable<T extends EntryType | OeuvreType | ExempleType> {
      // console.log("[POPULATE ACCESSTABLE] ak = ", chained);
     this.keysMap.set(item.id, chained);
     this.arrayItems.push(item);
+    return chained;
   }
 
   DOMElementOf(id: string) {
