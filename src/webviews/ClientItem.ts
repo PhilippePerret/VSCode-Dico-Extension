@@ -51,6 +51,7 @@ export abstract class ClientItem<Tdt extends ItemDataType> {
     const allItems: AnyItemType[] = items.map( (item: string) => JSON.parse(item) as AnyItemType);
     this.setAccessTableWithItems(allItems);
   }
+  /* Surclassée */ static setAccessTableWithItems(items: any){};
 
   public get id(): string {return this.item.id;}
 

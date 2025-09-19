@@ -86,7 +86,7 @@
      */
     static deserializeItems(items) {
       const allItems = items.map((item) => JSON.parse(item));
-      this.accessTable(allItems);
+      this.setAccessTableWithItems(allItems);
     }
     get id() {
       return this.item.id;
@@ -1738,7 +1738,7 @@
     get notes() {
       return this.data.dbData.notes;
     }
-    static setAccessTable(items) {
+    static setAccessTableWithItems(items) {
       this._accessTable = new AccessTable(items);
     }
     static _accessTable;
