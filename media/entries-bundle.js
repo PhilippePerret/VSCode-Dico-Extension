@@ -286,6 +286,9 @@
      * a pu modifier des données qui servent pour le tri, le formatage,
      * etc.
      * 
+     * @returns [<item>, <next item>] Pour soit updater les données pour une
+     * update soit insérer le nouvel élément dans le DOM pour une création
+     * Note : c'est le panneau qui s'en charge.
      */
     upsert(item) {
       console.log("Item re\xE7u par upsert", item);
@@ -296,11 +299,11 @@
         cachedItem = this.get(checkedId);
         console.log("Actualisation de", this.get(checkedId));
         Object.assign(cachedItem, item);
+        return [item, void 0];
       } else {
         console.log("C'est une cr\xE9ation de l'item", item);
-        this.createNewAccedableItem(item);
+        return this.createNewAccedableItem(item);
       }
-      return true;
     }
     createNewAccedableItem(newItem) {
       let nextItem = this.find((compItem) => {
@@ -317,13 +320,14 @@
         if (prevItemId) {
           Object.assign(prevAccKey, { next: newItem.id });
           Object.assign(nextAccKey, { prev: newItem.id });
-          console.log("Item avant le nouuveau", this.get(prevItemId), prevAccKey);
+          console.log("Item avant le nouveau", this.get(prevItemId), prevAccKey);
         }
       }
       const arrayIndex = this.arrayItems.length;
       const newAccKey = this.addInTable(newItem, arrayIndex, nextItemId, prevItemId);
       console.log("Item nouveau", newItem, newAccKey);
       console.log("Item apr\xE8s le nouveau", nextItem, nextAccKey);
+      return [newItem, nextItem];
     }
     getNextItem(id) {
       const nextAK = this.getNextAccKey(id);
@@ -1174,6 +1178,32 @@
     scrollTo(obj) {
       obj.scrollIntoView({ behavior: "auto", block: "center" });
     }
+    // Pour créer le nouvel élément
+    insertInDom(item, before) {
+      const clone = this.cloneItemTemplate();
+      const mainElement = clone.querySelector("." + this.minName);
+      if (mainElement) {
+        mainElement.setAttribute("data-id", item.id);
+      }
+      if (before) {
+        this.container.insertBefore(clone, this.accessTable.getObj(before.id));
+      } else {
+        this.container.appendChild(clone);
+      }
+      this.updateInDom(item);
+    }
+    // Pour actualiser les valeurs dans le DOM
+    updateInDom(item) {
+      const obj = this.accessTable.getObj(item.id);
+      Object.keys(item.dbData).forEach((prop) => {
+        let value = item.dbData[prop];
+        this.setPropValue(obj, item, prop, value);
+      });
+      Object.keys(item.cachedData).forEach((prop) => {
+        let value = item.cachedData[prop];
+        this.setPropValue(obj, item, prop, value);
+      });
+    }
     // Pour peupler le panneau
     populate(accessTable) {
       const container = this.container;
@@ -1181,28 +1211,14 @@
       let index = -1;
       accessTable.each((item) => {
         ++index;
-        const clone = this.cloneItemTemplate();
-        const mainElement = clone.querySelector("." + this.minName);
-        if (mainElement) {
-          mainElement.setAttribute("data-id", item.id);
-          mainElement.setAttribute("data-index", index.toString());
-        }
-        Object.keys(item.dbData).forEach((prop) => {
-          let value = item.dbData[prop];
-          this.setPropValue(clone, item, prop, value);
-        });
-        Object.keys(item.cachedData).forEach((prop) => {
-          let value = item.cachedData[prop];
-          this.setPropValue(clone, item, prop, value);
-        });
-        this.container.appendChild(clone);
+        this.insertInDom(item, void 0);
       });
       this.afterDisplayItems(accessTable);
       this.observePanel();
     }
-    setPropValue(clone, item, prop, value) {
+    setPropValue(obj, item, prop, value) {
       value = this.formateProp(item, prop, value);
-      clone.querySelectorAll(`[data-prop="${prop}"]`).forEach((element) => {
+      obj.querySelectorAll(`[data-prop="${prop}"]`).forEach((element) => {
         if (value.startsWith("<")) {
           element.innerHTML = value;
         } else {
@@ -2003,8 +2019,14 @@
       const res = await itemSaver.run();
       console.log("res dans onSave", res);
       if (res.ok) {
-        Entry.panel.flash("Item enregistr\xE9 avec succ\xE8s.", "notice");
-        Entry.accessTable.upsert(res.itemPrepared);
+        Entry.panel.flash("Item enregistr\xE9 avec succ\xE8s en DB.", "notice");
+        let item, nextItem;
+        [item, nextItem] = Entry.accessTable.upsert(res.itemPrepared);
+        if (nextItem) {
+          Entry.panel.insertInDom(item, nextItem);
+        } else {
+          Entry.panel.updateInDom(item);
+        }
       } else {
         console.error("ERREURS LORS DE L'ENREGISTREMENT DE L'ITEM", res.errors);
         Entry.panel.flash("Erreur (enregistrement de l\u2019entr\xE9e (voir la console", "error");

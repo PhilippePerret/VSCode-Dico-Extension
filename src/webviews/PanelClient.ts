@@ -139,34 +139,45 @@ export class PanelClient<T extends AnyItemType> {
     obj.scrollIntoView({behavior: 'auto', block: 'center'});
   }
 
+  // Pour créer le nouvel élément
+  public insertInDom(item: T, before: T | undefined) {
+    const clone = this.cloneItemTemplate() as DocumentFragment;
+    const mainElement = clone.querySelector('.' + this.minName);
+    if (mainElement) {
+      mainElement.setAttribute('data-id', item.id);
+    }
+    // Et on l'ajoute au conteneur
+    if (before) {
+      this.container.insertBefore(clone, this.accessTable.getObj(before.id));
+    } else {
+      this.container.appendChild(clone);
+    }
+    // On actualise ou on renseigne ses valeurs
+    this.updateInDom(item);
+  }
+
+  // Pour actualiser les valeurs dans le DOM
+  public updateInDom(item: T) {
+    const obj = this.accessTable.getObj(item.id);
+    // Régler les props
+    // (maintenant, elles peuvent se trouver dans dbData, qui 
+    // contient les données persistantes, ou dans cachedData, qui
+    // contient les données formatées)
+    Object.keys(item.dbData).forEach((prop: string) => {
+      let value = ((item.dbData as unknown) as Record<string, string>)[prop] as string;
+      this.setPropValue(obj, item, prop, value);
+    });
+    Object.keys(item.cachedData).forEach((prop: string) => {
+      let value = ((item.cachedData as unknown) as Record<string, string>)[prop] as string;
+      this.setPropValue(obj, item, prop, value);
+    });
+  }
+
   // Pour peupler le panneau
   public populate(accessTable: AccessTable<any>): void {
     const container = this.container;
     container.innerHTML = '';
-    let index = -1 ;
-    accessTable.each((item: AnyItemType) => { 
-      ++ index ;
-      const clone = this.cloneItemTemplate() as DocumentFragment;
-      const mainElement = clone.querySelector('.' + this.minName);
-      if (mainElement) {
-        mainElement.setAttribute('data-id', item.id);
-        mainElement.setAttribute('data-index', index.toString());
-      }
-      // Régler les props
-      // (maintenant, elles peuvent se trouver dans dbData, qui 
-      // contient les données persistantes, ou dans cachedData, qui
-      // contient les données formatées)
-      Object.keys(item.dbData).forEach((prop: string) => {
-        let value = ((item.dbData as unknown) as Record<string, string>)[prop] as string;
-        this.setPropValue(clone, item, prop, value);
-      });
-      Object.keys(item.cachedData).forEach((prop: string) => {
-        let value = ((item.cachedData as unknown) as Record<string, string>)[prop] as string;
-        this.setPropValue(clone, item, prop, value);
-      });
-      // Et on l'ajoute au conteneur
-      this.container.appendChild(clone);
-    });
+    accessTable.each((item: AnyItemType) => { this.insertInDom(item as T, undefined); });
 
     // Pour opérer après le peuplement du panneau. Par exemple, pour 
     // les exemples, on va ajouter les titres des œuvres.
@@ -176,10 +187,10 @@ export class PanelClient<T extends AnyItemType> {
     this.observePanel();
   }
 
-  private setPropValue(clone: DocumentFragment, item: Record<string, any>, prop: string, value: string | number) {
+  private setPropValue(obj: HTMLElement, item: Record<string, any>, prop: string, value: string | number) {
     // value = String(value);
     value = this.formateProp(item, prop, value);
-    clone
+    obj
       .querySelectorAll(`[data-prop="${prop}"]`)
       .forEach(element => {
         if (value.startsWith('<')) {

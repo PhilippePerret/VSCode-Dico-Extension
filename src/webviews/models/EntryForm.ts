@@ -1,4 +1,4 @@
-import { DBEntryType, EntryType } from '../../bothside/types';
+import { AnyItemType, DBEntryType, EntryType } from '../../bothside/types';
 import { StringNormalizer } from '../../bothside/StringUtils';
 import { Constants } from '../../bothside/UConstants';
 import { ComplexRpc } from '../services/ComplexRpc';
@@ -271,8 +271,14 @@ export class EntryForm extends FormManager<EntryType, DBEntryType> {
     const res = await itemSaver.run() as {ok: boolean, errors: any, item: DBEntryType, itemPrepared: EntryType};
     console.log("res dans onSave", res);
     if (res.ok) {
-      Entry.panel.flash("Item enregistré avec succès.", 'notice');
-      Entry.accessTable.upsert(res.itemPrepared);
+      Entry.panel.flash("Item enregistré avec succès en DB.", 'notice');
+      let item: AnyItemType, nextItem: AnyItemType | undefined;
+      [item, nextItem] = Entry.accessTable.upsert(res.itemPrepared);
+      if (nextItem /* Création d'un nouvel item */) {
+        Entry.panel.insertInDom(item, nextItem);
+      } else {
+        Entry.panel.updateInDom(item);
+      }
     } else {
       console.error("ERREURS LORS DE L'ENREGISTREMENT DE L'ITEM", res.errors);
       Entry.panel.flash('Erreur (enregistrement de l’entrée (voir la console', 'error');

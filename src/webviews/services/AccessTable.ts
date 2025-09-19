@@ -141,8 +141,11 @@ export class AccessTable<T extends EntryType | OeuvreType | ExempleType> {
    * a pu modifier des données qui servent pour le tri, le formatage,
    * etc.
    * 
+   * @returns [<item>, <next item>] Pour soit updater les données pour une
+   * update soit insérer le nouvel élément dans le DOM pour une création
+   * Note : c'est le panneau qui s'en charge.
    */
-  public upsert(item: AnyItemType): boolean {
+  public upsert(item: AnyItemType): [T, T | undefined] {
     console.log("Item reçu par upsert", item);
     const checkedId: string = item.id; 
     let cachedItem;
@@ -152,15 +155,15 @@ export class AccessTable<T extends EntryType | OeuvreType | ExempleType> {
       cachedItem = this.get(checkedId);
       console.log("Actualisation de", this.get(checkedId));
       Object.assign(cachedItem, item);
+      return [item as T, undefined];
     } else {
       // Create
       console.log("C'est une création de l'item", item);
-      this.createNewAccedableItem(item as T);
-   }
-    return true; // en cas de succès
+      return this.createNewAccedableItem(item as T);
+    }
   }
 
-  private createNewAccedableItem(newItem: T) {
+  private createNewAccedableItem(newItem: T): [T, T | undefined] {
     // On cherche sa place en fonction de son identifiant
     let nextItem: T | undefined = this.find((compItem: T) => { return compItem.id > newItem.id; });
     console.log("Item après", nextItem);
@@ -176,7 +179,7 @@ export class AccessTable<T extends EntryType | OeuvreType | ExempleType> {
         // et le suivant pour insérer le nouvel item
         Object.assign(prevAccKey, {next: newItem.id});
         Object.assign(nextAccKey, {prev: newItem.id});
-        console.log("Item avant le nouuveau", this.get(prevItemId), prevAccKey);
+        console.log("Item avant le nouveau", this.get(prevItemId), prevAccKey);
       }
     }
    const arrayIndex = this.arrayItems.length; // car l'item n'a pas encore été inséré
@@ -184,6 +187,7 @@ export class AccessTable<T extends EntryType | OeuvreType | ExempleType> {
     console.log("Item nouveau", newItem, newAccKey);
     console.log("Item après le nouveau", nextItem, nextAccKey);
     // TODO il faut l'ajouter dans le DOM
+    return [newItem, nextItem];
   }
   
   getNextItem(id: string): T | undefined {
