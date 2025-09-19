@@ -48,10 +48,7 @@ export abstract class ClientItem<Tdt extends ItemDataType> {
    * parcourrir les éléments. 
    */
   static deserializeItems(items: string[]): void {
-    // console.log("items séiralisés", items);
     const allItems: AnyItemType[] = items.map( (item: string) => JSON.parse(item) as AnyItemType);
-    console.log("items désérialisés", allItems);
-    // console.log("Premier item remonté:", allItems[0]);
     this.setAccessTableWithItems(allItems);
   }
   /* Surclassée */ static setAccessTableWithItems(items: any){};
