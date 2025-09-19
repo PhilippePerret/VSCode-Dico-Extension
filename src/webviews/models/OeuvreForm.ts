@@ -38,22 +38,29 @@ export class OeuvreForm extends FormManager<OeuvreType, DBOeuvreType> {
     const errors: string[] = [];
     let errs:string | undefined; // Pour mettre les erreurs provisoires
 
+    const item = this.editedItem;
+    const changeset = item.changeset;
+
     // En cas de nouvelle œuvre
-    if (this.isNewItem) {
+    if (changeset.isNew) {
       // Pas mal de choses ont déjà été vérifiées, et notamment le 
       // fait que les titres n'existent pas.
     }
-    const dbData: DBOeuvreType = item.dbData;
+    const dbData: DBOeuvreType = item.original as DBOeuvreType;
 
-    if (item.id === '' || !item.id){
-      errors.push('Il faut absolument que cet item ait un identifiant.');
+    if (changeset.id !== undefined) {
+      if (changeset.id === '' || !changeset.id) {
+        errors.push('Il faut absolument que cet item ait un identifiant.');
+      }
     }
 
-    if ((dbData.titre_original as string).trim().length === 0) {
-      errors.push('Il faut fournir le titre de l’œuvre original.');
+    if (changeset.titre_origin !== undefined) {
+      if ((changeset.titre_original as string).trim().length === 0) {
+        errors.push('Il faut fournir le titre de l’œuvre original.');
+      }
     }
-    
-    if ( errs = this.checkAuteurs(item.dbData)) {
+   
+    if ( errs = this.checkAuteurs(changeset.auteurs)) {
       errors.push('erreurs trouvés sur les auteurs : ' + errs);
     }
 
@@ -63,18 +70,22 @@ export class OeuvreForm extends FormManager<OeuvreType, DBOeuvreType> {
     }
   }
 
-  checkAuteurs(item: DBOeuvreType): undefined | string {
-    
-    let auts: any = String(item.auteurs).trim();
+  /**
+   * Vérification des auteurs. Pour le moment, on se contente de voir si
+   * leur genre est bien défini.
+   * 
+   * @param auteurs String contenant tous les auteurs définis
+   * @returns true/false
+   */
+  checkAuteurs(auteurs: string): undefined | string {
+    let auts: any = String(auteurs).trim();
     if ( auts.length === 0) {
       return 'Il faut impérativement fournir les autrices et auteurs';
     }
     auts = auts.split(',').map((a: string) => a.trim());
-
     const errs: string[] = [];
     const genderErrs = this.checkAuteursHaveGender(auts);
     genderErrs && errs.push(genderErrs);
-   
     if ( errs.length ) { return errs.join(', ');}
   }
   
@@ -135,7 +146,7 @@ export class OeuvreForm extends FormManager<OeuvreType, DBOeuvreType> {
   onChangeTitreAffiched(ev: Event | undefined = undefined){
     const noTitreOriginal = this.getValueOf('titre_original') === '';
     const titaff = this.getValueOf('titre_affiche') as string;
-    if ( this.isNewItem) {
+    if ( this.editedItem.changeset.isNew) {
      if (Oeuvre.doOeuvresExist([titaff]).known.length) {
         this.flash('Ce titre existe déjà. Si vous voulez vraiment le conserver, ajoutez un indice.', 'error');
         this.setValueOf('titre_affiche', '');
@@ -187,10 +198,11 @@ export class OeuvreForm extends FormManager<OeuvreType, DBOeuvreType> {
     // Par exemple quand remise à rien pour recalcul de l'id
     if (titorig === '') { return ; }
 
-    if ( this.isNewItem ) {
+    if (this.editedItem.changeset.isNew) {
       // Le titre original ne doit pas exister
       if ( Oeuvre.doOeuvresExist([titorig]).known.length){
         Oeuvre.panel.flash("Ce titre existe déjà. Si c'est vraiment une autre œuvre, ajoutez-lui un indice", 'error');
+        // TODO Ajouter une touche "v" pour le "voir" (ce sera une touche provisoire ajoutée à la table des touches du panneau)
         this.setValueOf('titre_original', '');
         return;
       }
