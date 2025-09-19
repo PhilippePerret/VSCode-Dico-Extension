@@ -218,8 +218,6 @@ export class AccessTable<T extends EntryType | OeuvreType | ExempleType> {
     traverseMethod: (item: T) => any,
     id: string 
   ){
-    console.log("keyMap dans eachSince", this.keysMap);
-    console.log("Premier item dans eachSince", this.firstItem);
     let item: T | undefined = this.get(id);
     do {
       if ( item ) {

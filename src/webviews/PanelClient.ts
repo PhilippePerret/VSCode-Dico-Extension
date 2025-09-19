@@ -31,7 +31,6 @@ export class PanelClient<T extends AnyItemType> {
   // Pour marquer le panneau actif ou inactif
   public activate() { this.setPanelFocus(true); }
   public desactivate() { this.setPanelFocus(false); }
-  public static ici(){console.log("Le ici du panneau.");}
 
   /**
    * Méthode puissante permettant d'attendre une réaction de l'utilisateur en affichant un 
@@ -71,6 +70,12 @@ export class PanelClient<T extends AnyItemType> {
   }
 
 
+  /**
+   * Affichage d'un message en haut du panneau.
+   * 
+   * @param msg Le message
+   * @param type Le type de message
+   */
   public flash(msg:string, type: FlashMessageType) {
     const o = document.createElement('div');
     o.className = type;
@@ -138,19 +143,19 @@ export class PanelClient<T extends AnyItemType> {
     const container = this.container;
     container.innerHTML = '';
     let index = -1 ;
-    accessTable.each((data: AnyItemType) => { // <========= FAIRE LA MÊME CHOSE (INSTANCE AU LIEU DE CLASSE POUR POUVOIR "TYPER")
+    accessTable.each((item: AnyItemType) => { 
       ++ index ;
       const clone = this.cloneItemTemplate() as DocumentFragment;
       const mainElement = clone.querySelector('.' + this.minName);
       if (mainElement) {
-        mainElement.setAttribute('data-id', data.id);
+        mainElement.setAttribute('data-id', item.id);
         mainElement.setAttribute('data-index', index.toString());
       }
       // Régler les props
-      Object.keys(data).forEach(prop => {
-        let value = ((data as unknown) as Record<string, string>)[prop] as string;
+      Object.keys(item.dbData).forEach(prop => {
+        let value = ((item.dbData as unknown) as Record<string, string>)[prop] as string;
         // value = String(value);
-        value = this.formateProp(data, prop, value);
+        value = this.formateProp(item.dbData, prop, value);
         clone
           .querySelectorAll(`[data-prop="${prop}"]`)
           .forEach(element => {
