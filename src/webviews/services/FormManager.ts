@@ -111,7 +111,7 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
     const item = this.editedItem as Record<string, any>;
     this.properties.forEach(dproperty => {
       const prop = dproperty.propName;
-      console.log("Propriété '%s' | Original: '%s' | New: '%s'", prop, item.original[prop], item[prop]);
+      // console.log("Propriété '%s' | Original: '%s' | New: '%s'", prop, item.original[prop], item[prop]);
       if ( item[prop] !== item.original[prop]) {
         Object.assign(this.editedItem.changeset, {
           [prop]: item[prop],

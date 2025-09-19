@@ -55,7 +55,7 @@ export class EntryForm extends FormManager<EntryType, DBEntryType> {
    * Grand méthode de check de la validité de l'item. On ne l'envoie
    * en enregistrement que s'il est parfaitement conforme. 
    */
-  async checkItem(): Promise<string | undefined> {
+  async checkEditedItem(): Promise<string | undefined> {
     const item = this.editedItem;
     const isNew = item.changeset.isNew;
     const errors: string[] = [];
