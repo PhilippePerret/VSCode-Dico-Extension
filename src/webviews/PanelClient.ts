@@ -158,11 +158,11 @@ export class PanelClient<T extends AnyItemType> {
       // contient les données formatées)
       Object.keys(item.dbData).forEach((prop: string) => {
         let value = ((item.dbData as unknown) as Record<string, string>)[prop] as string;
-        this.setPropValue(clone, item.dbData, prop, value);
+        this.setPropValue(clone, item, prop, value);
       });
       Object.keys(item.cachedData).forEach((prop: string) => {
         let value = ((item.cachedData as unknown) as Record<string, string>)[prop] as string;
-        this.setPropValue(clone, item.cachedData, prop, value);
+        this.setPropValue(clone, item, prop, value);
       });
       // Et on l'ajoute au conteneur
       this.container.appendChild(clone);
@@ -176,9 +176,9 @@ export class PanelClient<T extends AnyItemType> {
     this.observePanel();
   }
 
-  private setPropValue(clone: DocumentFragment, data: Record<string, any>, prop: string, value: string | number) {
+  private setPropValue(clone: DocumentFragment, item: Record<string, any>, prop: string, value: string | number) {
     // value = String(value);
-    value = this.formateProp(data, prop, value);
+    value = this.formateProp(item, prop, value);
     clone
       .querySelectorAll(`[data-prop="${prop}"]`)
       .forEach(element => {

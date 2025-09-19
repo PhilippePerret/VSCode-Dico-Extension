@@ -826,19 +826,19 @@
         }
         Object.keys(item.dbData).forEach((prop) => {
           let value = item.dbData[prop];
-          this.setPropValue(clone, item.dbData, prop, value);
+          this.setPropValue(clone, item, prop, value);
         });
         Object.keys(item.cachedData).forEach((prop) => {
           let value = item.cachedData[prop];
-          this.setPropValue(clone, item.cachedData, prop, value);
+          this.setPropValue(clone, item, prop, value);
         });
         this.container.appendChild(clone);
       });
       this.afterDisplayItems(accessTable);
       this.observePanel();
     }
-    setPropValue(clone, data, prop, value) {
-      value = this.formateProp(data, prop, value);
+    setPropValue(clone, item, prop, value) {
+      value = this.formateProp(item, prop, value);
       clone.querySelectorAll(`[data-prop="${prop}"]`).forEach((element) => {
         if (value.startsWith("<")) {
           element.innerHTML = value;

@@ -59,14 +59,10 @@ export class Exemple {
 		CanalExemple.afterSaveItem(params);
 	}
 
-
-
 	public static cacheAllData(items: DBExempleType[]): void {
 		this.cache.inject(items, this.prepareItemForCache.bind(this));
 	}
 	protected static prepareItemForCache(item: DBExempleType): ExempleType {
-		// console.log("item dans exemple", structuredClone(item));
-		// throw new Error("pour voir");
 		return {
 			id: `${item.oeuvre_id}-${item.indice}`,  // ID composite at root level
 			// dbData: (item as any).data, // JE NE SAIS PAS POURQUOI JE DOIS PRENDRE .data…
@@ -131,22 +127,9 @@ export class Exemple {
 	}
 
 	/**
-	 * Create from database row
-	 */
-	static fromRow(row: DBExempleType): Exemple | undefined {
-		try {
-			// Il faut créer un ExempleType complet depuis les données DB
-			const exempleType = this.prepareItemForCache(row);
-			return new Exemple(exempleType);
-		} catch(erreur) {
-			console.error("# ERREUR avec l'EXEMPLE : %s", erreur, row);
-		}
-	}
-
-	/**
 	 * Sort function for exemples (by oeuvre_id then by indice)
 	 */
-	static sortFunction(a:any, b:any): number {
+	static sortFunction(a:DBExempleType, b:DBExempleType): number {
 		// First sort by oeuvre ID (oeuvre_id)
 		const oeuvreComparison = a.oeuvre_id.localeCompare(b.oeuvre_id);
 		if (oeuvreComparison !== 0) { return oeuvreComparison; }
