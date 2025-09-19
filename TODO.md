@@ -1,7 +1,7 @@
 # Todo list
 
 * J'EN SUIS À :
-  - Affichage complet des items dans la liste
+  - [BUG] refaire marcher le manager VimLike
   - Procédure d'ajout ou d'actualisation d'une donnée dans accessTable + Panneau
     [BUG] Réussir à faire passer les choses (demander à Clause)
   - [si update]
