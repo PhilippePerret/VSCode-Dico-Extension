@@ -170,6 +170,11 @@
     arrayItems = [];
     // Table de la table (pour vérification)
     _size;
+    // Le premier item, qui doit forcément être le premier chargé
+    _firstItem;
+    get firstItem() {
+      return this._firstItem || (this._firstItem = this.arrayItems[0]);
+    }
     constructor(items) {
       this.populateInTable(items);
     }
@@ -408,13 +413,6 @@
     // dans une Map qui a en clé l'identifiant de l'item
     collect(traverseMethod) {
       return this.collectSince(traverseMethod, this.firstItem.id);
-    }
-    /**
-     * Retourne le premier item. Par convention, c'est le premier
-     * de la liste.
-     */
-    get firstItem() {
-      return this.arrayItems[0];
     }
     /**
      * Boucle sur les items, depuis l'item d'identifiant +id+ ou depuis le premier et 

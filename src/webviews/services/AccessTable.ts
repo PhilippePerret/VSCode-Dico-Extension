@@ -31,13 +31,14 @@ export class AccessTable<T extends EntryType | OeuvreType | ExempleType> {
   // Table de la table (pour vérification)
   _size!: number | null ;
   // Le premier item, qui doit forcément être le premier chargé
-  firstItem: T;
+  _firstItem!: T;
+  private get firstItem(){
+    return this._firstItem || (this._firstItem = this.arrayItems[0]); }
 
   constructor(
     items: T[]
   ) {
     this.populateInTable(items);
-    this.firstItem = this.arrayItems[0];
   }
   
   // après un ajout ou une suppression, par exemple
