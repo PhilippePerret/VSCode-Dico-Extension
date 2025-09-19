@@ -3,10 +3,7 @@ import { PanelWrapper, WebviewPanelWrapper } from '../InterComs-tests';
 import { PanelClass } from './panelClass';
 import { PanelClassEntry } from './panelClassEntry'; 
 import { PanelClassOeuvre } from './panelClassOeuvre';
-import { UEntry } from '../../../bothside/UEntry';
 import { PanelClassExemple } from './panelClassExemple';
-import { UOeuvre } from '../../../bothside/UOeuvre';
-import { UExemple } from '../../../bothside/UExemple';
 import { App } from '../App';
 import { CanalEntry, CanalOeuvre, CanalExemple } from '../Rpc';
 
@@ -26,9 +23,9 @@ export class PanelManager {
 		// panneaux
 		PanelClass.defineCommonPanelOptions(c) ; 
 		
-		this._panels.push(new PanelClassEntry(c, UEntry.names.tech.plur, UEntry.names.tit.plur, 1 ));
-		this._panels.push(new PanelClassOeuvre(c, UOeuvre.names.tech.plur, UOeuvre.names.tit.plur, 2));
-		this._panels.push(new PanelClassExemple(c, UExemple.names.tech.plur, UExemple.names.tit.plur, 3));
+		this._panels.push(new PanelClassEntry(c, 'entries', 'Entrées', 1 ));
+		this._panels.push(new PanelClassOeuvre(c, 'oeuvres', 'Œuvres', 2));
+		this._panels.push(new PanelClassExemple(c, 'exemples', 'Exemples', 3));
 		
 		console.log("Fin de l'ouverture des panneaux.");
 	}

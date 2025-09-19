@@ -86,6 +86,7 @@
      */
     static deserializeItems(items) {
       const allItems = items.map((item) => JSON.parse(item));
+      console.log("items d\xE9s\xE9rialis\xE9s", allItems);
       this.setAccessTableWithItems(allItems);
     }
     /* Surclassée */
@@ -349,8 +350,6 @@
     }
     // Boucle depuis l'élément d'identifiant +id+
     eachSince(traverseMethod, id) {
-      console.log("keyMap dans eachSince", this.keysMap);
-      console.log("Premier item dans eachSince", this.firstItem);
       let item = this.get(id);
       do {
         if (item) {
@@ -1062,9 +1061,6 @@
     desactivate() {
       this.setPanelFocus(false);
     }
-    static ici() {
-      console.log("Le ici du panneau.");
-    }
     /**
      * Méthode puissante permettant d'attendre une réaction de l'utilisateur en affichant un 
      * message. Typiquement, c'est le "Pour faire ça, tapez 1, pour faire ça, tapez 2".
@@ -1099,6 +1095,12 @@
       }
       this.keyManager.keyboardBypass = realButtons;
     }
+    /**
+     * Affichage d'un message en haut du panneau.
+     * 
+     * @param msg Le message
+     * @param type Le type de message
+     */
     flash(msg, type) {
       const o = document.createElement("div");
       o.className = type;
@@ -1168,17 +1170,18 @@
       const container = this.container;
       container.innerHTML = "";
       let index = -1;
-      accessTable.each((data) => {
+      accessTable.each((item) => {
         ++index;
         const clone = this.cloneItemTemplate();
         const mainElement = clone.querySelector("." + this.minName);
         if (mainElement) {
-          mainElement.setAttribute("data-id", data.id);
+          mainElement.setAttribute("data-id", item.id);
           mainElement.setAttribute("data-index", index.toString());
         }
-        Object.keys(data).forEach((prop) => {
-          let value = data[prop];
-          value = this.formateProp(data, prop, value);
+        Object.keys(item.dbData).forEach((prop) => {
+          let value = item.dbData[prop];
+          console.log("[Item %s] prop: %s | value: %s", item.id, prop, value);
+          value = this.formateProp(item.dbData, prop, value);
           clone.querySelectorAll(`[data-prop="${prop}"]`).forEach((element) => {
             if (value.startsWith("<")) {
               element.innerHTML = value;

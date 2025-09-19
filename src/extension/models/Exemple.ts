@@ -1,5 +1,4 @@
 import { StringNormalizer } from '../../bothside/StringUtils';
-import { UExemple } from '../../bothside/UExemple';
 import { UniversalCacheManager } from '../../bothside/UniversalCacheManager';
 import { DBManager } from '../db/db_manager';
 import { App } from '../services/App';
@@ -8,10 +7,8 @@ import { DBExempleType, ExempleType, EntryType, OeuvreType } from '../../bothsid
 import { Entry } from './Entry';
 import { Oeuvre } from './Oeuvre';
 
-// Re-export types for external use
-export { DBExempleType, ExempleType } from '../../bothside/types';
 
-// Classe wrapper autour d'ExempleType
+
 export class Exemple {
 	public static panelId = 'exemples';
 
@@ -20,7 +17,10 @@ export class Exemple {
   protected static get cache() { return this._cacheManagerInstance; };
 
 	// Constructor and data access
-	constructor(public data: ExempleType) {}
+	constructor(public data: ExempleType) {
+		// console.log("data dans constructor Exemple", structuredClone(data));
+		// throw new Error("pour voir");
+	}
 	
 	// Getters pour accès direct aux propriétés courantes
 	get id(): string { return this.data.id; }
@@ -40,7 +40,7 @@ export class Exemple {
 		return item;
 	}
 
-	public static sortFonction(a: Exemple, b: Exemple): number {
+	public static sortFonction(a: DBExempleType, b: DBExempleType): number {
     // First sort by oeuvre ID (oeuvre_id)
     const oeuvreComparison = a.oeuvre_id.localeCompare(b.oeuvre_id);
     if (oeuvreComparison !== 0) {
@@ -65,8 +65,11 @@ export class Exemple {
 		this.cache.inject(items, this.prepareItemForCache.bind(this));
 	}
 	protected static prepareItemForCache(item: DBExempleType): ExempleType {
+		// console.log("item dans exemple", structuredClone(item));
+		// throw new Error("pour voir");
 		return {
 			id: `${item.oeuvre_id}-${item.indice}`,  // ID composite at root level
+			// dbData: (item as any).data, // JE NE SAIS PAS POURQUOI JE DOIS PRENDRE .data…
 			dbData: item,
 			cachedData: {
 				itemType: 'exemple',

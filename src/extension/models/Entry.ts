@@ -1,5 +1,4 @@
 import { UniversalCacheManager } from '../../bothside/UniversalCacheManager';
-import { UEntry } from '../../bothside/UEntry';
 import { DBEntryType, EntryType, CachedEntryType, DomStateType } from '../../bothside/types';
 import { App } from '../services/App';
 import { StringNormalizer } from '../../bothside/StringUtils';
@@ -8,10 +7,6 @@ import { CanalEntry } from '../services/Rpc';
 
 // Re-export types for external use
 export { DBEntryType, EntryType } from '../../bothside/types';
-
-// Types legacy pour transition - à supprimer après migration complète
-export type IEntry = DBEntryType;
-export type FullEntry = EntryType;
 
 // Classe wrapper autour d'EntryType
 export class Entry {
@@ -22,7 +17,7 @@ export class Entry {
   protected static get cache() { return this._cacheManagerInstance; };
 	public static get(entry_id: string): EntryType { return this.cache.get(entry_id) as EntryType;}
 
-	public static sortFonction(a: Entry, b: Entry): number {
+	public static sortFonction(a: DBEntryType, b: DBEntryType): number {
     return a.entree.localeCompare(b.entree, 'fr', {
       sensitivity: 'base',
       numeric: true,
@@ -65,7 +60,7 @@ export class Entry {
 	public static async saveItem(params: {CRId: string, item: DBEntryType, ok: boolean, errors: any, [x: string]: any}){
 		const dbManager = DBManager.getInstance(App._context);
 		params = await dbManager.saveItemIn('entrees', params.item, params, this);
-		console.log("Params quand on revient dans Entry", params);
+		// console.log("Params quand on revient dans Entry", params);
 		// On retourne le résultat au panneau
 		CanalEntry.afterSaveItem(params);
 	}
@@ -74,7 +69,7 @@ export class Entry {
 	/**
 	 * Méthode pour mettre simplement les données en cache sans aucun
 	 * traitement (parce que pour les traiter, il faut impérativement
-	 * que toutes les données sont en cache).
+	 * que toutes les données soient en cache).
 	 */
 	public static cacheAllData(items: DBEntryType[]): void {
 		this.cache.inject(items, this.prepareItemForCache.bind(this));
@@ -101,9 +96,12 @@ export class Entry {
 			selected: false
 		};
 		
+		// console.log("'item' mis dans dbData ", structuredClone(item));
+		// console.log("'item' mis dans dbData (non cloné)", item);
+		// throw new Error("POUR VOIR");
 		const entryType: EntryType = {
-			id: item.id,  // ID at root level for easy access
-			dbData: item,
+			id: item.id,  // for easy access
+			dbData: item, 
 			cachedData: cachedData,
 			domState: domState
 		};
@@ -156,19 +154,6 @@ export class Entry {
 			categorie_id: this.categorie_id || null,
 			definition: this.definition
 		};
-	}
-
-	/**
-	 * Create from database row
-	 */
-	static fromRow(row: DBEntryType): Entry | undefined {
-		try {
-			// Il faut créer un EntryType complet depuis les données DB
-			const entryType = this.prepareItemForCache(row);
-			return new Entry(entryType); 
-		} catch(erreur) {
-			console.error("# ERREUR avec L'entrée : %s", erreur, row);
-		}
 	}
 
 	/**

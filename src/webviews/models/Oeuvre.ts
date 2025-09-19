@@ -1,4 +1,3 @@
-import { UOeuvre } from '../../bothside/UOeuvre';
 import { RpcChannel } from '../../bothside/RpcChannel';
 import { createRpcClient } from '../RpcClient';
 import { ClientItem } from '../ClientItem';

@@ -1,13 +1,9 @@
 import { UniversalCacheManager } from '../../bothside/UniversalCacheManager';
-import { UOeuvre } from '../../bothside/UOeuvre';
 import { DBOeuvreType, OeuvreType } from '../../bothside/types';
 import { App } from '../services/App';
 import { StringNormalizer } from '../../bothside/StringUtils';
 import { DBManager } from '../db/db_manager';
 import { CanalOeuvre } from '../services/Rpc';
-
-// Re-export types for external use
-export { DBOeuvreType, OeuvreType } from '../../bothside/types';
 
 export class Oeuvre {
 	public static panelId = 'oeuvres';
@@ -18,7 +14,7 @@ export class Oeuvre {
   protected static get cache() { return this._cacheManagerInstance; };
 	public static get(oeuvre_id: string): OeuvreType { return this.cache.get(oeuvre_id) as OeuvreType ;}
 
-	public static sortFonction(a: Oeuvre, b: Oeuvre): number {
+	public static sortFonction(a: DBOeuvreType, b: DBOeuvreType): number {
 		const titleA = a.titre_original || a.titre_affiche;
 		const titleB = b.titre_original || b.titre_affiche;
 		return titleA.localeCompare(titleB, 'fr', {

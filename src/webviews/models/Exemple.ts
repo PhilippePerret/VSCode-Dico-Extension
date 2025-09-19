@@ -6,7 +6,6 @@ import { createRpcClient } from '../RpcClient';
 import { VimLikeManager } from '../services/VimLikeManager';
 import { AccessTable } from '../services/AccessTable';
 import { PanelClient } from '../PanelClient';
-import { AnyElementType } from './AnyClientElement';
 import { ExempleForm } from './ExempleForm';
 
 

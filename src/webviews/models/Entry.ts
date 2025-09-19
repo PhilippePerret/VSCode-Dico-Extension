@@ -146,7 +146,6 @@ RpcEntry.on('desactivate', () => {
 
 RpcEntry.on('populate', (params) => {
   const items = Entry.deserializeItems(params.data);
-  // console.log("[CLIENT Entry] Items désérialisés", items);
   EntryPanel.populate(Entry.accessTable);
   EntryPanel.initKeyManager();
 });
