@@ -265,8 +265,6 @@ export class EntryForm extends FormManager<EntryType, DBEntryType> {
   async onSaveEditedItem(data2save: DBEntryType): Promise<boolean> {
     console.info("Item à sauvegarder", this.editedItem);
     console.info("Données à sauvegarder", data2save);
-    console.warn("Mais je ne sauve rien pour le moment");
-    return false ;
     const itemSaver = new ComplexRpc({
       call: Entry.saveItem.bind(Entry, data2save)
     });

@@ -148,6 +148,13 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
     // Données persistantes
     const data2save: Tdb = structuredClone(this.editedItem.original) as Tdb;
     Object.assign(data2save, this.editedItem.data2save);
+    // Les données à retirer des données à sauver, qui appartiennent à 
+    // editedItem.changeset
+    // NOTE : Le plus simple serait quand même d'avoir les propriétés dans une
+    // autre propriété, pour ne rien avoir à faire. Par exemple :
+    // editedItem.changeset.newData. On pourrait aussi prendre les nouvelles
+    // données 
+    Object.assign(data2save, {isNew: undefined, size: undefined});
     await this.onSaveEditedItem(data2save);
     this.saving = false;
     if (andQuit) { this.closeForm(); }

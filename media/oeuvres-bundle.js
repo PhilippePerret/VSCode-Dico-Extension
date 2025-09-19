@@ -65,20 +65,20 @@
       this.klass = klass;
     }
     _currentSelection;
-    select(item2) {
+    select(item) {
       this._currentSelection && this.deselect(this._currentSelection);
-      item2.obj.classList.add("selected");
-      this._currentSelection = item2;
+      item.obj.classList.add("selected");
+      this._currentSelection = item;
     }
-    deselect(item2) {
-      item2.obj.classList.remove("selected");
+    deselect(item) {
+      item.obj.classList.remove("selected");
     }
   };
 
   // src/webviews/ClientItem.ts
   var ClientItem = class {
-    constructor(item2) {
-      this.item = item2;
+    constructor(item) {
+      this.item = item;
     }
     static klass;
     static get accessTable() {
@@ -127,7 +127,7 @@
      * parcourrir les éléments. 
      */
     static deserializeItems(items) {
-      const allItems = items.map((item2) => JSON.parse(item2));
+      const allItems = items.map((item) => JSON.parse(item));
       this.setAccessTableWithItems(allItems);
     }
     /* Surclassée */
@@ -798,8 +798,8 @@
     // Scroll jusqu'à l'élément et le sélectionne
     scrollToAndSelect(itemId) {
       const klass = this._klass;
-      const item2 = klass.get(itemId);
-      if (!item2) {
+      const item = klass.get(itemId);
+      if (!item) {
         return;
       }
       klass.isVisible(itemId) || klass.setVisible(itemId);
@@ -814,29 +814,29 @@
       const container = this.container;
       container.innerHTML = "";
       let index = -1;
-      accessTable.each((item2) => {
+      accessTable.each((item) => {
         ++index;
         const clone = this.cloneItemTemplate();
         const mainElement = clone.querySelector("." + this.minName);
         if (mainElement) {
-          mainElement.setAttribute("data-id", item2.id);
+          mainElement.setAttribute("data-id", item.id);
           mainElement.setAttribute("data-index", index.toString());
         }
-        Object.keys(item2.dbData).forEach((prop) => {
-          let value = item2.dbData[prop];
-          this.setPropValue(clone, item2, prop, value);
+        Object.keys(item.dbData).forEach((prop) => {
+          let value = item.dbData[prop];
+          this.setPropValue(clone, item, prop, value);
         });
-        Object.keys(item2.cachedData).forEach((prop) => {
-          let value = item2.cachedData[prop];
-          this.setPropValue(clone, item2, prop, value);
+        Object.keys(item.cachedData).forEach((prop) => {
+          let value = item.cachedData[prop];
+          this.setPropValue(clone, item, prop, value);
         });
         this.container.appendChild(clone);
       });
       this.afterDisplayItems(accessTable);
       this.observePanel();
     }
-    setPropValue(clone, item2, prop, value) {
-      value = this.formateProp(item2, prop, value);
+    setPropValue(clone, item, prop, value) {
+      value = this.formateProp(item, prop, value);
       clone.querySelectorAll(`[data-prop="${prop}"]`).forEach((element) => {
         if (value.startsWith("<")) {
           element.innerHTML = value;
@@ -863,7 +863,7 @@
     // à afficher. Mais normalement, elles sont surtout traitées lors de la
     // mise en cache
     /* surclassed */
-    formateProp(item2, prop, value) {
+    formateProp(item, prop, value) {
       return String(value);
     }
     /* surclassed */
@@ -886,7 +886,7 @@
       const matchingItems = this.searchMatchingItems(searched);
       const matchingCount = matchingItems.length;
       console.log("[CLIENT %s] Filtrage %s - %i founds / %i \xE9l\xE9ment", this.titName, searched, matchingCount, this.accessTable.size);
-      const matchingIds = new Set(matchingItems.map((item2) => item2.id));
+      const matchingIds = new Set(matchingItems.map((item) => item.id));
       this.accessTable.eachAccKey((ak) => {
         const visible = matchingIds.has(ak.id);
         const display = visible ? "block" : "none";
@@ -902,8 +902,8 @@
     }
     filter(accessTable, fnFiltre) {
       return accessTable.findAll(
-        (item2) => {
-          return fnFiltre(item2);
+        (item) => {
+          return fnFiltre(item);
         },
         {}
       );
@@ -1098,32 +1098,32 @@
      * etc.
      * 
      */
-    upsert(item2) {
-      console.log("Item re\xE7u par upsert", item2);
-      const checkedId = ((ity, item3) => {
+    upsert(item) {
+      console.log("Item re\xE7u par upsert", item);
+      const checkedId = ((ity, item2) => {
         switch (ity) {
           case "entry":
           case "oeuvre":
-            return item3.id;
+            return item2.id;
           // Now at root level
           case "exemple":
-            return item3.id;
+            return item2.id;
         }
-      })(item2.cachedData.itemType, item2);
+      })(item.cachedData.itemType, item);
       let cachedItem;
       if (this.exists(checkedId)) {
         console.log("C'est une actualisation de l'item ", checkedId);
         cachedItem = this.get(checkedId);
         console.log("Actualisation de", this.get(checkedId));
-        Object.assign(cachedItem, item2);
+        Object.assign(cachedItem, item);
       } else {
-        console.log("C'est une cr\xE9ation de l'item", item2);
-        this.createNewAccedableItem(item2);
+        console.log("C'est une cr\xE9ation de l'item", item);
+        this.createNewAccedableItem(item);
       }
       return true;
     }
-    createNewAccedableItem(item2) {
-      let cachedItem = item2;
+    createNewAccedableItem(item) {
+      let cachedItem = item;
       this.addInTable(cachedItem, 0, void 0, void 0);
     }
     getNextItem(id) {
@@ -1160,15 +1160,15 @@
     }
     // Boucle depuis l'élément d'identifiant +id+
     eachSince(traverseMethod, id) {
-      let item2 = this.get(id);
+      let item = this.get(id);
       do {
-        if (item2) {
-          traverseMethod(item2);
-          item2 = this.getNextItem(item2.id);
+        if (item) {
+          traverseMethod(item);
+          item = this.getNextItem(item.id);
         } else {
           break;
         }
-      } while (item2);
+      } while (item);
     }
     /**
      * Boucle sur toutes les AcceedableItem (AccKey/ak)
@@ -1182,16 +1182,16 @@
      */
     mapSince(traverseMethod, id) {
       const collected = [];
-      let item2 = this.get(id);
+      let item = this.get(id);
       do {
-        if (item2) {
-          let retour = traverseMethod(item2);
+        if (item) {
+          let retour = traverseMethod(item);
           collected.push(retour);
-          item2 = this.getNextItem(item2.id);
+          item = this.getNextItem(item.id);
         } else {
           break;
         }
-      } while (item2);
+      } while (item);
       return collected;
     }
     // Boucle sur TOUTES les données en collectant une donnée
@@ -1206,16 +1206,16 @@
      */
     collectSince(traverseMethod, itemId) {
       const collected = /* @__PURE__ */ new Map();
-      let item2 = this.get(itemId);
+      let item = this.get(itemId);
       do {
-        if (item2) {
-          let retour = traverseMethod(item2);
-          collected.set(item2.id, retour);
-          item2 = this.getNextItem(item2.id);
+        if (item) {
+          let retour = traverseMethod(item);
+          collected.set(item.id, retour);
+          item = this.getNextItem(item.id);
         } else {
           break;
         }
-      } while (item2);
+      } while (item);
       return collected;
     }
     // Boucle sur tous les éléments en récoltant une valeur qu'on met
@@ -1231,22 +1231,22 @@
       return this.findAfter(condition, void 0);
     }
     findAfter(condition, id) {
-      let item2;
+      let item;
       if (id === void 0) {
-        item2 = this.firstItem;
+        item = this.firstItem;
       } else {
-        item2 = this.getNextItem(id);
+        item = this.getNextItem(id);
       }
       let found;
       do {
-        if (item2) {
-          if (condition(item2) === true) {
-            found = item2;
+        if (item) {
+          if (condition(item) === true) {
+            found = item;
             break;
           }
-          item2 = this.getNextItem(item2.id);
+          item = this.getNextItem(item.id);
         }
-      } while (item2);
+      } while (item);
       return found;
     }
     /**
@@ -1263,24 +1263,24 @@
     findAllAfter(condition, id, options) {
       const collected = [];
       let collected_count = 0;
-      let item2;
+      let item;
       if (id === void 0) {
-        item2 = this.firstItem;
+        item = this.firstItem;
       } else {
-        item2 = this.getNextItem(id);
+        item = this.getNextItem(id);
       }
       do {
-        if (item2) {
-          if (condition(item2) === true) {
-            collected.push(item2);
+        if (item) {
+          if (condition(item) === true) {
+            collected.push(item);
             collected_count++;
             if (options.count && collected_count === options.count) {
               break;
             }
           }
-          item2 = this.getNextItem(item2.id);
+          item = this.getNextItem(item.id);
         }
-      } while (item2);
+      } while (item);
       return collected;
     }
     /**
@@ -1296,17 +1296,17 @@
       this.keysMap = /* @__PURE__ */ new Map();
       this.arrayItems = [];
       for (let i = 0, len = items.length; i < len; ++i) {
-        const item2 = items[i];
+        const item = items[i];
         const nextItem = items[i + 1] || void 0;
         const prevItem = items[i - 1] || void 0;
-        this.addInTable(item2, i, nextItem, prevItem);
+        this.addInTable(item, i, nextItem, prevItem);
       }
     }
     // Insertion séparée pour pouvoir ajouter en cours de travail
-    addInTable(item2, arrayIndex, nextItem, prevItem) {
+    addInTable(item, arrayIndex, nextItem, prevItem) {
       const chained = {
         type: "accedable-item",
-        id: item2.id,
+        id: item.id,
         obj: void 0,
         index: arrayIndex,
         next: nextItem ? nextItem.id : void 0,
@@ -1316,8 +1316,8 @@
         selected: false,
         modified: false
       };
-      this.keysMap.set(item2.id, chained);
-      this.arrayItems.push(item2);
+      this.keysMap.set(item.id, chained);
+      this.arrayItems.push(item);
     }
     DOMElementOf(id) {
       return document.querySelector(`main#items > div[data-id="${id}"]`);
@@ -1390,10 +1390,10 @@
      * 
      * @param item Objet Entry, Oeuvre ou Exemple à éditer/créer
      */
-    editItem(item2) {
-      const isNewItem = item2.id === "";
+    editItem(item) {
+      const isNewItem = item.id === "";
       this.panel.context = isNewItem ? "create-element" : "edit-element";
-      const originalData = isNewItem ? {} : structuredClone(item2.dbData);
+      const originalData = isNewItem ? {} : structuredClone(item.dbData);
       this.editedItem = Object.assign(originalData, {
         original: structuredClone(originalData),
         changeset: { size: 0, isNew: isNewItem }
@@ -1423,13 +1423,13 @@
     async itemIsNotSavable() {
       this.panel.cleanFlash();
       this.collectValues();
-      const item2 = this.editedItem;
+      const item = this.editedItem;
       this.properties.forEach((dproperty) => {
         const prop = dproperty.propName;
-        if (item2[prop] !== item2.original[prop]) {
+        if (item[prop] !== item.original[prop]) {
           Object.assign(this.editedItem.changeset, {
-            [prop]: item2[prop],
-            size: ++item2.changeset.size
+            [prop]: item[prop],
+            size: ++item.changeset.size
           });
         }
       });
@@ -1453,7 +1453,10 @@
     async onConfirmSave(andQuit) {
       console.log("Sauvegarde confirm\xE9e");
       const fakeItem = this.collectValues();
-      await this.onSaveEditedItem();
+      const data2save = structuredClone(this.editedItem.original);
+      Object.assign(data2save, this.editedItem.data2save);
+      Object.assign(data2save, { isNew: void 0, size: void 0 });
+      await this.onSaveEditedItem(data2save);
       this.saving = false;
       if (andQuit) {
         this.closeForm();
@@ -1461,12 +1464,12 @@
     }
     itemIsEmpty() {
       var isEmpty = true;
-      const item2 = this.editedItem;
+      const item = this.editedItem;
       this.properties.forEach((dprop) => {
         if (!isEmpty) {
           return;
         }
-        if (item2[dprop.propName] !== "") {
+        if (item[dprop.propName] !== "") {
           isEmpty = false;
         }
       });
@@ -2292,16 +2295,22 @@
     async checkEditedItem() {
       const errors = [];
       let errs;
-      if (this.isNewItem) {
+      const item = this.editedItem;
+      const changeset = item.changeset;
+      if (changeset.isNew) {
       }
-      const dbData = item.dbData;
-      if (item.id === "" || !item.id) {
-        errors.push("Il faut absolument que cet item ait un identifiant.");
+      const dbData = item.original;
+      if (changeset.id !== void 0) {
+        if (changeset.id === "" || !changeset.id) {
+          errors.push("Il faut absolument que cet item ait un identifiant.");
+        }
       }
-      if (dbData.titre_original.trim().length === 0) {
-        errors.push("Il faut fournir le titre de l\u2019\u0153uvre original.");
+      if (changeset.titre_origin !== void 0) {
+        if (changeset.titre_original.trim().length === 0) {
+          errors.push("Il faut fournir le titre de l\u2019\u0153uvre original.");
+        }
       }
-      if (errs = this.checkAuteurs(item.dbData)) {
+      if (errs = this.checkAuteurs(changeset.auteurs)) {
         errors.push("erreurs trouv\xE9s sur les auteurs : " + errs);
       }
       if (errors.length) {
@@ -2309,8 +2318,15 @@
         return errors.join(", ").toLowerCase();
       }
     }
-    checkAuteurs(item2) {
-      let auts = String(item2.auteurs).trim();
+    /**
+     * Vérification des auteurs. Pour le moment, on se contente de voir si
+     * leur genre est bien défini.
+     * 
+     * @param auteurs String contenant tous les auteurs définis
+     * @returns true/false
+     */
+    checkAuteurs(auteurs) {
+      let auts = String(auteurs).trim();
       if (auts.length === 0) {
         return "Il faut imp\xE9rativement fournir les autrices et auteurs";
       }
@@ -2376,7 +2392,7 @@
     onChangeTitreAffiched(ev = void 0) {
       const noTitreOriginal = this.getValueOf("titre_original") === "";
       const titaff = this.getValueOf("titre_affiche");
-      if (this.isNewItem) {
+      if (this.editedItem.changeset.isNew) {
         if (Oeuvre.doOeuvresExist([titaff]).known.length) {
           this.flash("Ce titre existe d\xE9j\xE0. Si vous voulez vraiment le conserver, ajoutez un indice.", "error");
           this.setValueOf("titre_affiche", "");
@@ -2422,7 +2438,7 @@
       if (titorig === "") {
         return;
       }
-      if (this.isNewItem) {
+      if (this.editedItem.changeset.isNew) {
         if (Oeuvre.doOeuvresExist([titorig]).known.length) {
           Oeuvre.panel.flash("Ce titre existe d\xE9j\xE0. Si c'est vraiment une autre \u0153uvre, ajoutez-lui un indice", "error");
           this.setValueOf("titre_original", "");
@@ -2470,13 +2486,13 @@
      * @param item L'oeuvre à enregistrer
      * @returns True si l'enregistrement a pu se faire correctement.
      */
-    async onSaveEditedItem() {
-      const item2 = this.editedItem;
-      console.log("Il faut que j'apprendre \xE0 sauver : ", item2);
+    async onSaveEditedItem(data2save) {
+      const item = this.editedItem;
+      console.log("Il faut que j'apprendre \xE0 sauver : ", item);
       console.log("Pour le moment je ne fais rien");
       return false;
       const itemSaver = new ComplexRpc({
-        call: Oeuvre.saveItem.bind(Oeuvre, item2)
+        call: Oeuvre.saveItem.bind(Oeuvre, item)
       });
       const res = await itemSaver.run();
       if (res.ok) {
@@ -2531,8 +2547,8 @@
     static getFirstVisibleAfter(refItem) {
       const aT = this.accessTable;
       return aT.findAfter(
-        (item2) => {
-          return aT.getAccKey(item2.id).visible === true;
+        (item) => {
+          return aT.getAccKey(item.id).visible === true;
         },
         refItem.id
       );
@@ -2565,14 +2581,14 @@
     }
     static oeuvreExistsByTitle(title) {
       title = StringNormalizer.rationalize(title);
-      return !!this.accessTable.find((item2) => item2.cachedData.titresLookUp.includes(title));
+      return !!this.accessTable.find((item) => item.cachedData.titresLookUp.includes(title));
     }
     /**
      * 
      * Méthodes pour enregistrer les oeuvres
      */
-    static saveItem(item2, compRpcId) {
-      RpcOeuvre.notify("save-oeuvre", { CRId: compRpcId, item: item2 });
+    static saveItem(item, compRpcId) {
+      RpcOeuvre.notify("save-oeuvre", { CRId: compRpcId, item });
     }
     static onSavedOeuvre(params) {
       console.log("[CLIENT OEUVRE] Retour dans le panneau des oeuvres", params);

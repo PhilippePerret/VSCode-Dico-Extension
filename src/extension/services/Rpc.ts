@@ -48,6 +48,16 @@ abstract class Rpc {
 
 }
 
+
+
+/**
+ * 
+ * 
+ * ================== RPC ENTRY ==================
+ * 
+ * 
+ */
+
 // Toutes les commandes de message doivent être définies ici
 class RpcEntry extends Rpc {
   protected panelName = 'panneau des entrées';

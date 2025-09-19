@@ -1483,7 +1483,10 @@
     async onConfirmSave(andQuit) {
       console.log("Sauvegarde confirm\xE9e");
       const fakeItem = this.collectValues();
-      await this.onSaveEditedItem();
+      const data2save = structuredClone(this.editedItem.original);
+      Object.assign(data2save, this.editedItem.data2save);
+      Object.assign(data2save, { isNew: void 0, size: void 0 });
+      await this.onSaveEditedItem(data2save);
       this.saving = false;
       if (andQuit) {
         this.closeForm();
@@ -1980,13 +1983,9 @@
      * -------------------------- 
      * Procédure complexe (ComplexRpc)
      */
-    async onSaveEditedItem() {
+    async onSaveEditedItem(data2save) {
       console.info("Item \xE0 sauvegarder", this.editedItem);
-      const data2save = structuredClone(this.editedItem.original);
-      Object.assign(data2save, this.editedItem.data2save);
       console.info("Donn\xE9es \xE0 sauvegarder", data2save);
-      console.warn("Mais je ne sauve rien pour le moment");
-      return false;
       const itemSaver = new ComplexRpc({
         call: Entry.saveItem.bind(Entry, data2save)
       });

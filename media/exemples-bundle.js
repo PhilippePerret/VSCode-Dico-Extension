@@ -1418,7 +1418,10 @@
     async onConfirmSave(andQuit) {
       console.log("Sauvegarde confirm\xE9e");
       const fakeItem = this.collectValues();
-      await this.onSaveEditedItem();
+      const data2save = structuredClone(this.editedItem.original);
+      Object.assign(data2save, this.editedItem.data2save);
+      Object.assign(data2save, { isNew: void 0, size: void 0 });
+      await this.onSaveEditedItem(data2save);
       this.saving = false;
       if (andQuit) {
         this.closeForm();
@@ -1716,8 +1719,9 @@
     async checkEditedItem() {
       return "Les donn\xE9es ne sont pas check\xE9s";
     }
-    async onSaveEditedItem() {
+    async onSaveEditedItem(data2save) {
       console.log("Il faut que j'apprendre \xE0 sauver l'exemple : ", this.editedItem);
+      console.log("Donn\xE9es \xE0 sauver", data2save);
       return true;
     }
     observeForm() {
