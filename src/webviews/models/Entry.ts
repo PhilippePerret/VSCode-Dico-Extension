@@ -38,7 +38,7 @@ export class Entry extends ClientItem<EntryType> {
   get categorie_id(): string | undefined { return this.item.dbData.categorie_id; }
   get definition(): string { return this.item.dbData.definition; }
 
-  static setAccessTable(items: EntryType[]) {
+  static setAccessTableWithItems(items: EntryType[]) {
     this._accessTable = new AccessTable<EntryType>(items);
   }
   public static _accessTable: AccessTable<EntryType>;

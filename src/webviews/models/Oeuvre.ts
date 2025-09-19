@@ -30,7 +30,7 @@ export class Oeuvre extends ClientItem<OeuvreType> {
   get notes(): string | undefined { return this.data.dbData.notes; }
   get resume(): string | undefined { return this.data.dbData.resume; }
 
-  static setAccessTable(items: OeuvreType[]) {
+  static setAccessTableWithItems(items: OeuvreType[]) {
     this._accessTable = new AccessTable<OeuvreType>(items);
   }
   public static _accessTable: AccessTable<OeuvreType>;

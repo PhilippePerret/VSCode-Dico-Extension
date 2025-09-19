@@ -28,7 +28,7 @@ export class Exemple extends ClientItem<ExempleType> {
   get content(): string { return this.data.dbData.content; }
   get notes(): string | undefined { return this.data.dbData.notes; }
 
-  static setAccessTable(items: ExempleType[]) {
+  static setAccessTableWithItems(items: ExempleType[]) {
     this._accessTable = new AccessTable<ExempleType>(items);
   }
   public static _accessTable: AccessTable<ExempleType>;

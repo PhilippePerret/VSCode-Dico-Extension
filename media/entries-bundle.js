@@ -40,7 +40,7 @@
     }
     static klass;
     static get accessTable() {
-      return this.klass.accessTable;
+      return this.klass._accessTable;
     }
     static panel;
     // protected static _accessTable: AccessTable<any>;

@@ -49,7 +49,7 @@ export abstract class ClientItem<Tdt extends ItemDataType> {
    */
   static deserializeItems(items: string[]): void {
     const allItems: AnyItemType[] = items.map( (item: string) => JSON.parse(item) as AnyItemType);
-    this.accessTable(allItems);
+    this.setAccessTableWithItems(allItems);
   }
 
   public get id(): string {return this.item.id;}
