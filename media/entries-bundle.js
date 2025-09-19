@@ -86,7 +86,6 @@
      */
     static deserializeItems(items) {
       const allItems = items.map((item) => JSON.parse(item));
-      console.log("items d\xE9s\xE9rialis\xE9s", allItems);
       this.setAccessTableWithItems(allItems);
     }
     /* Surclassée */
@@ -925,7 +924,6 @@
       }
     }
     onKeyDownModeNormal(ev) {
-      console.log("-> VimLikeManager.onKeyDownModeNormal", ev.key, ev);
       if (ev.metaKey) {
         return this.onKeyDownWithMeta(ev);
       }
@@ -1395,17 +1393,16 @@
   var FormManager = class {
     // table des raccourcis propres
     tablePropertiesByPropName;
-    isNewItem;
     // Fonction pour sauver (appelée quand on sauve la donnée)
-    async checkItem(item) {
+    async checkEditedItem() {
       return void 0;
     }
     panel;
     // le panneau contenant le formulaire
     originalData;
     saving = false;
-    // L'item qui sera travaillé ici, pour ne pas toucher l'item original
-    fakeItem;
+    // Maintenant c'est celui-ci
+    editedItem;
     checked = false;
     _obj;
     // le formulaire complet
@@ -1424,11 +1421,15 @@
      * @param item Objet Entry, Oeuvre ou Exemple à éditer/créer
      */
     editItem(item) {
-      this.panel.context = item.data.id === "" ? "create-element" : "edit-element";
-      this.originalData = item.data;
-      this.isNewItem = !item.data.id;
+      const isNewItem = item.id === "";
+      this.panel.context = isNewItem ? "create-element" : "edit-element";
+      const originalData = isNewItem ? {} : structuredClone(item.dbData);
+      this.editedItem = Object.assign(originalData, {
+        original: structuredClone(originalData),
+        changeset: { size: 0, isNew: isNewItem }
+      });
       this.openForm();
-      this.dispatchValues(item.data);
+      this.dispatchValues(this.editedItem);
       if ("function" === typeof this.afterEdit) {
         this.afterEdit.call(this);
       }
@@ -1449,31 +1450,28 @@
     }
     async itemIsNotSavable() {
       this.panel.cleanFlash();
-      const fakeItem = this.collectValues();
-      if (!this.originalData.id) {
-        Object.assign(fakeItem, { isNew: true });
-      }
-      const changeset = /* @__PURE__ */ new Map();
+      this.collectValues();
+      const item = this.editedItem;
       this.properties.forEach((dproperty) => {
         const prop = dproperty.propName;
-        if (fakeItem[prop] !== this.originalData[prop]) {
-          changeset.set(prop, fakeItem[prop]);
+        console.log("Propri\xE9t\xE9 '%s' | Original: '%s' | New: '%s'", prop, item.original[prop], item[prop]);
+        if (item[prop] !== item.original[prop]) {
+          Object.assign(this.editedItem.changeset, {
+            [prop]: item[prop],
+            size: ++item.changeset.size
+          });
         }
       });
-      Object.assign(fakeItem, {
-        changeset,
-        original: this.originalData
-      });
-      console.log("Item \xE0 enregistrer", fakeItem);
-      if (this.itemIsEmpty(fakeItem)) {
+      console.log("Item \xE0 enregistrer", this.editedItem);
+      if (this.itemIsEmpty()) {
         this.panel.flash("Aucune donn\xE9e n'a \xE9t\xE9 founie\u2026", "error");
         return true;
       }
-      if (changeset.size === 0) {
+      if (this.editedItem.changeset.size === 0) {
         this.panel.flash("Les donn\xE9es n'ont pas chang\xE9\u2026", "warn");
         return true;
       }
-      let invalidity = await this.checkItem(fakeItem);
+      let invalidity = await this.checkEditedItem();
       console.log("=== FIN DU CHECK DE L'ITEM ===");
       if (invalidity) {
         this.panel.flash("Les donn\xE9es sont invalides : " + invalidity, "error");
@@ -1484,16 +1482,20 @@
     async onConfirmSave(andQuit) {
       console.log("Sauvegarde confirm\xE9e");
       const fakeItem = this.collectValues();
-      await this.onSave(fakeItem);
+      await this.onSaveEditedItem();
       this.saving = false;
       if (andQuit) {
         this.closeForm();
       }
     }
-    itemIsEmpty(fakeItem) {
+    itemIsEmpty() {
       var isEmpty = true;
+      const item = this.editedItem;
       this.properties.forEach((dprop) => {
-        if (fakeItem[dprop.propName] !== "") {
+        if (!isEmpty) {
+          return;
+        }
+        if (item[dprop.propName] !== "") {
           isEmpty = false;
         }
       });
@@ -1532,13 +1534,11 @@
     // Récupère les données dans le formulaire et retourne l'item
     // avec ses nouvelles données.
     collectValues() {
-      this.fakeItem = {};
       this.properties.forEach((dprop) => {
         const prop = dprop.propName;
         const value = this.getValueOf(dprop);
-        Object.assign(this.fakeItem, { [prop]: value });
+        Object.assign(this.editedItem, { [prop]: value });
       });
-      return this.fakeItem;
     }
     /**
      * Pendant de la précédente, donne la valeur +value+ à la propriété
@@ -1616,10 +1616,10 @@
         }
       });
     }
-    async __onSave() {
+    async __onSaveEditedItem() {
       return this.saveItem(false);
     }
-    async __onSaveAndQuit() {
+    async __onSaveEditedItemAndQuit() {
       await this.saveItem(true);
     }
     __onCancel() {
@@ -1810,70 +1810,72 @@
      * Grand méthode de check de la validité de l'item. On ne l'envoie
      * en enregistrement que s'il est parfaitement conforme. 
      */
-    async checkItem(item) {
-      const isNew = item.isNew;
+    async checkItem() {
+      const item = this.editedItem;
+      const isNew = item.changeset.isNew;
       const errors = [];
-      this.diverseChecks(item, errors);
-      const unknownOeuvres = await this.checkExistenceOeuvres(item);
-      if (unknownOeuvres.length) {
-        errors.push(`des \u0153uvres sont introuvables : ${unknownOeuvres.map((t) => `"${t}"`).join(", ")}`);
-      }
-      const unknownEx = await this.checkExistenceExemples(item);
-      if (unknownEx.length) {
-        errors.push(`des exemples sont introuvables: ${unknownEx.join(", ")}`);
+      this.diverseChecks(item.changeset, errors);
+      if (item.changeset.definiition) {
+        const unknownOeuvres = await this.checkExistenceOeuvres(item.changeset.definition);
+        if (unknownOeuvres.length) {
+          errors.push(`des \u0153uvres sont introuvables : ${unknownOeuvres.map((t) => `"${t}"`).join(", ")}`);
+        }
+        const unknownEx = await this.checkExistenceExemples(item.changeset.definition);
+        if (unknownEx.length) {
+          errors.push(`des exemples sont introuvables: ${unknownEx.join(", ")}`);
+        }
       }
       if (errors.length) {
         console.error("Donn\xE9es invalides", errors);
         return errors.join(", ").toLowerCase();
       }
     }
-    async checkExistenceOeuvres(item) {
+    async checkExistenceOeuvres(definition) {
       const checkerOeuvres = new ComplexRpc({
-        call: this.searchUnknownOeuvresIn.bind(this, item.definition)
+        call: this.searchUnknownOeuvresIn.bind(this, definition)
       });
       let resultat = await checkerOeuvres.run();
       const res = resultat;
       console.log("Retour apr\xE8s checkerOeuvres", resultat);
       return res.unknown;
     }
-    diverseChecks(item, errors) {
-      if (item.entree === "") {
-        errors.push("L'entr\xE9e doit \xEAtre d\xE9finie");
-      }
-      if (item.changeset.has("entree")) {
-        const newEntree = item.changeset.get("entree");
-        console.log("L'entr\xE9e a chang\xE9 (%s/%s)", item.original.entree, newEntree);
-        if (Entry.doesEntreeExist(newEntree)) {
-          errors.push(`L'entr\xE9e "${newEntree}" existe d\xE9j\xE0\u2026`);
+    diverseChecks(changeset, errors) {
+      if (changeset.entree && changeset.entree === "") {
+        if (changeset.entree === "") {
+          errors.push("L'entr\xE9e doit \xEAtre d\xE9finie");
+        }
+        if (Entry.doesEntreeExist(changeset.entree)) {
+          errors.push(`L'entr\xE9e "${changeset.entree}" existe d\xE9j\xE0\u2026`);
         }
       }
-      if (item.id === "") {
-        errors.push("L'identifiant doit absoluement \xEAtre d\xE9fini");
-      } else if (item.changeset.has("id")) {
-        if (Entry.doesIdExist(item.id)) {
-          errors.push(`L'identifiant "${item.id}" existe d\xE9j\xE0. Je ne peux le r\xE9attribuer`);
+      if (changeset.id) {
+        if (changeset.id === "") {
+          errors.push("L'identifiant doit absoluement \xEAtre d\xE9fini");
+        }
+        if (Entry.doesIdExist(changeset.id)) {
+          errors.push(`L'identifiant "${changeset.id}" existe d\xE9j\xE0. Je ne peux le r\xE9attribuer`);
         }
       }
-      if (item.definition === "") {
-        errors.push("La d\xE9finition du mot doit \xEAtre donn\xE9e");
-      } else if (item.changeset.has("definition")) {
-        if (item.definition.length < 50 && null === item.definition.match(_EntryForm.REG_SHORT_DEF)) {
+      if (changeset.definition) {
+        changeset.definition === "" && errors.push("La d\xE9finition du mot doit \xEAtre donn\xE9e");
+        if (changeset.definition.length < 50 && null === changeset.definition.match(_EntryForm.REG_SHORT_DEF)) {
           errors.push("La d\xE9finition est courte, sans justification\u2026");
         }
-        const unknownEntries = this.searchUnknownEntriesIn(item.definition);
+        const unknownEntries = this.searchUnknownEntriesIn(changeset.definition);
         if (unknownEntries.length > 0) {
           errors.push(`entr\xE9es inconnues dans la d\xE9fintion (${unknownEntries.join(", ")})`);
         }
       } else {
         console.log("La d\xE9finition n'a pas \xE9t\xE9 modifi\xE9e.");
       }
-      if (item.genre === "") {
-        errors.push("Le genre de l'entr\xE9e doit \xEAtre donn\xE9");
-      } else if (item.changeset.has("genre") && Constants.genreNotExists(item.genre)) {
-        errors.push(`bizarrement, le genre "${item.genre} est inconnu\u2026`);
+      if (changeset.genre) {
+        changeset.genre !== "" || errors.push("Le genre de l'entr\xE9e doit \xEAtre donn\xE9");
+        if (changeset.changeset.has("genre") && Constants.genreNotExists(changeset.genre)) {
+          errors.push(`bizarrement, le genre "${changeset.genre} est inconnu\u2026`);
+        }
       }
-      if (item.categorie_id !== "" && item.changeset.has("categorie_id")) {
-        const unknownCategorie = this.checkUnknownCategoriesIn(item.categorie_id);
+      if (changeset.categorie_id) {
+        const unknownCategorie = this.checkUnknownCategoriesIn(changeset.categorie_id);
         if (unknownCategorie.length) {
           errors.push(`des cat\xE9gories sont inconnues : ${unknownCategorie.join(", ")}`);
         }
@@ -1931,9 +1933,9 @@
      * Fonction principale pour checker les exemples dans la définition
      * C'est elle qui initie la requête Rpc complexe. 
      */
-    async checkExistenceExemples(item) {
+    async checkExistenceExemples(definition) {
       const comp = new ComplexRpc({
-        call: this.searchUnknownExemplesIn.bind(this, item.definition)
+        call: this.searchUnknownExemplesIn.bind(this, definition)
       });
       const resultat = await comp.run();
       const res = resultat;
@@ -1976,9 +1978,15 @@
      * -------------------------- 
      * Procédure complexe (ComplexRpc)
      */
-    async onSave(item) {
+    async onSaveEditedItem() {
+      console.info("Item \xE0 sauvegarder", this.editedItem);
+      const data2save = structuredClone(this.editedItem.original);
+      Object.assign(data2save, this.editedItem.changeset);
+      console.info("Donn\xE9es \xE0 sauvegarder", data2save);
+      console.warn("Mais je ne sauve rien pour le moment");
+      return false;
       const itemSaver = new ComplexRpc({
-        call: Entry.saveItem.bind(Entry, item)
+        call: Entry.saveItem.bind(Entry, data2save)
       });
       const res = await itemSaver.run();
       console.log("res dans onSave", res);

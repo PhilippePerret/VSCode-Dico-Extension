@@ -128,7 +128,6 @@
      */
     static deserializeItems(items) {
       const allItems = items.map((item) => JSON.parse(item));
-      console.log("items d\xE9s\xE9rialis\xE9s", allItems);
       this.setAccessTableWithItems(allItems);
     }
     /* Surclassée */
@@ -571,7 +570,6 @@
       }
     }
     onKeyDownModeNormal(ev) {
-      console.log("-> VimLikeManager.onKeyDownModeNormal", ev.key, ev);
       if (ev.metaKey) {
         return this.onKeyDownWithMeta(ev);
       }
@@ -1365,17 +1363,16 @@
   var FormManager = class {
     // table des raccourcis propres
     tablePropertiesByPropName;
-    isNewItem;
     // Fonction pour sauver (appelée quand on sauve la donnée)
-    async checkItem(item) {
+    async checkEditedItem() {
       return void 0;
     }
     panel;
     // le panneau contenant le formulaire
     originalData;
     saving = false;
-    // L'item qui sera travaillé ici, pour ne pas toucher l'item original
-    fakeItem;
+    // Maintenant c'est celui-ci
+    editedItem;
     checked = false;
     _obj;
     // le formulaire complet
@@ -1394,11 +1391,15 @@
      * @param item Objet Entry, Oeuvre ou Exemple à éditer/créer
      */
     editItem(item) {
-      this.panel.context = item.data.id === "" ? "create-element" : "edit-element";
-      this.originalData = item.data;
-      this.isNewItem = !item.data.id;
+      const isNewItem = item.id === "";
+      this.panel.context = isNewItem ? "create-element" : "edit-element";
+      const originalData = isNewItem ? {} : structuredClone(item.dbData);
+      this.editedItem = Object.assign(originalData, {
+        original: structuredClone(originalData),
+        changeset: { size: 0, isNew: isNewItem }
+      });
       this.openForm();
-      this.dispatchValues(item.data);
+      this.dispatchValues(this.editedItem);
       if ("function" === typeof this.afterEdit) {
         this.afterEdit.call(this);
       }
@@ -1419,31 +1420,28 @@
     }
     async itemIsNotSavable() {
       this.panel.cleanFlash();
-      const fakeItem = this.collectValues();
-      if (!this.originalData.id) {
-        Object.assign(fakeItem, { isNew: true });
-      }
-      const changeset = /* @__PURE__ */ new Map();
+      this.collectValues();
+      const item = this.editedItem;
       this.properties.forEach((dproperty) => {
         const prop = dproperty.propName;
-        if (fakeItem[prop] !== this.originalData[prop]) {
-          changeset.set(prop, fakeItem[prop]);
+        console.log("Propri\xE9t\xE9 '%s' | Original: '%s' | New: '%s'", prop, item.original[prop], item[prop]);
+        if (item[prop] !== item.original[prop]) {
+          Object.assign(this.editedItem.changeset, {
+            [prop]: item[prop],
+            size: ++item.changeset.size
+          });
         }
       });
-      Object.assign(fakeItem, {
-        changeset,
-        original: this.originalData
-      });
-      console.log("Item \xE0 enregistrer", fakeItem);
-      if (this.itemIsEmpty(fakeItem)) {
+      console.log("Item \xE0 enregistrer", this.editedItem);
+      if (this.itemIsEmpty()) {
         this.panel.flash("Aucune donn\xE9e n'a \xE9t\xE9 founie\u2026", "error");
         return true;
       }
-      if (changeset.size === 0) {
+      if (this.editedItem.changeset.size === 0) {
         this.panel.flash("Les donn\xE9es n'ont pas chang\xE9\u2026", "warn");
         return true;
       }
-      let invalidity = await this.checkItem(fakeItem);
+      let invalidity = await this.checkEditedItem();
       console.log("=== FIN DU CHECK DE L'ITEM ===");
       if (invalidity) {
         this.panel.flash("Les donn\xE9es sont invalides : " + invalidity, "error");
@@ -1454,16 +1452,20 @@
     async onConfirmSave(andQuit) {
       console.log("Sauvegarde confirm\xE9e");
       const fakeItem = this.collectValues();
-      await this.onSave(fakeItem);
+      await this.onSaveEditedItem();
       this.saving = false;
       if (andQuit) {
         this.closeForm();
       }
     }
-    itemIsEmpty(fakeItem) {
+    itemIsEmpty() {
       var isEmpty = true;
+      const item = this.editedItem;
       this.properties.forEach((dprop) => {
-        if (fakeItem[dprop.propName] !== "") {
+        if (!isEmpty) {
+          return;
+        }
+        if (item[dprop.propName] !== "") {
           isEmpty = false;
         }
       });
@@ -1502,13 +1504,11 @@
     // Récupère les données dans le formulaire et retourne l'item
     // avec ses nouvelles données.
     collectValues() {
-      this.fakeItem = {};
       this.properties.forEach((dprop) => {
         const prop = dprop.propName;
         const value = this.getValueOf(dprop);
-        Object.assign(this.fakeItem, { [prop]: value });
+        Object.assign(this.editedItem, { [prop]: value });
       });
-      return this.fakeItem;
     }
     /**
      * Pendant de la précédente, donne la valeur +value+ à la propriété
@@ -1586,10 +1586,10 @@
         }
       });
     }
-    async __onSave() {
+    async __onSaveEditedItem() {
       return this.saveItem(false);
     }
-    async __onSaveAndQuit() {
+    async __onSaveEditedItemAndQuit() {
       await this.saveItem(true);
     }
     __onCancel() {
@@ -2293,13 +2293,14 @@
       let errs;
       if (this.isNewItem) {
       }
+      const dbData = item.dbData;
       if (item.id === "" || !item.id) {
         errors.push("Il faut absolument que cet item ait un identifiant.");
       }
-      if (item.titre_original.trim().length === 0) {
+      if (dbData.titre_original.trim().length === 0) {
         errors.push("Il faut fournir le titre de l\u2019\u0153uvre original.");
       }
-      if (errs = this.checkAuteurs(item)) {
+      if (errs = this.checkAuteurs(item.dbData)) {
         errors.push("erreurs trouv\xE9s sur les auteurs : " + errs);
       }
       if (errors.length) {
@@ -2308,7 +2309,7 @@
       }
     }
     checkAuteurs(item) {
-      let auts = item.auteurs.trim();
+      let auts = String(item.auteurs).trim();
       if (auts.length === 0) {
         return "Il faut imp\xE9rativement fournir les autrices et auteurs";
       }
@@ -2470,6 +2471,8 @@
      */
     async onSave(item) {
       console.log("Il faut que j'apprendre \xE0 sauver : ", item);
+      console.log("Pour le moment je ne fais rien");
+      return false;
       const itemSaver = new ComplexRpc({
         call: Oeuvre.saveItem.bind(Oeuvre, item)
       });

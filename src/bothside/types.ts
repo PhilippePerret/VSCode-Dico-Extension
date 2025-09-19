@@ -88,3 +88,4 @@ export interface ExempleType {
 
 // Union types for any item
 export type AnyItemType = EntryType | OeuvreType | ExempleType;
+export type AnyDbType = DBEntryType | DBOeuvreType | DBExempleType;

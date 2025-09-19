@@ -1,5 +1,5 @@
 import { PanelClient } from "../PanelClient";
-import { AnyItemType } from "../../bothside/types";
+import { EntryType, OeuvreType, ExempleType, AnyDbType, AnyItemType, DBEntryType, DBOeuvreType, DBExempleType } from "../../bothside/types";
 
 // Type pour la définition d'une propriété
 export interface FormProperty {
@@ -15,21 +15,42 @@ export interface FormProperty {
 
 type FieldType = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
 
+export interface ChangeSetType {
+  [x: string]: any;
+  isNew: boolean;
+  size: number;
+}
+
+interface EditedEntryType /* pour "Type de l'item édité */ extends DBEntryType {
+  // Pour mettre les changements effectués
+  changeset: ChangeSetType;
+  // Pour mettre les données initiales de l'item
+  original: DBEntryType;
+}
+interface EditedOeuvreType extends DBOeuvreType {
+  changeset : ChangeSetType;
+  original: DBOeuvreType;
+}
+interface EditedExempleType extends DBExempleType {
+  changeset: ChangeSetType;
+  original: DBExempleType;
+}
+type EditedIType = EditedEntryType | EditedOeuvreType | EditedExempleType; 
+
 /**
  * Classe pour étendre le formulaire de chaque élément
  */
 
-export abstract class FormManager<T extends AnyItemType> {
+export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> {
 
   abstract formId: string; // Identifiant unique du formulaire
   abstract prefix: string; // utilisé pour nommer les champs
   abstract properties: FormProperty[];
   abstract tableKeys: {[x: string]: Function}; // table des raccourcis propres
   private tablePropertiesByPropName!: Map<string, FormProperty>;
-  public isNewItem!: boolean; //
   abstract afterEdit(): void; // à faire après l'édition d'un élément
-  abstract onSave(item: T): Promise<boolean>; // Fonction pour sauver (appelée quand on sauve la donnée)
-  async checkItem(item: T): Promise<string | undefined> { return undefined ; }; // Pour checker les données 
+  abstract onSaveEditedItem(): Promise<boolean>; // Fonction pour sauver (appelée quand on sauve la donnée)
+  async checkEditedItem(): Promise<string | undefined> { return undefined ; }; // Pour checker les données 
   onCancel?(): void; // Fonction appelée en cas d'annulation
   abstract observeForm(): void; // fonction d'observation propre du formulaire
   onFocusForm?(ev: FocusEvent): any;
@@ -37,8 +58,8 @@ export abstract class FormManager<T extends AnyItemType> {
   private originalData!: {[x: string]: any};
   public saving: boolean = false;
 
-  // L'item qui sera travaillé ici, pour ne pas toucher l'item original
-  fakeItem?: any;
+  // Maintenant c'est celui-ci
+  protected editedItem!: EditedIType;
 
   private checked: boolean = false;
 
@@ -60,11 +81,15 @@ export abstract class FormManager<T extends AnyItemType> {
    */
   public editItem(item: T): void {
     // console.log("Édition de l'item", item);
-    this.panel.context = item.id === '' ? 'create-element' : 'edit-element';
-    this.originalData = structuredClone(item.dbData);
-    this.isNewItem = !item.id;
+    const isNewItem = item.id === '';
+    this.panel.context = isNewItem ? 'create-element' : 'edit-element';
+    const originalData: Tdb = isNewItem ? {} as Tdb : structuredClone(item.dbData) as Tdb;
+    this.editedItem /* EditedIType */ = Object.assign(originalData, {
+      original: structuredClone(originalData),
+      changeset: {size: 0, isNew: isNewItem}
+    }) as any as EditedIType;
     this.openForm();
-    this.dispatchValues(item.dbData);
+    this.dispatchValues(this.editedItem);
     if ( 'function' === typeof this.afterEdit ) { this.afterEdit.call(this); }
     this.setMode('form');
   }
@@ -82,31 +107,28 @@ export abstract class FormManager<T extends AnyItemType> {
 
   private async itemIsNotSavable(): Promise<boolean> {
     this.panel.cleanFlash();
-    const fakeItem = this.collectValues();
-    if ( !this.originalData.id ) { Object.assign(fakeItem, {isNew: true}); }
-    // Comme dans Phoenix, on fait un changeset dans fakeItem
-    const changeset: Map<string, any> = new Map();
+    this.collectValues(); // maintenant les met dans this.editedItem
+    const item = this.editedItem as Record<string, any>;
     this.properties.forEach(dproperty => {
       const prop = dproperty.propName;
-      if ( fakeItem[prop] !== this.originalData[prop]) {
-       changeset.set(prop, fakeItem[prop]);
+      console.log("Propriété '%s' | Original: '%s' | New: '%s'", prop, item.original[prop], item[prop]);
+      if ( item[prop] !== item.original[prop]) {
+        Object.assign(this.editedItem.changeset, {
+          [prop]: item[prop],
+          size: ++item.changeset.size
+        });
       }
     });
-    // On ajoute dans fakeItem le changset et les données originales
-    Object.assign(fakeItem, {
-      changeset: changeset,
-      original: this.originalData
-    });
-    console.log("Item à enregistrer", fakeItem);
-    if ( this.itemIsEmpty(fakeItem)) {
+    console.log("Item à enregistrer", this.editedItem);
+    if ( this.itemIsEmpty()) {
       this.panel.flash("Aucune donnée n'a été founie…", 'error');
       return true;
     } 
-    if (changeset.size === 0 ) {
+    if (this.editedItem.changeset.size === 0 ) {
       this.panel.flash("Les données n'ont pas changé…", 'warn');
       return true;
     }
-    let invalidity: string | undefined = await this.checkItem(fakeItem);
+    let invalidity: string | undefined = await this.checkEditedItem();
     console.log("=== FIN DU CHECK DE L'ITEM ===");
     if (invalidity) {
       this.panel.flash("Les données sont invalides : " + invalidity, 'error');
@@ -118,14 +140,16 @@ export abstract class FormManager<T extends AnyItemType> {
   public async onConfirmSave(andQuit: boolean): Promise<void> {
     console.log("Sauvegarde confirmée");
     const fakeItem = this.collectValues();
-   await this.onSave(fakeItem);
+   await this.onSaveEditedItem();
     this.saving = false;
     if (andQuit) { this.closeForm(); }
   }
-  private itemIsEmpty(fakeItem: T): boolean {
+  private itemIsEmpty(): boolean {
     var isEmpty = true;
+    const item = this.editedItem as Record<string, any>;
     this.properties.forEach(dprop => {
-      if ( (fakeItem.dbData as Record<string, any>)[dprop.propName] !== '' ) { isEmpty = false; }
+      if (!isEmpty) { return ;}
+      if ( item[dprop.propName] !== '' ) { isEmpty = false; }
     });
     return isEmpty;
   }
@@ -166,13 +190,11 @@ export abstract class FormManager<T extends AnyItemType> {
   // Récupère les données dans le formulaire et retourne l'item
   // avec ses nouvelles données.
   collectValues() {
-    this.fakeItem = {};
     this.properties.forEach( dprop => {
       const prop = dprop.propName;
       const value = this.getValueOf(dprop);
-      Object.assign(this.fakeItem, {[prop]: value});
+      Object.assign(this.editedItem, {[prop]: value});
     });
-    return this.fakeItem;
   }
 
   /**
@@ -252,10 +274,10 @@ export abstract class FormManager<T extends AnyItemType> {
     });
   }
 
-  async __onSave(){
+  async __onSaveEditedItem(){
     return this.saveItem(false);
   }
-  async __onSaveAndQuit(): Promise<void>{
+  async __onSaveEditedItemAndQuit(): Promise<void>{
     await this.saveItem(true);
   }
   __onCancel(){

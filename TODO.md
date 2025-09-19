@@ -1,7 +1,10 @@
 # Todo list
 
 * J'EN SUIS À :
-  - [BUG] Pouvoir remettre en édition
+  - [BUG] Pouvoir enregistrer/créer à nouveau
+    Les changements ne sont pas enregistrées (pour une nouvelle donnée, tout devrait être mis);
+     
+
   - Procédure d'ajout ou d'actualisation d'une donnée dans accessTable + Panneau
     [BUG] Réussir à faire passer les choses (demander à Clause)
   - [si update]

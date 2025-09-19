@@ -2,7 +2,7 @@ import { DBEntryType, EntryType } from '../../bothside/types';
 import { StringNormalizer } from '../../bothside/StringUtils';
 import { Constants } from '../../bothside/UConstants';
 import { ComplexRpc } from '../services/ComplexRpc';
-import { FormManager, FormProperty } from "../services/FormManager";
+import { ChangeSetType, FormManager, FormProperty } from "../services/FormManager";
 import { Entry, RpcEntry } from "./Entry";
 
 class FEntry extends Entry {
@@ -11,7 +11,7 @@ class FEntry extends Entry {
 const allg: {[x: string]: string} = Constants.ENTRIES_GENRES;
 const genres = Object.keys(allg).map( key => [key, allg[key]] );
 
-export class EntryForm extends FormManager<EntryType> {
+export class EntryForm extends FormManager<EntryType, DBEntryType> {
   formId = 'entry-form';
   prefix = 'entry';
   properties: FormProperty[] = [
@@ -55,29 +55,29 @@ export class EntryForm extends FormManager<EntryType> {
    * Grand méthode de check de la validité de l'item. On ne l'envoie
    * en enregistrement que s'il est parfaitement conforme. 
    */
-  async checkItem(item: {
-    [x:string]: any
-  }): Promise<string | undefined> {
-    const isNew = item.isNew;
+  async checkItem(): Promise<string | undefined> {
+    const item = this.editedItem;
+    const isNew = item.changeset.isNew;
     const errors: string[] = [];
 
     // Vérifications diverses et synchrones sur les données
-    this.diverseChecks(item, errors);
+    this.diverseChecks(item.changeset, errors);
 
     // Vérification de l'existence des oeuvres dans la
     // définition
-    const unknownOeuvres: string[] = await this.checkExistenceOeuvres(item);
-    if (unknownOeuvres.length) {
-      errors.push(`des œuvres sont introuvables : ${unknownOeuvres.map(t => `"${t}"`).join(', ')}`);
-    }
+    if (item.changeset.definiition) {
+      const unknownOeuvres: string[] = await this.checkExistenceOeuvres(item.changeset.definition);
+      if (unknownOeuvres.length) {
+        errors.push(`des œuvres sont introuvables : ${unknownOeuvres.map(t => `"${t}"`).join(', ')}`);
+      }
 
-    // Vérification (complexe) de l'existence des exemples
-    // définis dans la définition de l'entrée
-    const unknownEx: string[] = await this.checkExistenceExemples(item);
-    if ( unknownEx.length ) {
-      errors.push(`des exemples sont introuvables: ${unknownEx.join(', ')}`);
+      // Vérification (complexe) de l'existence des exemples
+      // définis dans la définition de l'entrée
+      const unknownEx: string[] = await this.checkExistenceExemples(item.changeset.definition);
+      if (unknownEx.length) {
+        errors.push(`des exemples sont introuvables: ${unknownEx.join(', ')}`);
+      }
     }
-
 
     // résultat final retourné
     if (errors.length) {
@@ -86,9 +86,9 @@ export class EntryForm extends FormManager<EntryType> {
     }
   }
 
-  async checkExistenceOeuvres(item: {[x: string]: any}): Promise<string[]> {
+  async checkExistenceOeuvres(definition: string): Promise<string[]> {
     const checkerOeuvres = new ComplexRpc({
-      call: this.searchUnknownOeuvresIn.bind(this, item.definition)
+      call: this.searchUnknownOeuvresIn.bind(this, definition)
     });
     let resultat: unknown = await checkerOeuvres.run();
     const res = (resultat as {known: string[], unknown: string[]});
@@ -96,38 +96,28 @@ export class EntryForm extends FormManager<EntryType> {
     return res.unknown;
   }
 
-  diverseChecks(item: {[x: string]: any}, errors: string[]): string[] {
+  diverseChecks(changeset: ChangeSetType, errors: string[]): string[] {
     
-    // L'entrée doit être définie
-    if (item.entree === '') {
-      errors.push("L'entrée doit être définie");
+    if (changeset.entree && changeset.entree === '') {
+      // L'entrée ne doit pas être vide 
+      if (changeset.entree === '') { errors.push("L'entrée doit être définie");}
+      // L'entrée doit être unique (si elle a changée)
+      if ( Entry.doesEntreeExist(changeset.entree)) { errors.push(`L'entrée "${changeset.entree}" existe déjà…`); }
     }
-    // L'entrée doit être unique (si elle a changée)
-    if (item.changeset.has('entree')) {
-      const newEntree = item.changeset.get('entree');
-      console.log("L'entrée a changé (%s/%s)", item.original.entree, newEntree);
-      if ( Entry.doesEntreeExist(newEntree)) {
-        errors.push(`L'entrée "${newEntree}" existe déjà…`);
-      }
-    }
-    // L'identifiant doit être défini
-    if (item.id === ''){
-      errors.push("L'identifiant doit absoluement être défini");
-    } else if (item.changeset.has('id')) {
+    if (changeset.id) {
+      // L'identifiant ne doit pas être vide
+      if (changeset.id === '') { errors.push("L'identifiant doit absoluement être défini"); }
       // L'identifiant doit être unique (si nouveau)
-      if (Entry.doesIdExist(item.id)) {
-        errors.push(`L'identifiant "${item.id}" existe déjà. Je ne peux le réattribuer`);
-      }
+      if (Entry.doesIdExist(changeset.id)) { errors.push(`L'identifiant "${changeset.id}" existe déjà. Je ne peux le réattribuer`); }
     }
-    // La définition doit être donnée et valide
-    if ( item.definition === ''){
-      errors.push("La définition du mot doit être donnée");
-    } else if (item.changeset.has('definition')) {
+    if (changeset.definition) {
+      // La définition ne doit pas être vide 
+      changeset.definition === '' && errors.push("La définition du mot doit être donnée");
       // Définition trop courte, sans justifications
-      if ( item.definition.length < 50 && null === item.definition.match(EntryForm.REG_SHORT_DEF)) {
+      if (changeset.definition.length < 50 && null === changeset.definition.match(EntryForm.REG_SHORT_DEF)) {
         errors.push("La définition est courte, sans justification…");
       }
-      const unknownEntries = this.searchUnknownEntriesIn(item.definition);
+      const unknownEntries = this.searchUnknownEntriesIn(changeset.definition);
       if ( unknownEntries.length > 0) {
         errors.push(`entrées inconnues dans la défintion (${unknownEntries.join(', ')})`);
       }
@@ -135,23 +125,26 @@ export class EntryForm extends FormManager<EntryType> {
       console.log("La définition n'a pas été modifiée.");
     }
 
-    // Le genre doit être donné
-    if ( item.genre === '') {
-      errors.push("Le genre de l'entrée doit être donné");
-    } else if (item.changeset.has('genre') && Constants.genreNotExists(item.genre)) {
-      errors.push(`bizarrement, le genre "${item.genre} est inconnu…`);
+    if (changeset.genre ) {
+      // Le genre doit être donné
+      changeset.genre !== '' || errors.push("Le genre de l'entrée doit être donné");
+      // Le genre doit exister
+      if (changeset.changeset.has('genre') && Constants.genreNotExists(changeset.genre)) {
+        errors.push(`bizarrement, le genre "${changeset.genre} est inconnu…`);
+      }
     }
     
     //  Si les catégories sont définies, il faut qu'elles existent
     // Rappel : Une "catégorie", c'est simplement l'ID d'une entrée
     // (c'est la particularité du dictionnaire, mais ça tombe sous le
     // sens) 
-    if (item.categorie_id !== '' && item.changeset.has('categorie_id')) {
-      const unknownCategorie = this.checkUnknownCategoriesIn(item.categorie_id);
+    if (changeset.categorie_id) {
+      const unknownCategorie = this.checkUnknownCategoriesIn(changeset.categorie_id);
       if (unknownCategorie.length) {
         errors.push(`des catégories sont inconnues : ${unknownCategorie.join(', ')}`);
       }
     }
+
     return errors;
   }
 
@@ -217,9 +210,9 @@ export class EntryForm extends FormManager<EntryType> {
    * Fonction principale pour checker les exemples dans la définition
    * C'est elle qui initie la requête Rpc complexe. 
    */
-  async checkExistenceExemples(item: { [x: string]: any }): Promise<string[]> {
+  async checkExistenceExemples(definition: string): Promise<string[]> {
     const comp = new ComplexRpc({
-      call: this.searchUnknownExemplesIn.bind(this, item.definition)
+      call: this.searchUnknownExemplesIn.bind(this, definition)
     });
     const resultat = await comp.run();
     const res = resultat as {known: string[], unknown: string[]};
@@ -268,12 +261,17 @@ export class EntryForm extends FormManager<EntryType> {
    * -------------------------- 
    * Procédure complexe (ComplexRpc)
    */
-  async onSave(item: EntryType): Promise<boolean> {
-    console.info("Données à sauvegarder", item);
+  async onSaveEditedItem(): Promise<boolean> {
+    console.info("Item à sauvegarder", this.editedItem);
+    // Données persistantes
+    const data2save: DBEntryType = structuredClone(this.editedItem.original) as DBEntryType;
+    Object.assign(data2save, this.editedItem.changeset);
+    
+    console.info("Données à sauvegarder", data2save);
     console.warn("Mais je ne sauve rien pour le moment");
     return false ;
     const itemSaver = new ComplexRpc({
-      call: Entry.saveItem.bind(Entry, item.dbData)
+      call: Entry.saveItem.bind(Entry, data2save)
     });
     const res = await itemSaver.run() as {ok: boolean, errors: any, item: DBEntryType};
     console.log("res dans onSave", res);
