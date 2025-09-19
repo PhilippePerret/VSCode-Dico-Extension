@@ -1,10 +1,8 @@
+import { DBEntryType, EntryType } from '../../bothside/types';
 import { StringNormalizer } from '../../bothside/StringUtils';
 import { Constants } from '../../bothside/UConstants';
-import { DBEntryType } from '../../bothside/types';
-import { PanelClassEntry } from '../../extension/services/panels/panelClassEntry';
 import { ComplexRpc } from '../services/ComplexRpc';
 import { FormManager, FormProperty } from "../services/FormManager";
-import { AnyElementType } from './AnyClientElement';
 import { Entry, RpcEntry } from "./Entry";
 
 class FEntry extends Entry {
@@ -13,7 +11,7 @@ class FEntry extends Entry {
 const allg: {[x: string]: string} = Constants.ENTRIES_GENRES;
 const genres = Object.keys(allg).map( key => [key, allg[key]] );
 
-export class EntryForm extends FormManager<typeof Entry, FEntry> {
+export class EntryForm extends FormManager<EntryType> {
   formId = 'entry-form';
   prefix = 'entry';
   properties: FormProperty[] = [
@@ -270,16 +268,18 @@ export class EntryForm extends FormManager<typeof Entry, FEntry> {
    * -------------------------- 
    * Procédure complexe (ComplexRpc)
    */
-  async onSave(item: Entry): Promise<boolean> {
-    // console.info("Données à sauvegarder", item);
+  async onSave(item: EntryType): Promise<boolean> {
+    console.info("Données à sauvegarder", item);
+    console.warn("Mais je ne sauve rien pour le moment");
+    return false ;
     const itemSaver = new ComplexRpc({
-      call: Entry.saveItem.bind(Entry, item as unknown as IEntry)
+      call: Entry.saveItem.bind(Entry, item.dbData)
     });
-    const res = await itemSaver.run() as {ok: boolean, errors: any, item: IEntry};
+    const res = await itemSaver.run() as {ok: boolean, errors: any, item: DBEntryType};
     console.log("res dans onSave", res);
     if (res.ok) {
       Entry.panel.flash("Item enregistré avec succès.", 'notice');
-      Entry.accessTable.upsert(res.item as any as AnyFullElementType);
+      Entry.accessTable.upsert(res.item);
     } else {
       console.error("ERREURS LORS DE L'ENREGISTREMENT DE L'ITEM", res.errors);
       Entry.panel.flash('Erreur (enregistrement de l’entrée (voir la console', 'error');

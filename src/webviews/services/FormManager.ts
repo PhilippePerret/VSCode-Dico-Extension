@@ -1,4 +1,3 @@
-import { ExtensionMode } from "vscode";
 import { PanelClient } from "../PanelClient";
 import { AnyItemType } from "../../bothside/types";
 
@@ -14,19 +13,13 @@ export interface FormProperty {
   onChange?(): void; // la fonction optionnelle à appeler en cas de changement de cette propriété
 }
 
-interface ConcreteElement {
-  data: { [k: string]: any}
-  [k: string]: any; 
-} 
-
 type FieldType = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
-
 
 /**
  * Classe pour étendre le formulaire de chaque élément
  */
 
-export abstract class FormManager<C, T extends ConcreteElement> {
+export abstract class FormManager<T extends AnyItemType> {
 
   abstract formId: string; // Identifiant unique du formulaire
   abstract prefix: string; // utilisé pour nommer les champs
@@ -67,11 +60,11 @@ export abstract class FormManager<C, T extends ConcreteElement> {
    */
   public editItem(item: T): void {
     // console.log("Édition de l'item", item);
-    this.panel.context = item.data.id === '' ? 'create-element' : 'edit-element';
-    this.originalData = item.data;
-    this.isNewItem = !item.data.id;
+    this.panel.context = item.id === '' ? 'create-element' : 'edit-element';
+    this.originalData = structuredClone(item.dbData);
+    this.isNewItem = !item.id;
     this.openForm();
-    this.dispatchValues(item.data);
+    this.dispatchValues(item.dbData);
     if ( 'function' === typeof this.afterEdit ) { this.afterEdit.call(this); }
     this.setMode('form');
   }
@@ -132,7 +125,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   private itemIsEmpty(fakeItem: T): boolean {
     var isEmpty = true;
     this.properties.forEach(dprop => {
-      if ( fakeItem[dprop.propName] !== '' ) { isEmpty = false; }
+      if ( (fakeItem.dbData as Record<string, any>)[dprop.propName] !== '' ) { isEmpty = false; }
     });
     return isEmpty;
   }

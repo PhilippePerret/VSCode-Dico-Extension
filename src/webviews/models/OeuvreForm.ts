@@ -1,16 +1,12 @@
 import { StringNormalizer } from "../../bothside/StringUtils";
-import { DBOeuvreType } from "../../bothside/types";
+import { DBOeuvreType, OeuvreType } from "../../bothside/types";
 import { ComplexRpc } from "../services/ComplexRpc";
 import { stopEvent } from "../services/DomUtils";
 import { FormManager, FormProperty } from "../services/FormManager";
-import { OeuvrePicker, OptionsOeuvre, TMDB } from "../services/OeuvreFinder";
+import { OeuvrePicker, OptionsOeuvre } from "../services/OeuvreFinder";
 import { Oeuvre } from "./Oeuvre";
 
-class FOeuvre extends Oeuvre {
-  [x: string]: any;
-}
-
-export class OeuvreForm extends FormManager<typeof Oeuvre, FOeuvre> {
+export class OeuvreForm extends FormManager<OeuvreType> {
   prefix = 'oeuvre';
   formId = 'oeuvre-form';
   properties: FormProperty[] = [
@@ -38,7 +34,7 @@ export class OeuvreForm extends FormManager<typeof Oeuvre, FOeuvre> {
     this.panel.context = isNew ? 'create-oeuvre' : 'edit-oeuvre';
   }
 
-  async checkItem(item: FOeuvre): Promise<string | undefined> {
+  async checkItem(item: OeuvreType): Promise<string | undefined> {
     const errors: string[] = [];
     let errs:string | undefined; // Pour mettre les erreurs provisoires
 
@@ -46,18 +42,18 @@ export class OeuvreForm extends FormManager<typeof Oeuvre, FOeuvre> {
     if (this.isNewItem) {
       // Pas mal de choses ont déjà été vérifiées, et notamment le 
       // fait que les titres n'existent pas.
-      
     }
+    const dbData: DBOeuvreType = item.dbData;
 
     if (item.id === '' || !item.id){
       errors.push('Il faut absolument que cet item ait un identifiant.');
     }
 
-    if (item.titre_original.trim().length === 0) {
+    if ((dbData.titre_original as string).trim().length === 0) {
       errors.push('Il faut fournir le titre de l’œuvre original.');
     }
     
-    if ( errs = this.checkAuteurs(item)) {
+    if ( errs = this.checkAuteurs(item.dbData)) {
       errors.push('erreurs trouvés sur les auteurs : ' + errs);
     }
 
@@ -67,9 +63,9 @@ export class OeuvreForm extends FormManager<typeof Oeuvre, FOeuvre> {
     }
   }
 
-  checkAuteurs(item: FOeuvre): undefined | string {
+  checkAuteurs(item: DBOeuvreType): undefined | string {
     
-    let auts = item.auteurs.trim();
+    let auts: any = String(item.auteurs).trim();
     if ( auts.length === 0) {
       return 'Il faut impérativement fournir les autrices et auteurs';
     }
@@ -244,12 +240,14 @@ export class OeuvreForm extends FormManager<typeof Oeuvre, FOeuvre> {
    * @param item L'oeuvre à enregistrer
    * @returns True si l'enregistrement a pu se faire correctement.
    */
-  async onSave(item: Oeuvre): Promise<boolean> {
+  async onSave(item: OeuvreType): Promise<boolean> {
     console.log("Il faut que j'apprendre à sauver : ", item);
+    console.log("Pour le moment je ne fais rien");
+    return false;
     const itemSaver = new ComplexRpc({
-      call: Oeuvre.saveItem.bind(Oeuvre, item as unknown as IOeuvre)
+      call: Oeuvre.saveItem.bind(Oeuvre, item as unknown as DBOeuvreType)
     });
-    const res = await itemSaver.run() as {ok: boolean, errors: any, item: IOeuvre};
+    const res = await itemSaver.run() as {ok: boolean, errors: any, item: DBOeuvreType};
     // console.log("Res après attente de sauvegarde de l'oeuvre", res);
     if (res.ok) {
       console.log("Je dois apprendre à actualiser l'affichage de l'oeuvre ou l'insérer.");
