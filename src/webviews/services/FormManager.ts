@@ -1,4 +1,6 @@
+import { ExtensionMode } from "vscode";
 import { PanelClient } from "../PanelClient";
+import { AnyItemType } from "../../bothside/types";
 
 // Type pour la définition d'une propriété
 export interface FormProperty {
@@ -38,7 +40,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   onCancel?(): void; // Fonction appelée en cas d'annulation
   abstract observeForm(): void; // fonction d'observation propre du formulaire
   onFocusForm?(ev: FocusEvent): any;
-  public panel!: PanelClient<any, any>; // le panneau contenant le formulaire
+  public panel!: PanelClient<AnyItemType>; // le panneau contenant le formulaire
   private originalData!: {[x: string]: any};
   public saving: boolean = false;
 
@@ -268,9 +270,9 @@ export abstract class FormManager<C, T extends ConcreteElement> {
   }
   __onFocusOnForm(ev: FocusEvent) {
     if ('function' === typeof this.onFocusForm) { this.onFocusForm.call(this, ev); }
-    (this.panel as PanelClient<any, any>).keyManager.setMode('form');
+    (this.panel as PanelClient<AnyItemType>).keyManager.setMode('form');
   }
-  public setPanel(panel: PanelClient<any, any>) {
+  public setPanel(panel: PanelClient<AnyItemType>) {
     this.panel = panel;
   }
   // === MÉTHODES DE VALIDATION DES DONNÉES D'IMPLÉMENTATION ===
@@ -329,7 +331,7 @@ export abstract class FormManager<C, T extends ConcreteElement> {
 
     // On règle le changement de mode suivant qu'on focusse dans un
     // champ éditable ou qu'on en blure
-    (this.panel as PanelClient<any, any>).keyManager.discrimineFieldsForModeIn(this.obj, {edit: 'edit', normal: 'form'});
+    (this.panel as PanelClient<AnyItemType>).keyManager.discrimineFieldsForModeIn(this.obj, {edit: 'edit', normal: 'form'});
   }
   
   focusField(indice: number) {

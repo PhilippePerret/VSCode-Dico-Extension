@@ -1,7 +1,7 @@
 # Todo list
 
 * J'EN SUIS À :
-  - [BUG] refaire marcher le manager VimLike
+  - [BUG] Pouvoir remettre en édition
   - Procédure d'ajout ou d'actualisation d'une donnée dans accessTable + Panneau
     [BUG] Réussir à faire passer les choses (demander à Clause)
   - [si update]
