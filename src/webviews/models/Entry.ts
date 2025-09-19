@@ -10,15 +10,15 @@
  *     pour enregistrer des informations ou obtenir des données des autres
  *     panneaux.
  */
-import { DBEntryType, EntryType, AnyItemType } from '../../bothside/types';
 import { StringNormalizer } from '../../bothside/StringUtils';
 import { ClientItem } from '../ClientItem';
 import { createRpcClient } from '../RpcClient';
 import { AnyElementType } from './AnyClientElement';
-import { AccessTable } from '../services/AccessTable';
 import { PanelClient } from '../PanelClient';
+import { AccessTable } from '../services/AccessTable';
 import { EntryForm } from './EntryForm';
 import { ComplexRpc } from '../services/ComplexRpc';
+import { DBEntryType, EntryType, AnyItemType } from '../../bothside/types';
 
 
 export class Entry extends ClientItem<EntryType> {
@@ -184,4 +184,4 @@ RpcEntry.on('after-saved-item', (params) => {
 
 // Pour exposer globalement
 (window as any).Entry = Entry ;
-(window as any).RpcEntry = RpcEntry;
+// (window as any).RpcEntry = RpcEntry;

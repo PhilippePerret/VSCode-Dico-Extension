@@ -1,9 +1,7 @@
 # Todo list
 
 * J'EN SUIS À :
-  - [BUG] Pouvoir enregistrer/créer à nouveau
-    Les changements ne sont pas enregistrées (pour une nouvelle donnée, tout devrait être mis);
-     
+  - Implémenter toute la sauvegarder et création pour les œuvres
 
   - Procédure d'ajout ou d'actualisation d'une donnée dans accessTable + Panneau
     [BUG] Réussir à faire passer les choses (demander à Clause)

@@ -17,11 +17,14 @@ abstract class Rpc {
     this.rpc.notify('after-saved-item', params);
   }
 
-
   // C'est ici qu'on détermine le panneau, quand il est fait
   initialize(panel: vscode.WebviewPanel) {
     this.panel = panel;
     this.rpc = createRpcServer(panel);
+
+    // ON peut définir ici les méthodes communes à tous les canaux.
+
+
   }
 
   // raccourcis
@@ -35,7 +38,6 @@ abstract class Rpc {
     this.rpc.ask(command, params);
   }
   
-  // ON peut définir ici les méthodes communes à tous les canaux.
 
   // Pour demander au panneau le peuplement du panneau en lui
   // transmettant les données des entrées.
@@ -78,14 +80,6 @@ class RpcEntry extends Rpc {
     this.rpc.notify('check-exemples-resultat', params);
   }
 
-  // // Appelée après l'enregistrement de l'item, pour confirmation ou 
-  // // signalement d'une erreur
-  // afterSaveItem(params: {CRId: string, ok: boolean, errors: any, item: any}){
-  //   // console.log("[ENTENSIONS] Remontée au panneau après sauvegarde Item", params);
-  //   this.rpc.notify('after-saved-item', params);
-  // }
-
-
   initialize(panel: vscode.WebviewPanel): void {
     super.initialize(panel);
 
@@ -119,6 +113,17 @@ class RpcEntry extends Rpc {
   }
 }
 
+
+/**
+ * 
+ * 
+ * =================== RPC OEUVRE =====================
+ * 
+ * 
+ * 
+ */
+
+
 class RpcOeuvre extends Rpc {
   protected panelName = 'panneau des œuvres';
   checkOeuvres(params: {CRId: string, oeuvres: string[]}) {
@@ -129,10 +134,10 @@ class RpcOeuvre extends Rpc {
     this.rpc.notify('display-oeuvre', param);
   }
 
-  // afterSaveOeuvre(params: {CRId: string, ok: boolean, errors: any, item: any}){
-  //   // console.log("[EXTENSION RpcOeuvre] Remontée au panneau après save", params);
-  //   this.rpc.notify('after-save-oeuvre', params);
-  // }
+  afterSaveItem(params: {CRId: string, ok: boolean, errors: any, item: any}){
+    // console.log("[EXTENSION RpcOeuvre] Remontée au panneau après save", params);
+    this.rpc.notify('after-save-item', params);
+  }
 
   // Définition des récepteurs on
   initialize(panel: vscode.WebviewPanel): void {
@@ -143,10 +148,10 @@ class RpcOeuvre extends Rpc {
       CanalEntry.resultatCheckingOeuvres(params);
     });
 
-    this.rpc.on('save-oeuvre', async (params: any) => {
+    this.rpc.on('save-item', async (params: any) => {
       // console.log("[EXTENSION OEUVRE] Réception de l'œuvre à sauver", params);
       Object.assign(params, {ok: null, errors: []});
-      Oeuvre.saveOeuvre(params);
+      Oeuvre.saveItem(params);
     });
 
     this.rpc.on('tmdb-secrets', async () => {

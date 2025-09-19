@@ -45,10 +45,11 @@ export class EntryForm extends FormManager<EntryType, DBEntryType> {
 
   // À faire juste après la mise en édition d'une Entrée
   afterEdit(): void {
-    const id = this.field('id').value ;
-    const isNewItem = id === '' ;
+    const id = this.getValueOf('id');
+    const isNew = id === '' ;
     // Pour un nouvel item, il faut débloquer l'identifiant
-    if (isNewItem) { this.setIdLock(false); }
+    if (isNew) { this.setIdLock(false); }
+    this.panel.context = isNew ? 'create-entry' : 'edit-entry';
   }
 
   /**
@@ -57,6 +58,7 @@ export class EntryForm extends FormManager<EntryType, DBEntryType> {
    */
   async checkEditedItem(): Promise<string | undefined> {
     const item = this.editedItem;
+    const changeset = item.changeset;
     const isNew = item.changeset.isNew;
     const errors: string[] = [];
 
@@ -65,15 +67,15 @@ export class EntryForm extends FormManager<EntryType, DBEntryType> {
 
     // Vérification de l'existence des oeuvres dans la
     // définition
-    if (item.changeset.definiition !== undefined) {
-      const unknownOeuvres: string[] = await this.checkExistenceOeuvres(item.changeset.definition);
+    if (changeset.definiition !== undefined) {
+      const unknownOeuvres: string[] = await this.checkExistenceOeuvres(changeset.definition);
       if (unknownOeuvres.length) {
         errors.push(`des œuvres sont introuvables : ${unknownOeuvres.map(t => `"${t}"`).join(', ')}`);
       }
 
       // Vérification (complexe) de l'existence des exemples
       // définis dans la définition de l'entrée
-      const unknownEx: string[] = await this.checkExistenceExemples(item.changeset.definition);
+      const unknownEx: string[] = await this.checkExistenceExemples(changeset.definition);
       if (unknownEx.length) {
         errors.push(`des exemples sont introuvables: ${unknownEx.join(', ')}`);
       }
@@ -271,7 +273,7 @@ export class EntryForm extends FormManager<EntryType, DBEntryType> {
     const res = await itemSaver.run() as {ok: boolean, errors: any, item: DBEntryType, itemPrepared: EntryType};
     console.log("res dans onSave", res);
     if (res.ok) {
-      Entry.panel.flash("Item enregistré avec succès en DB.", 'notice');
+      Entry.panel.flash("Entrée enregistrée avec succès en DB.", 'notice');
       let item: AnyItemType, nextItem: AnyItemType | undefined;
       [item, nextItem] = Entry.accessTable.upsert(res.itemPrepared);
       if (nextItem /* Création d'un nouvel item */) {
@@ -283,7 +285,6 @@ export class EntryForm extends FormManager<EntryType, DBEntryType> {
       console.error("ERREURS LORS DE L'ENREGISTREMENT DE L'ITEM", res.errors);
       Entry.panel.flash('Erreur (enregistrement de l’entrée (voir la console', 'error');
     }
-
     return true; // quand ça a été bien enregistré
   }
 

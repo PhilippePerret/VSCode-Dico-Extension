@@ -839,9 +839,7 @@
     populate(accessTable) {
       const container = this.container;
       container.innerHTML = "";
-      let index = -1;
       accessTable.each((item) => {
-        ++index;
         this.insertInDom(item, void 0);
       });
       this.afterDisplayItems(accessTable);

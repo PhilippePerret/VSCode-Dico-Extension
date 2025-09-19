@@ -1,5 +1,5 @@
 import { StringNormalizer } from "../../bothside/StringUtils";
-import { DBOeuvreType, OeuvreType } from "../../bothside/types";
+import { AnyItemType, DBOeuvreType, OeuvreType } from "../../bothside/types";
 import { ComplexRpc } from "../services/ComplexRpc";
 import { stopEvent } from "../services/DomUtils";
 import { FormManager, FormProperty } from "../services/FormManager";
@@ -35,11 +35,10 @@ export class OeuvreForm extends FormManager<OeuvreType, DBOeuvreType> {
   }
 
   async checkEditedItem(): Promise<string | undefined> {
-    const errors: string[] = [];
-    let errs:string | undefined; // Pour mettre les erreurs provisoires
-
     const item = this.editedItem;
     const changeset = item.changeset;
+    const errors: string[] = [];
+    let errs:string | undefined; // Pour mettre les erreurs provisoires
 
     // En cas de nouvelle œuvre
     if (changeset.isNew) {
@@ -78,7 +77,7 @@ export class OeuvreForm extends FormManager<OeuvreType, DBOeuvreType> {
    * @returns true/false
    */
   checkAuteurs(auteurs: string): undefined | string {
-    let auts: any = String(auteurs).trim();
+    let auts: any = auteurs.trim();
     if ( auts.length === 0) {
       return 'Il faut impérativement fournir les autrices et auteurs';
     }
@@ -248,29 +247,33 @@ export class OeuvreForm extends FormManager<OeuvreType, DBOeuvreType> {
   }
 
   /**
+   * ENREGISTREMENT DE L'ŒUVRE
+   * --------------------------
    * 
    * @param item L'oeuvre à enregistrer
    * @returns True si l'enregistrement a pu se faire correctement.
    */
   async onSaveEditedItem(data2save: DBOeuvreType): Promise<boolean> {
-    const item = this.editedItem;
-    console.log("Il faut que j'apprendre à sauver : ", item);
-    console.log("Pour le moment je ne fais rien");
-    return false;
+    console.log("Il faut que j'apprendre à sauver : ", this.editedItem);
+    console.log("Données oeuvre à sauvegarder", data2save);
     const itemSaver = new ComplexRpc({
-      call: Oeuvre.saveItem.bind(Oeuvre, item as unknown as DBOeuvreType)
+      call: Oeuvre.saveItem.bind(Oeuvre, data2save) 
     });
-    const res = await itemSaver.run() as {ok: boolean, errors: any, item: DBOeuvreType};
+    const res = await itemSaver.run() as {ok: boolean, errors: any, item: DBOeuvreType, itemPrepared: OeuvreType};
     // console.log("Res après attente de sauvegarde de l'oeuvre", res);
     if (res.ok) {
-      console.log("Je dois apprendre à actualiser l'affichage de l'oeuvre ou l'insérer.");
       Oeuvre.panel.flash("Œuvre enregistrée avec succès.", 'notice');
+      let item: AnyItemType, nextItem: AnyItemType | undefined;
+      [item, nextItem] = Oeuvre.accessTable.upsert(res.itemPrepared);
+      if (nextItem /* seulement en cas de création d'un nouvel élément */) {
+        Oeuvre.panel.insertInDom(item, nextItem);
+      } else {
+        Oeuvre.panel.updateInDom(item);
+      }
     } else {
       console.error("ERREUR LORS DE L'ENREGISTREMENT DE L'OEUVRE", res.errors);
       Oeuvre.panel.flash('Erreur (enregistrement de l’œuvre (voir la console', 'error');
     }
     return true;
   }
-
-
 }

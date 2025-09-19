@@ -1,13 +1,14 @@
+import { StringNormalizer } from '../../bothside/StringUtils';
 import { RpcChannel } from '../../bothside/RpcChannel';
 import { createRpcClient } from '../RpcClient';
 import { ClientItem } from '../ClientItem';
-import { OeuvreType, DBOeuvreType, AnyItemType } from '../../bothside/types';
-import { StringNormalizer } from '../../bothside/StringUtils';
 import { AnyElementType } from './AnyClientElement';
 import { PanelClient } from '../PanelClient';
 import { AccessTable } from '../services/AccessTable';
 import { OeuvreForm } from './OeuvreForm';
 import { ComplexRpc } from '../services/ComplexRpc';
+import { OeuvreType, DBOeuvreType, AnyItemType } from '../../bothside/types';
+import { EntryType } from 'perf_hooks';
 
 export class Oeuvre extends ClientItem<OeuvreType> {
   readonly type = 'oeuvre';
@@ -16,18 +17,18 @@ export class Oeuvre extends ClientItem<OeuvreType> {
   static currentItem: Oeuvre;
   
   // Constructor and data access
-  constructor(public data: OeuvreType) {
-    super(data);
+  constructor(public item: OeuvreType) {
+    super(item);
   }
   
   // Getters pour accès direct aux propriétés courantes
-  get titre_affiche(): string { return this.data.dbData.titre_affiche; }
-  get titre_original(): string | undefined { return this.data.dbData.titre_original; }
-  get titre_francais(): string | undefined { return this.data.dbData.titre_francais; }
-  get annee(): number | undefined { return this.data.dbData.annee; }
-  get auteurs(): string | undefined { return this.data.dbData.auteurs; }
-  get notes(): string | undefined { return this.data.dbData.notes; }
-  get resume(): string | undefined { return this.data.dbData.resume; }
+  get titre_affiche(): string { return this.item.dbData.titre_affiche; }
+  get titre_original(): string | undefined { return this.item.dbData.titre_original; }
+  get titre_francais(): string | undefined { return this.item.dbData.titre_francais; }
+  get annee(): number | undefined { return this.item.dbData.annee; }
+  get auteurs(): string | undefined { return this.item.dbData.auteurs; }
+  get notes(): string | undefined { return this.item.dbData.notes; }
+  get resume(): string | undefined { return this.item.dbData.resume; }
 
   static setAccessTableWithItems(items: OeuvreType[]) {
     this._accessTable = new AccessTable<OeuvreType>(items);
@@ -79,11 +80,11 @@ export class Oeuvre extends ClientItem<OeuvreType> {
    * Méthodes pour enregistrer les oeuvres
    */
   public static saveItem(item: DBOeuvreType, compRpcId: string) {
-    RpcOeuvre.notify('save-oeuvre', {CRId: compRpcId, item: item});
+    RpcOeuvre.notify('save-item', {CRId: compRpcId, item: item});
   }
 
-  public static onSavedOeuvre(params: {CRId: string, ok: boolean, errors: any, item: DBOeuvreType}){
-    console.log("[CLIENT OEUVRE] Retour dans le panneau des oeuvres", params);
+  public static onSavedItem(params: {CRId: string, ok: boolean, errors: any, item: DBOeuvreType, itemPrepared: EntryType}){
+    // console.log("[CLIENT OEUVRE] Retour dans le panneau des oeuvres", params);
     ComplexRpc.resolveRequest(params.CRId, params);
   }
 }
@@ -151,9 +152,9 @@ RpcOeuvre.on('check-oeuvres', (params) => {
   RpcOeuvre.notify('check-oeuvres-resultat', { CRId: params.CRId, resultat: resultat });
 });
 
-RpcOeuvre.on('after-save-oeuvre', (params) => {
-  console.log("[CLIENT Oeuvre] Réception du after-save-oeuvre", params);
-  Oeuvre.onSavedOeuvre(params);
+RpcOeuvre.on('after-save-item', (params) => {
+  console.log("[CLIENT Oeuvre] Réception du after-save-item", params);
+  Oeuvre.onSavedItem(params);
 });
 
 (window as any).Oeuvre = Oeuvre ;

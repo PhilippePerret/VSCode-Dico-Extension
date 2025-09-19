@@ -5,12 +5,8 @@ import { StringNormalizer } from '../../bothside/StringUtils';
 import { DBManager } from '../db/db_manager';
 import { CanalEntry } from '../services/Rpc';
 
-// Re-export types for external use
-export { DBEntryType, EntryType } from '../../bothside/types';
-
-// Classe wrapper autour d'EntryType
 export class Entry {
-	public static panelId: string = 'entries';
+	public static panelId = 'entries';
 
 	public static cacheDebug() { return this.cache; }
 	protected static _cacheManagerInstance: UniversalCacheManager<DBEntryType, EntryType> = new UniversalCacheManager();
