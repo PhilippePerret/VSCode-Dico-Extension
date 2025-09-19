@@ -1,29 +1,18 @@
-import { Entry } from "./models/Entry";
-import { Exemple } from "./models/Exemple";
-import { Oeuvre } from "./models/Oeuvre";
-import { EntryType, OeuvreType, ExempleType } from "../bothside/types";
-import { AccessTable } from "./services/AccessTable";
-import { AnyElementType } from "../extension/models/AnyElement";
+import { EntryType, OeuvreType, ExempleType, AnyItemType } from "../bothside/types";
 import { SelectionManager } from "./services/SelectionManager";
 import { PanelClient } from "./PanelClient";
 
 type ItemDataType = EntryType | OeuvreType | ExempleType;
-type ItemClassType = typeof Entry | typeof Oeuvre | typeof Exemple;
-
-// Types legacy pour transition - à supprimer après migration complète
-type Tel_u = ItemDataType;
-type Tel = ItemClassType;
-
 
 /**
  * Class abstraite pour tous les Items (Entry, Oeuvre, Exemple)
  */
-export abstract class ClientItem<Tel, Tel_u> {
+export abstract class ClientItem<Tdt extends ItemDataType> {
   static klass: any;
-  public static get accessTable(){ return this._accessTable;}
-  public static panel: PanelClient<any, any>;
+  public static get accessTable(){ return this.klass.accessTable;}
+  public static panel: PanelClient<any>;
 
-  protected static _accessTable: AccessTable<any>;
+  // protected static _accessTable: AccessTable<any>;
   private static _selector: SelectionManager;
   public static get Selector(){ 
     return this._selector || (this._selector = new SelectionManager(this.klass));
@@ -31,13 +20,13 @@ export abstract class ClientItem<Tel, Tel_u> {
 
   // Raccourcis vers l'accessTable, pour obtenir des informations
   // sur les items ou les items eux-même
-  static get(itemId: string): AnyElementType | undefined {
-    return this.accessTable.getById(itemId);
+  static get(itemId: string): AnyItemType | undefined {
+    return this.accessTable.get(itemId);
   } 
   static getObj(itemId: string): HTMLDivElement {
     return this.accessTable.getObj(itemId);
   }
-  static each(method:(item: AnyElementType) => void){ this.accessTable.each(method);}
+  static each(method:(item: AnyItemType) => void){ this.accessTable.each(method);}
 
   static isVisible(id: string): boolean { return this.accessTable.isVisible(id); }
   static setVisible(id: string) { this.accessTable.setVisibility(id, true); }
@@ -52,30 +41,23 @@ export abstract class ClientItem<Tel, Tel_u> {
     this.panel.form.editItem(new this.klass(emptyDbData)); 
   }
 
-  toRow(){ return {};}
+  // toRow(){ return {};}
   /**
    * Méthode qui reçoit les items sérialisés depuis l'extension et va les
    * consigner dans le panneau, dans une AccessTable qui permettra de 
    * parcourrir les éléments. 
    */
-  static deserializeItems(items: string[], klass: typeof Entry | typeof Oeuvre | typeof Exemple) {
-    const allItems = items.map( item => new this.klass(JSON.parse(item)));
-    this.klass.setAccessTable(allItems);
+  static deserializeItems(items: string[]): void {
+    const allItems: AnyItemType[] = items.map( (item: string) => JSON.parse(item) as AnyItemType);
+    this.accessTable(allItems);
   }
 
-  public data: Tel_u;
+  public get id(): string {return this.item.id;}
 
-  constructor(itemData: Tel_u){
-    this.data = itemData;
-  } 
+  constructor(
+    public item: Tdt
+  ){ } 
 
   // Pour obtenir l'AccKey (ak) de l'item
-  static getAccKey(id: string) { return this.accessTable.getAccKeyById(id) ; }
-
-  // public get obj(){ return this._obj ;}
-  // protected get isNotVisible(){ return this._visible === false;}
-  // protected get isVisible(){ return this._visible === true ;}
-
-  // private _obj!: HTMLDivElement;
-  // private _visible: boolean = true;
+  static getAccKey(id: string) { return this.accessTable.getAccKey(id) ; }
 }

@@ -32,7 +32,7 @@ export class AccessTable<T extends EntryType | OeuvreType | ExempleType> {
   _size!: number | null ;
   // Le premier item, qui doit forcément être le premier chargé
   _firstItem!: T;
-  private get firstItem(){
+  public get firstItem(){
     return this._firstItem || (this._firstItem = this.arrayItems[0]); }
 
   constructor(
@@ -61,7 +61,7 @@ export class AccessTable<T extends EntryType | OeuvreType | ExempleType> {
     }
   }
 
-  selectNextItem(panel: PanelClient<any, any>): void {
+  selectNextItem(panel: PanelClient<any>): void {
     const selection = panel.getSelection();
     let nextId: string | undefined ;
     if ( selection ) {
@@ -72,7 +72,7 @@ export class AccessTable<T extends EntryType | OeuvreType | ExempleType> {
     const finalNextId = nextId || this.firstItem.id;
     panel.select(finalNextId);
   }
-  selectPrevItem(panel: PanelClient<any, any>): void {
+  selectPrevItem(panel: PanelClient<any>): void {
     const selection = panel.getSelection();
     let prevId: string | undefined;
     if ( selection ) {

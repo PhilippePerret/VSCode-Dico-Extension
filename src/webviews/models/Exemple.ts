@@ -1,6 +1,5 @@
 import { RpcChannel } from '../../bothside/RpcChannel';
-import { UExemple } from '../../bothside/UExemple';
-import { ExempleType, DBExempleType } from '../../bothside/types';
+import { AnyItemType, ExempleType  } from '../../bothside/types';
 import { StringNormalizer } from '../../bothside/StringUtils';
 import { ClientItem } from '../ClientItem';
 import { createRpcClient } from '../RpcClient';
@@ -11,7 +10,7 @@ import { AnyElementType } from './AnyClientElement';
 import { ExempleForm } from './ExempleForm';
 
 
-export class Exemple extends ClientItem<DBExempleType, ExempleType> {
+export class Exemple extends ClientItem<ExempleType> {
   readonly type = 'exemple';
   static readonly minName = 'exemple';
   static readonly klass = Exemple;
@@ -23,7 +22,6 @@ export class Exemple extends ClientItem<DBExempleType, ExempleType> {
   }
   
   // Getters pour accès direct aux propriétés courantes
-  get id(): string { return this.data.id; }
   get oeuvre_id(): string { return this.data.dbData.oeuvre_id; }
   get indice(): number { return this.data.dbData.indice; }
   get entry_id(): string { return this.data.dbData.entry_id; }
@@ -33,7 +31,8 @@ export class Exemple extends ClientItem<DBExempleType, ExempleType> {
   static setAccessTable(items: ExempleType[]) {
     this._accessTable = new AccessTable<ExempleType>(items);
   }
-
+  public static _accessTable: AccessTable<ExempleType>;
+  
   static doExemplesExist(exemples: string[][]): {known: string[], unknown: string[]} {
     const resultat: {known: string[], unknown: string[]} = {known: [], unknown: []};
     exemples.forEach(paire => {
@@ -51,8 +50,6 @@ export class Exemple extends ClientItem<DBExempleType, ExempleType> {
     return !!this.accessTable.exists(`${oeuvreId}-${exIndice}`);
   }
 
-
-
 }
 
 
@@ -63,7 +60,7 @@ interface OTitre {
   titre: string;              // le titre affiché
 }
 
-class ExemplePanelClass extends PanelClient<Exemple, typeof Exemple> {
+class ExemplePanelClass extends PanelClient<ExempleType> {
   protected get accessTable(){ return Exemple.accessTable ; }
   modeFiltre = 'by-title';
   BlockTitres: Map<string, OTitre> = new Map();
@@ -173,36 +170,35 @@ class ExemplePanelClass extends PanelClient<Exemple, typeof Exemple> {
    * et sur toutes les entrées.
    * 
    */
-  searchMatchingItems(searched: string): Exemple[] {
+  searchMatchingItems(searched: string): ExempleType[] {
     const searchLow = StringNormalizer.toLower(searched);
     const searchRa = StringNormalizer.rationalize(searched); 
-    let exemplesFound: Exemple[];
+    let exemplesFound: ExempleType[];
 
     switch (this.modeFiltre) {
 
       case 'by-title':
         // Filtrage par titre d'œuvre (défaut)
-        exemplesFound = this.filter(Exemple.accessTable, (ex: AnyElementType) => {
-          ex = ex as Exemple;
-          return ex.data.cachedData.titresLookUp.some((titre: string) => {
+        exemplesFound = this.filter(Exemple.accessTable, (ex: AnyItemType) => {
+          return (ex as ExempleType).cachedData.titresLookUp.some((titre: string) => {
             return titre.substring(0, searchLow.length) === searchLow;
           });
-        }) as Exemple[];
+        }) as ExempleType[];
         break;
       case 'by-entry':
         // Filtrage pour entrée
-        exemplesFound = this.filter(Exemple.accessTable, (ex: AnyElementType) => {
-          const seg = (ex as Exemple).data.cachedData.entry4filter.substring(0, searchLow.length);
+        exemplesFound = this.filter(Exemple.accessTable, (ex: AnyItemType) => {
+          const seg = (ex as ExempleType).cachedData.entry4filter.substring(0, searchLow.length);
           return seg === searchLow || seg === searchRa;
-        }) as Exemple[];
+        }) as ExempleType[];
         break;
       case 'by-content':
-         exemplesFound = this.filter(Exemple.accessTable, (ex: AnyElementType) => {
-          ex = ex as Exemple;
-          console.log("ex", ex.data);
-          return ex.data.cachedData.content_min.includes(searchLow) ||
-            ex.data.cachedData.content_min_ra.includes(searchRa);
-        }) as Exemple[];
+         exemplesFound = this.filter(Exemple.accessTable, (ex: AnyItemType) => {
+          console.log("ex", ex);
+          ex = ex as ExempleType;
+          return ex.cachedData.content_min.includes(searchLow) ||
+            ex.cachedData.content_min_ra.includes(searchRa);
+        }) as ExempleType[];
         break;
       default:
         return [] ; // ne doit jamais être atteint, juste pour lint
@@ -215,10 +211,10 @@ class ExemplePanelClass extends PanelClient<Exemple, typeof Exemple> {
     // Pour consigner les titres modifiés
     const titres2aff: Map<string, boolean> = new Map();
 
-    exemplesFound.forEach((ex: Exemple) => {
+    exemplesFound.forEach((ex: ExempleType) => {
       // Si le titre a déjà été traité, on passe au suivant
-      if ( titres2aff.has(ex.data.dbData.oeuvre_id)) { return ; }
-      titres2aff.set(ex.data.dbData.oeuvre_id, true);
+      if ( titres2aff.has(ex.dbData.oeuvre_id)) { return ; }
+      titres2aff.set(ex.dbData.oeuvre_id, true);
     });
     // Ici, on a dans titres2aff les titres à afficher
     this.BlockTitres.forEach((btitre:OTitre) => {
@@ -256,7 +252,7 @@ RpcEx.on('desactivate', () => {
 
 RpcEx.on('populate', (params) => {
   // console.log("[CLIENT-EXemples] Items remontés :", params.data);
-  const items = Exemple.deserializeItems(params.data, Exemple);
+  const items = Exemple.deserializeItems(params.data);
   // console.log("[CLIENT-Exemple Items désérialisés", items);
   // console.log("[EXEMPLES] Table d'acces", Exemple.accessTable);
   ExemplePanel.populate(Exemple.accessTable);

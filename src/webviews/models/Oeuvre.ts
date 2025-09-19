@@ -2,7 +2,7 @@ import { UOeuvre } from '../../bothside/UOeuvre';
 import { RpcChannel } from '../../bothside/RpcChannel';
 import { createRpcClient } from '../RpcClient';
 import { ClientItem } from '../ClientItem';
-import { OeuvreType, DBOeuvreType } from '../../bothside/types';
+import { OeuvreType, DBOeuvreType, AnyItemType } from '../../bothside/types';
 import { StringNormalizer } from '../../bothside/StringUtils';
 import { AnyElementType } from './AnyClientElement';
 import { PanelClient } from '../PanelClient';
@@ -10,7 +10,7 @@ import { AccessTable } from '../services/AccessTable';
 import { OeuvreForm } from './OeuvreForm';
 import { ComplexRpc } from '../services/ComplexRpc';
 
-export class Oeuvre extends ClientItem<DBOeuvreType, OeuvreType> {
+export class Oeuvre extends ClientItem<OeuvreType> {
   readonly type = 'oeuvre';
   static readonly minName = 'oeuvre';
   static readonly klass = Oeuvre;
@@ -22,7 +22,6 @@ export class Oeuvre extends ClientItem<DBOeuvreType, OeuvreType> {
   }
   
   // Getters pour accès direct aux propriétés courantes
-  get id(): string { return this.data.id; }
   get titre_affiche(): string { return this.data.dbData.titre_affiche; }
   get titre_original(): string | undefined { return this.data.dbData.titre_original; }
   get titre_francais(): string | undefined { return this.data.dbData.titre_francais; }
@@ -34,7 +33,8 @@ export class Oeuvre extends ClientItem<DBOeuvreType, OeuvreType> {
   static setAccessTable(items: OeuvreType[]) {
     this._accessTable = new AccessTable<OeuvreType>(items);
   }
-
+  public static _accessTable: AccessTable<OeuvreType>;
+  
   // retourn le premier item visible après l'item +item+
   static getFirstVisibleAfter(refItem: Oeuvre): AnyElementType | undefined {
     const aT = this.accessTable ;
@@ -72,7 +72,7 @@ export class Oeuvre extends ClientItem<DBOeuvreType, OeuvreType> {
   }
   private static oeuvreExistsByTitle(title: string): boolean {
     title = StringNormalizer.rationalize(title);
-    return !!this.accessTable.find(item => item.data.cachedData.titresLookUp.includes(title));
+    return !!this.accessTable.find((item: OeuvreType) => item.cachedData.titresLookUp.includes(title));
   }
 
   /**
@@ -90,17 +90,16 @@ export class Oeuvre extends ClientItem<DBOeuvreType, OeuvreType> {
 }
 
 
-class OeuvrePanelClass extends PanelClient<Oeuvre, typeof Oeuvre> {
+class OeuvrePanelClass extends PanelClient<OeuvreType> {
   protected get accessTable(){ return Oeuvre.accessTable ; }
 
-  searchMatchingItems(searched: string): Oeuvre[] {
+  searchMatchingItems(searched: string): OeuvreType[] {
     const searchLower = StringNormalizer.toLower(searched);
-    return this.filter(Oeuvre.accessTable, (oeuvre: AnyElementType) => {
-      oeuvre = oeuvre as Oeuvre;
-      return oeuvre.data.cachedData.titresLookUp.some((titre: string) => {
+    return this.filter(Oeuvre.accessTable, (oeuvre: AnyItemType) => {
+      return (oeuvre as OeuvreType).cachedData.titresLookUp.some((titre: string) => {
         return titre.substring(0, searchLower.length) === searchLower;
       });
-    }) as Oeuvre[];
+    }) as OeuvreType[];
   }
 
   // initKeyManager() {
@@ -136,7 +135,7 @@ RpcOeuvre.on('desactivate', () => {
 
 
 RpcOeuvre.on('populate', (params) => {
-  const items = Oeuvre.deserializeItems(params.data, Oeuvre);
+  const items = Oeuvre.deserializeItems(params.data);
   OeuvrePanel.populate(Oeuvre.accessTable);
   OeuvrePanel.initKeyManager();
 });

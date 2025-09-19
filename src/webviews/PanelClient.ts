@@ -1,5 +1,4 @@
 import { ConsoleManager } from "./ConsoleManager";
-import { AnyElementType } from "./models/AnyClientElement";
 import { Entry } from "./models/Entry";
 import { Exemple } from "./models/Exemple";
 import { Oeuvre } from "./models/Oeuvre";
@@ -8,6 +7,7 @@ import { FormManager } from "./services/FormManager";
 import { Help } from "./services/HelpManager";
 import { VimLikeManager } from "./services/VimLikeManager";
 import "../bothside/class_extensions";
+import { AnyItemType } from "../bothside/types";
 
 
 export type FlashMessageType = 'notice' | 'warn' | 'error' | 'action';
@@ -19,13 +19,7 @@ interface PanelConstructorData {
   form: FormManager<any, any>; // gestionnaire de formulaire
 }
 
-type Tplus = {
-  [k: string]: any;
-  data: Record<string, any>
-}
-
-
-export class PanelClient<T extends Tplus, C> {
+export class PanelClient<T extends AnyItemType> {
   
   // ========== A P I ================
 
@@ -144,9 +138,8 @@ export class PanelClient<T extends Tplus, C> {
     const container = this.container;
     container.innerHTML = '';
     let index = -1 ;
-    accessTable.each((item: AnyElementType) => { // <========= FAIRE LA MÊME CHOSE (INSTANCE AU LIEU DE CLASSE POUR POUVOIR "TYPER")
+    accessTable.each((data: AnyItemType) => { // <========= FAIRE LA MÊME CHOSE (INSTANCE AU LIEU DE CLASSE POUR POUVOIR "TYPER")
       ++ index ;
-      const data = item.data;
       const clone = this.cloneItemTemplate() as DocumentFragment;
       const mainElement = clone.querySelector('.' + this.minName);
       if (mainElement) {
@@ -157,7 +150,7 @@ export class PanelClient<T extends Tplus, C> {
       Object.keys(data).forEach(prop => {
         let value = ((data as unknown) as Record<string, string>)[prop] as string;
         // value = String(value);
-        value = this.formateProp(item, prop, value);
+        value = this.formateProp(data, prop, value);
         clone
           .querySelectorAll(`[data-prop="${prop}"]`)
           .forEach(element => {
@@ -217,7 +210,7 @@ export class PanelClient<T extends Tplus, C> {
     const matchingItems: T[] = this.searchMatchingItems(searched);
     const matchingCount = matchingItems.length;
     console.log('[CLIENT %s] Filtrage %s - %i founds / %i élément', this.titName, searched, matchingCount, this.accessTable.size);
-    const matchingIds = new Set(matchingItems.map((item: T) => item.data.id));
+    const matchingIds = new Set(matchingItems.map((item: T) => item.id));
     // Avant, on bouclait sur les items (dans accessTable). Mais maintenant,
     // l'état des éléments n'étant pas consigné dans leur item, on boucle
     // sur leur 'accKey'
@@ -234,9 +227,9 @@ export class PanelClient<T extends Tplus, C> {
       }
     });
   }
-  filter(accessTable: AccessTable<any>, fnFiltre: (item: AnyElementType) => boolean): AnyElementType[] {
+  filter(accessTable: AccessTable<any>, fnFiltre: (item: AnyItemType) => boolean): AnyItemType[] {
     return accessTable.findAll(
-      (item: AnyElementType) => { return fnFiltre(item); },
+      (item: AnyItemType) => { return fnFiltre(item); },
       {}
     );
   }

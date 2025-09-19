@@ -10,7 +10,7 @@
  *     pour enregistrer des informations ou obtenir des données des autres
  *     panneaux.
  */
-import { DBEntryType, EntryType, DomStateType } from '../../bothside/types';
+import { DBEntryType, EntryType, DomStateType, AnyItemType } from '../../bothside/types';
 import { StringNormalizer } from '../../bothside/StringUtils';
 import { ClientItem } from '../ClientItem';
 import { createRpcClient } from '../RpcClient';
@@ -21,34 +21,34 @@ import { EntryForm } from './EntryForm';
 import { ComplexRpc } from '../services/ComplexRpc';
 
 
-export class Entry extends ClientItem<DBEntryType, EntryType> {
+export class Entry extends ClientItem<EntryType> {
   readonly type = 'entry';
   static readonly minName = 'entry';
   static readonly klass = Entry;
   static currentItem: Entry;
   
   // Constructor and data access
-  constructor(public data: EntryType) {
-    super(data);
+  constructor(item: EntryType) {
+    super(item);
   }
   
   // Getters pour accès direct aux propriétés courantes
-  get id(): string { return this.data.id; }
-  get entree(): string { return this.data.dbData.entree; }
-  get genre(): string { return this.data.dbData.genre; }
-  get categorie_id(): string | undefined { return this.data.dbData.categorie_id; }
-  get definition(): string { return this.data.dbData.definition; }
+  get entree(): string { return this.item.dbData.entree; }
+  get genre(): string { return this.item.dbData.genre; }
+  get categorie_id(): string | undefined { return this.item.dbData.categorie_id; }
+  get definition(): string { return this.item.dbData.definition; }
 
   static setAccessTable(items: EntryType[]) {
     this._accessTable = new AccessTable<EntryType>(items);
   }
+  public static _accessTable: AccessTable<EntryType>;
 
   // retourn le premier item visible après l'item +item+
   static getFirstVisibleAfter(refItem: Entry): AnyElementType | undefined {
     const aT = this.accessTable ;
     return aT.findAfter(
-      (item: AnyElementType) => { return aT.getAccKey(item.data.id).visible === true; },
-      refItem.data.id
+      (item: AnyElementType) => { return aT.getAccKey(item.id).visible === true; },
+      refItem.item.id
     );
   }
 
@@ -58,13 +58,10 @@ export class Entry extends ClientItem<DBEntryType, EntryType> {
   // @return true si l'entrée +entree+ existe déjà
   public static doesEntreeExist(entree: string): boolean {
     entree = entree.toLowerCase();
-    return this.accessTable.find((item) => item.data.dbData.entree.toLowerCase() === entree) !== undefined ;
+    return this.accessTable.find((item: EntryType) => item.cachedData.entree_min === entree) !== undefined ;
   }
   // @return true si l'identifiant +id+ existe déjà
-  public static doesIdExist(id: string): boolean {
-    if (this.accessTable.exists(id)) { return true; }
-    return false;
-  }
+  public static doesIdExist(id: string): boolean { return this.accessTable.exists(id); }
 
   /**
    * Méthode pour enregistrer l'item dans la table
@@ -82,7 +79,7 @@ export class Entry extends ClientItem<DBEntryType, EntryType> {
 
 }// class Entry
 
-class EntryPanelClass extends PanelClient<Entry, typeof Entry> {
+class EntryPanelClass extends PanelClient<EntryType> {
   protected get accessTable(){ return Entry.accessTable ; }
 
   /**
@@ -93,19 +90,15 @@ class EntryPanelClass extends PanelClient<Entry, typeof Entry> {
    */
   // Méthode de filtrage des entrées
   // Retourne celles qui commencent par +searched+
-  searchMatchingItems(searched: string): Entry[] {
+  searchMatchingItems(searched: string): EntryType[] {
     const prefixLower = StringNormalizer.toLower(searched);
     const prefixRa = StringNormalizer.rationalize(searched);
-    return this.filter(Entry.accessTable, (entry: AnyElementType) => {
-      entry = entry as Entry;
-      return entry.data.cachedData.entree_min.startsWith(prefixLower) || 
-             entry.data.cachedData.entree_min_ra.startsWith(prefixRa);
-    }) as Entry[];
+    return this.filter(Entry.accessTable, (item: AnyItemType) => {
+      item = item as EntryType;
+      return item.cachedData.entree_min.startsWith(prefixLower) || 
+             item.cachedData.entree_min_ra.startsWith(prefixRa);
+    }) as EntryType[];
   }
-
-  // initKeyManager() {
-  //   this._keyManager = new VimLikeManager(document.body, this, Entry);
-  // }
 }
 
 const EntryPanel = new EntryPanelClass({
@@ -152,7 +145,7 @@ RpcEntry.on('desactivate', () => {
 });
 
 RpcEntry.on('populate', (params) => {
-  const items = Entry.deserializeItems(params.data, Entry);
+  const items = Entry.deserializeItems(params.data);
   // console.log("[CLIENT Entry] Items désérialisés", items);
   EntryPanel.populate(Entry.accessTable);
   EntryPanel.initKeyManager();
