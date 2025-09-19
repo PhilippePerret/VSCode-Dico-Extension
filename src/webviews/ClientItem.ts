@@ -9,7 +9,7 @@ type ItemDataType = EntryType | OeuvreType | ExempleType;
  */
 export abstract class ClientItem<Tdt extends ItemDataType> {
   static klass: any;
-  public static get accessTable(){ return this.klass.accessTable;}
+  public static get accessTable(){ return this.klass._accessTable;}
   public static panel: PanelClient<any>;
 
   // protected static _accessTable: AccessTable<any>;

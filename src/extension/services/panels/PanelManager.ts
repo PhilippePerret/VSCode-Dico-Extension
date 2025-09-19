@@ -47,7 +47,6 @@ export class PanelManager {
 	 * Appelée après la mise en cache des données pour peupler les panneaux.
 	 */
 	public static async populatePanels(): Promise<void> {
-		console.log("[EXTENSION] Je dois apprendre à repeupler les panneaux");
 		App.resetReadyCounter(3);
 		this._panels.forEach((panel: PanelClass) => { 
 			console.log("Panneau à peupler : %s", panel.title); // OK ici, c'est le bon panneau

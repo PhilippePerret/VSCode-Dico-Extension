@@ -35,12 +35,15 @@
 
   // src/webviews/ClientItem.ts
   var ClientItem = class {
+    constructor(item) {
+      this.item = item;
+    }
     static klass;
     static get accessTable() {
-      return this._accessTable;
+      return this.klass.accessTable;
     }
     static panel;
-    static _accessTable;
+    // protected static _accessTable: AccessTable<any>;
     static _selector;
     static get Selector() {
       return this._selector || (this._selector = new SelectionManager(this.klass));
@@ -48,7 +51,7 @@
     // Raccourcis vers l'accessTable, pour obtenir des informations
     // sur les items ou les items eux-même
     static get(itemId) {
-      return this.accessTable.getById(itemId);
+      return this.accessTable.get(itemId);
     }
     static getObj(itemId) {
       return this.accessTable.getObj(itemId);
@@ -75,31 +78,23 @@
       const emptyDbData = { id: "" };
       this.panel.form.editItem(new this.klass(emptyDbData));
     }
-    toRow() {
-      return {};
-    }
+    // toRow(){ return {};}
     /**
      * Méthode qui reçoit les items sérialisés depuis l'extension et va les
      * consigner dans le panneau, dans une AccessTable qui permettra de 
      * parcourrir les éléments. 
      */
-    static deserializeItems(items, klass) {
-      const allItems = items.map((item) => new this.klass(JSON.parse(item)));
-      this.klass.setAccessTable(allItems);
+    static deserializeItems(items) {
+      const allItems = items.map((item) => JSON.parse(item));
+      this.accessTable(allItems);
     }
-    data;
-    constructor(itemData) {
-      this.data = itemData;
+    get id() {
+      return this.item.id;
     }
     // Pour obtenir l'AccKey (ak) de l'item
     static getAccKey(id) {
-      return this.accessTable.getAccKeyById(id);
+      return this.accessTable.getAccKey(id);
     }
-    // public get obj(){ return this._obj ;}
-    // protected get isNotVisible(){ return this._visible === false;}
-    // protected get isVisible(){ return this._visible === true ;}
-    // private _obj!: HTMLDivElement;
-    // private _visible: boolean = true;
   };
 
   // src/bothside/RpcChannel.ts
@@ -1168,9 +1163,8 @@
       const container = this.container;
       container.innerHTML = "";
       let index = -1;
-      accessTable.each((item) => {
+      accessTable.each((data) => {
         ++index;
-        const data = item.data;
         const clone = this.cloneItemTemplate();
         const mainElement = clone.querySelector("." + this.minName);
         if (mainElement) {
@@ -1179,7 +1173,7 @@
         }
         Object.keys(data).forEach((prop) => {
           let value = data[prop];
-          value = this.formateProp(item, prop, value);
+          value = this.formateProp(data, prop, value);
           clone.querySelectorAll(`[data-prop="${prop}"]`).forEach((element) => {
             if (value.startsWith("<")) {
               element.innerHTML = value;
@@ -1234,7 +1228,7 @@
       const matchingItems = this.searchMatchingItems(searched);
       const matchingCount = matchingItems.length;
       console.log("[CLIENT %s] Filtrage %s - %i founds / %i \xE9l\xE9ment", this.titName, searched, matchingCount, this.accessTable.size);
-      const matchingIds = new Set(matchingItems.map((item) => item.data.id));
+      const matchingIds = new Set(matchingItems.map((item) => item.id));
       this.accessTable.eachAccKey((ak) => {
         const visible = matchingIds.has(ak.id);
         const display = visible ? "block" : "none";
@@ -2000,42 +1994,39 @@
 
   // src/webviews/models/Entry.ts
   var Entry = class _Entry extends ClientItem {
-    // Constructor and data access
-    constructor(data) {
-      super(data);
-      this.data = data;
-    }
     type = "entry";
     static minName = "entry";
     static klass = _Entry;
     static currentItem;
-    // Getters pour accès direct aux propriétés courantes
-    get id() {
-      return this.data.id;
+    // Constructor and data access
+    constructor(item) {
+      super(item);
     }
+    // Getters pour accès direct aux propriétés courantes
     get entree() {
-      return this.data.dbData.entree;
+      return this.item.dbData.entree;
     }
     get genre() {
-      return this.data.dbData.genre;
+      return this.item.dbData.genre;
     }
     get categorie_id() {
-      return this.data.dbData.categorie_id;
+      return this.item.dbData.categorie_id;
     }
     get definition() {
-      return this.data.dbData.definition;
+      return this.item.dbData.definition;
     }
     static setAccessTable(items) {
       this._accessTable = new AccessTable(items);
     }
+    static _accessTable;
     // retourn le premier item visible après l'item +item+
     static getFirstVisibleAfter(refItem) {
       const aT = this.accessTable;
       return aT.findAfter(
         (item) => {
-          return aT.getAccKey(item.data.id).visible === true;
+          return aT.getAccKey(item.id).visible === true;
         },
-        refItem.data.id
+        refItem.item.id
       );
     }
     /*
@@ -2044,14 +2035,11 @@
     // @return true si l'entrée +entree+ existe déjà
     static doesEntreeExist(entree) {
       entree = entree.toLowerCase();
-      return this.accessTable.find((item) => item.data.dbData.entree.toLowerCase() === entree) !== void 0;
+      return this.accessTable.find((item) => item.cachedData.entree_min === entree) !== void 0;
     }
     // @return true si l'identifiant +id+ existe déjà
     static doesIdExist(id) {
-      if (this.accessTable.exists(id)) {
-        return true;
-      }
-      return false;
+      return this.accessTable.exists(id);
     }
     /**
      * Méthode pour enregistrer l'item dans la table
@@ -2080,14 +2068,11 @@
     searchMatchingItems(searched) {
       const prefixLower = StringNormalizer.toLower(searched);
       const prefixRa = StringNormalizer.rationalize(searched);
-      return this.filter(Entry.accessTable, (entry) => {
-        entry = entry;
-        return entry.data.cachedData.entree_min.startsWith(prefixLower) || entry.data.cachedData.entree_min_ra.startsWith(prefixRa);
+      return this.filter(Entry.accessTable, (item) => {
+        item = item;
+        return item.cachedData.entree_min.startsWith(prefixLower) || item.cachedData.entree_min_ra.startsWith(prefixRa);
       });
     }
-    // initKeyManager() {
-    //   this._keyManager = new VimLikeManager(document.body, this, Entry);
-    // }
   };
   var EntryPanel = new EntryPanelClass({
     minName: "entry",
@@ -2117,7 +2102,7 @@
     EntryPanel.desactivate();
   });
   RpcEntry.on("populate", (params) => {
-    const items = Entry.deserializeItems(params.data, Entry);
+    const items = Entry.deserializeItems(params.data);
     EntryPanel.populate(Entry.accessTable);
     EntryPanel.initKeyManager();
   });

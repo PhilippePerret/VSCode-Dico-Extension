@@ -10,7 +10,7 @@
  *     pour enregistrer des informations ou obtenir des données des autres
  *     panneaux.
  */
-import { DBEntryType, EntryType, DomStateType, AnyItemType } from '../../bothside/types';
+import { DBEntryType, EntryType, AnyItemType } from '../../bothside/types';
 import { StringNormalizer } from '../../bothside/StringUtils';
 import { ClientItem } from '../ClientItem';
 import { createRpcClient } from '../RpcClient';

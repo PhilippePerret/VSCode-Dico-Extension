@@ -35,12 +35,15 @@
 
   // src/webviews/ClientItem.ts
   var ClientItem = class {
+    constructor(item) {
+      this.item = item;
+    }
     static klass;
     static get accessTable() {
-      return this._accessTable;
+      return this.klass.accessTable;
     }
     static panel;
-    static _accessTable;
+    // protected static _accessTable: AccessTable<any>;
     static _selector;
     static get Selector() {
       return this._selector || (this._selector = new SelectionManager(this.klass));
@@ -48,7 +51,7 @@
     // Raccourcis vers l'accessTable, pour obtenir des informations
     // sur les items ou les items eux-même
     static get(itemId) {
-      return this.accessTable.getById(itemId);
+      return this.accessTable.get(itemId);
     }
     static getObj(itemId) {
       return this.accessTable.getObj(itemId);
@@ -75,31 +78,23 @@
       const emptyDbData = { id: "" };
       this.panel.form.editItem(new this.klass(emptyDbData));
     }
-    toRow() {
-      return {};
-    }
+    // toRow(){ return {};}
     /**
      * Méthode qui reçoit les items sérialisés depuis l'extension et va les
      * consigner dans le panneau, dans une AccessTable qui permettra de 
      * parcourrir les éléments. 
      */
-    static deserializeItems(items, klass) {
-      const allItems = items.map((item) => new this.klass(JSON.parse(item)));
-      this.klass.setAccessTable(allItems);
+    static deserializeItems(items) {
+      const allItems = items.map((item) => JSON.parse(item));
+      this.accessTable(allItems);
     }
-    data;
-    constructor(itemData) {
-      this.data = itemData;
+    get id() {
+      return this.item.id;
     }
     // Pour obtenir l'AccKey (ak) de l'item
     static getAccKey(id) {
-      return this.accessTable.getAccKeyById(id);
+      return this.accessTable.getAccKey(id);
     }
-    // public get obj(){ return this._obj ;}
-    // protected get isNotVisible(){ return this._visible === false;}
-    // protected get isVisible(){ return this._visible === true ;}
-    // private _obj!: HTMLDivElement;
-    // private _visible: boolean = true;
   };
 
   // src/bothside/RpcChannel.ts
@@ -1168,9 +1163,8 @@
       const container = this.container;
       container.innerHTML = "";
       let index = -1;
-      accessTable.each((item) => {
+      accessTable.each((data) => {
         ++index;
-        const data = item.data;
         const clone = this.cloneItemTemplate();
         const mainElement = clone.querySelector("." + this.minName);
         if (mainElement) {
@@ -1179,7 +1173,7 @@
         }
         Object.keys(data).forEach((prop) => {
           let value = data[prop];
-          value = this.formateProp(item, prop, value);
+          value = this.formateProp(data, prop, value);
           clone.querySelectorAll(`[data-prop="${prop}"]`).forEach((element) => {
             if (value.startsWith("<")) {
               element.innerHTML = value;
@@ -1234,7 +1228,7 @@
       const matchingItems = this.searchMatchingItems(searched);
       const matchingCount = matchingItems.length;
       console.log("[CLIENT %s] Filtrage %s - %i founds / %i \xE9l\xE9ment", this.titName, searched, matchingCount, this.accessTable.size);
-      const matchingIds = new Set(matchingItems.map((item) => item.data.id));
+      const matchingIds = new Set(matchingItems.map((item) => item.id));
       this.accessTable.eachAccKey((ak) => {
         const visible = matchingIds.has(ak.id);
         const display = visible ? "block" : "none";
@@ -1729,9 +1723,6 @@
     static klass = _Exemple;
     static currentItem;
     // Getters pour accès direct aux propriétés courantes
-    get id() {
-      return this.data.id;
-    }
     get oeuvre_id() {
       return this.data.dbData.oeuvre_id;
     }
@@ -1750,6 +1741,7 @@
     static setAccessTable(items) {
       this._accessTable = new AccessTable(items);
     }
+    static _accessTable;
     static doExemplesExist(exemples) {
       const resultat = { known: [], unknown: [] };
       exemples.forEach((paire) => {
@@ -1869,23 +1861,22 @@
       switch (this.modeFiltre) {
         case "by-title":
           exemplesFound = this.filter(Exemple.accessTable, (ex) => {
-            ex = ex;
-            return ex.data.cachedData.titresLookUp.some((titre) => {
+            return ex.cachedData.titresLookUp.some((titre) => {
               return titre.substring(0, searchLow.length) === searchLow;
             });
           });
           break;
         case "by-entry":
           exemplesFound = this.filter(Exemple.accessTable, (ex) => {
-            const seg = ex.data.cachedData.entry4filter.substring(0, searchLow.length);
+            const seg = ex.cachedData.entry4filter.substring(0, searchLow.length);
             return seg === searchLow || seg === searchRa;
           });
           break;
         case "by-content":
           exemplesFound = this.filter(Exemple.accessTable, (ex) => {
+            console.log("ex", ex);
             ex = ex;
-            console.log("ex", ex.data);
-            return ex.data.cachedData.content_min.includes(searchLow) || ex.data.cachedData.content_min_ra.includes(searchRa);
+            return ex.cachedData.content_min.includes(searchLow) || ex.cachedData.content_min_ra.includes(searchRa);
           });
           break;
         default:
@@ -1893,10 +1884,10 @@
       }
       const titres2aff = /* @__PURE__ */ new Map();
       exemplesFound.forEach((ex) => {
-        if (titres2aff.has(ex.data.dbData.oeuvre_id)) {
+        if (titres2aff.has(ex.dbData.oeuvre_id)) {
           return;
         }
-        titres2aff.set(ex.data.dbData.oeuvre_id, true);
+        titres2aff.set(ex.dbData.oeuvre_id, true);
       });
       this.BlockTitres.forEach((btitre) => {
         const dispWanted = titres2aff.has(btitre.id) ? "block" : "none";
@@ -1932,7 +1923,7 @@
     ExemplePanel.desactivate();
   });
   RpcEx.on("populate", (params) => {
-    const items = Exemple.deserializeItems(params.data, Exemple);
+    const items = Exemple.deserializeItems(params.data);
     ExemplePanel.populate(Exemple.accessTable);
     ExemplePanel.initialize();
     ExemplePanel.initKeyManager();

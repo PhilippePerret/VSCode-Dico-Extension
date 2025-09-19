@@ -77,12 +77,15 @@
 
   // src/webviews/ClientItem.ts
   var ClientItem = class {
+    constructor(item) {
+      this.item = item;
+    }
     static klass;
     static get accessTable() {
-      return this._accessTable;
+      return this.klass.accessTable;
     }
     static panel;
-    static _accessTable;
+    // protected static _accessTable: AccessTable<any>;
     static _selector;
     static get Selector() {
       return this._selector || (this._selector = new SelectionManager(this.klass));
@@ -90,7 +93,7 @@
     // Raccourcis vers l'accessTable, pour obtenir des informations
     // sur les items ou les items eux-même
     static get(itemId) {
-      return this.accessTable.getById(itemId);
+      return this.accessTable.get(itemId);
     }
     static getObj(itemId) {
       return this.accessTable.getObj(itemId);
@@ -117,31 +120,23 @@
       const emptyDbData = { id: "" };
       this.panel.form.editItem(new this.klass(emptyDbData));
     }
-    toRow() {
-      return {};
-    }
+    // toRow(){ return {};}
     /**
      * Méthode qui reçoit les items sérialisés depuis l'extension et va les
      * consigner dans le panneau, dans une AccessTable qui permettra de 
      * parcourrir les éléments. 
      */
-    static deserializeItems(items, klass) {
-      const allItems = items.map((item) => new this.klass(JSON.parse(item)));
-      this.klass.setAccessTable(allItems);
+    static deserializeItems(items) {
+      const allItems = items.map((item) => JSON.parse(item));
+      this.accessTable(allItems);
     }
-    data;
-    constructor(itemData) {
-      this.data = itemData;
+    get id() {
+      return this.item.id;
     }
     // Pour obtenir l'AccKey (ak) de l'item
     static getAccKey(id) {
-      return this.accessTable.getAccKeyById(id);
+      return this.accessTable.getAccKey(id);
     }
-    // public get obj(){ return this._obj ;}
-    // protected get isNotVisible(){ return this._visible === false;}
-    // protected get isVisible(){ return this._visible === true ;}
-    // private _obj!: HTMLDivElement;
-    // private _visible: boolean = true;
   };
 
   // src/bothside/StringUtils.ts
@@ -814,9 +809,8 @@
       const container = this.container;
       container.innerHTML = "";
       let index = -1;
-      accessTable.each((item) => {
+      accessTable.each((data) => {
         ++index;
-        const data = item.data;
         const clone = this.cloneItemTemplate();
         const mainElement = clone.querySelector("." + this.minName);
         if (mainElement) {
@@ -825,7 +819,7 @@
         }
         Object.keys(data).forEach((prop) => {
           let value = data[prop];
-          value = this.formateProp(item, prop, value);
+          value = this.formateProp(data, prop, value);
           clone.querySelectorAll(`[data-prop="${prop}"]`).forEach((element) => {
             if (value.startsWith("<")) {
               element.innerHTML = value;
@@ -880,7 +874,7 @@
       const matchingItems = this.searchMatchingItems(searched);
       const matchingCount = matchingItems.length;
       console.log("[CLIENT %s] Filtrage %s - %i founds / %i \xE9l\xE9ment", this.titName, searched, matchingCount, this.accessTable.size);
-      const matchingIds = new Set(matchingItems.map((item) => item.data.id));
+      const matchingIds = new Set(matchingItems.map((item) => item.id));
       this.accessTable.eachAccKey((ak) => {
         const visible = matchingIds.has(ak.id);
         const display = visible ? "block" : "none";
@@ -2489,9 +2483,6 @@
     static klass = _Oeuvre;
     static currentItem;
     // Getters pour accès direct aux propriétés courantes
-    get id() {
-      return this.data.id;
-    }
     get titre_affiche() {
       return this.data.dbData.titre_affiche;
     }
@@ -2516,6 +2507,7 @@
     static setAccessTable(items) {
       this._accessTable = new AccessTable(items);
     }
+    static _accessTable;
     // retourn le premier item visible après l'item +item+
     static getFirstVisibleAfter(refItem) {
       const aT = this.accessTable;
@@ -2554,7 +2546,7 @@
     }
     static oeuvreExistsByTitle(title) {
       title = StringNormalizer.rationalize(title);
-      return !!this.accessTable.find((item) => item.data.cachedData.titresLookUp.includes(title));
+      return !!this.accessTable.find((item) => item.cachedData.titresLookUp.includes(title));
     }
     /**
      * 
@@ -2575,8 +2567,7 @@
     searchMatchingItems(searched) {
       const searchLower = StringNormalizer.toLower(searched);
       return this.filter(Oeuvre.accessTable, (oeuvre) => {
-        oeuvre = oeuvre;
-        return oeuvre.data.cachedData.titresLookUp.some((titre) => {
+        return oeuvre.cachedData.titresLookUp.some((titre) => {
           return titre.substring(0, searchLower.length) === searchLower;
         });
       });
@@ -2609,7 +2600,7 @@
     OeuvrePanel.desactivate();
   });
   RpcOeuvre.on("populate", (params) => {
-    const items = Oeuvre.deserializeItems(params.data, Oeuvre);
+    const items = Oeuvre.deserializeItems(params.data);
     OeuvrePanel.populate(Oeuvre.accessTable);
     OeuvrePanel.initKeyManager();
   });
