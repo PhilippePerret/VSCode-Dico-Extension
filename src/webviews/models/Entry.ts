@@ -79,6 +79,16 @@ export class Entry extends ClientItem<EntryType> {
 
 }// class Entry
 
+
+
+
+/**
+ * 
+ * ============== PANNEAUX DES ENTRÉES ===============
+ */
+
+
+
 class EntryPanelClass extends PanelClient<EntryType> {
   protected get accessTable(){ return Entry.accessTable ; }
 
@@ -114,6 +124,7 @@ Entry.panel = EntryPanel;
 /**
  * 
  * ================= R P C ====================
+ * 
  */
 
 export const RpcEntry = createRpcClient();
@@ -130,7 +141,8 @@ RpcEntry.on('flash', (params) => {
 // Evènement reçu de l'extension à l'ouverture (après l'installation 
 // complète) permettant essentiellement d'afficher la première aide.
 RpcEntry.on('start', () => {
-  setTimeout(EntryPanel.activateContextualHelp.bind(EntryPanel), 1000);
+  // Pour activer le panneau d'aide à l'ouverture
+  // setTimeout(EntryPanel.activateContextualHelp.bind(EntryPanel), 1000);
 });
 
 RpcEntry.on('activate', () => {

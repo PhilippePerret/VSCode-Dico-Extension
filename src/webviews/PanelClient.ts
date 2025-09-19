@@ -8,6 +8,7 @@ import { Help } from "./services/HelpManager";
 import { VimLikeManager } from "./services/VimLikeManager";
 import "../bothside/class_extensions";
 import { AnyItemType } from "../bothside/types";
+import { stringify } from "querystring";
 
 
 export type FlashMessageType = 'notice' | 'warn' | 'error' | 'action';
@@ -152,19 +153,16 @@ export class PanelClient<T extends AnyItemType> {
         mainElement.setAttribute('data-index', index.toString());
       }
       // Régler les props
-      Object.keys(item.dbData).forEach(prop => {
+      // (maintenant, elles peuvent se trouver dans dbData, qui 
+      // contient les données persistantes, ou dans cachedData, qui
+      // contient les données formatées)
+      Object.keys(item.dbData).forEach((prop: string) => {
         let value = ((item.dbData as unknown) as Record<string, string>)[prop] as string;
-        // value = String(value);
-        value = this.formateProp(item.dbData, prop, value);
-        clone
-          .querySelectorAll(`[data-prop="${prop}"]`)
-          .forEach(element => {
-            if (value.startsWith('<')) {
-              element.innerHTML = value;
-            } else {
-              element.textContent = value;
-            }
-          });
+        this.setPropValue(clone, item.dbData, prop, value);
+      });
+      Object.keys(item.cachedData).forEach((prop: string) => {
+        let value = ((item.cachedData as unknown) as Record<string, string>)[prop] as string;
+        this.setPropValue(clone, item.cachedData, prop, value);
       });
       // Et on l'ajoute au conteneur
       this.container.appendChild(clone);
@@ -178,6 +176,19 @@ export class PanelClient<T extends AnyItemType> {
     this.observePanel();
   }
 
+  private setPropValue(clone: DocumentFragment, data: Record<string, any>, prop: string, value: string | number) {
+    // value = String(value);
+    value = this.formateProp(data, prop, value);
+    clone
+      .querySelectorAll(`[data-prop="${prop}"]`)
+      .forEach(element => {
+        if (value.startsWith('<')) {
+          element.innerHTML = value;
+        } else {
+          element.textContent = value;
+        }
+      });
+  }
 
   // ========== PRIVATE METHODS ==============
   // Pour la propriété public keyManager

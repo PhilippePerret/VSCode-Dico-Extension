@@ -1180,20 +1180,26 @@
         }
         Object.keys(item.dbData).forEach((prop) => {
           let value = item.dbData[prop];
-          console.log("[Item %s] prop: %s | value: %s", item.id, prop, value);
-          value = this.formateProp(item.dbData, prop, value);
-          clone.querySelectorAll(`[data-prop="${prop}"]`).forEach((element) => {
-            if (value.startsWith("<")) {
-              element.innerHTML = value;
-            } else {
-              element.textContent = value;
-            }
-          });
+          this.setPropValue(clone, item.dbData, prop, value);
+        });
+        Object.keys(item.cachedData).forEach((prop) => {
+          let value = item.cachedData[prop];
+          this.setPropValue(clone, item.cachedData, prop, value);
         });
         this.container.appendChild(clone);
       });
       this.afterDisplayItems(accessTable);
       this.observePanel();
+    }
+    setPropValue(clone, data, prop, value) {
+      value = this.formateProp(data, prop, value);
+      clone.querySelectorAll(`[data-prop="${prop}"]`).forEach((element) => {
+        if (value.startsWith("<")) {
+          element.innerHTML = value;
+        } else {
+          element.textContent = value;
+        }
+      });
     }
     // ========== PRIVATE METHODS ==============
     // Pour la propriété public keyManager
@@ -1722,6 +1728,7 @@
   // src/webviews/models/Exemple.ts
   var Exemple = class _Exemple extends ClientItem {
     // Constructor and data access
+    // Mais bon… on s'en sert le moins possible
     constructor(data) {
       super(data);
       this.data = data;
@@ -1781,7 +1788,7 @@
     formateProp(ex, prop, value) {
       switch (prop) {
         case "entree_formated":
-          return `<a data-type="entry" data-id="${ex.data.dbData.entry_id}">${value}</a>`;
+          return `<a data-type="entry" data-id="${ex.dbData.entry_id}">${value}</a>`;
         default:
           return String(value);
       }

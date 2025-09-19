@@ -826,20 +826,26 @@
         }
         Object.keys(item.dbData).forEach((prop) => {
           let value = item.dbData[prop];
-          console.log("[Item %s] prop: %s | value: %s", item.id, prop, value);
-          value = this.formateProp(item.dbData, prop, value);
-          clone.querySelectorAll(`[data-prop="${prop}"]`).forEach((element) => {
-            if (value.startsWith("<")) {
-              element.innerHTML = value;
-            } else {
-              element.textContent = value;
-            }
-          });
+          this.setPropValue(clone, item.dbData, prop, value);
+        });
+        Object.keys(item.cachedData).forEach((prop) => {
+          let value = item.cachedData[prop];
+          this.setPropValue(clone, item.cachedData, prop, value);
         });
         this.container.appendChild(clone);
       });
       this.afterDisplayItems(accessTable);
       this.observePanel();
+    }
+    setPropValue(clone, data, prop, value) {
+      value = this.formateProp(data, prop, value);
+      clone.querySelectorAll(`[data-prop="${prop}"]`).forEach((element) => {
+        if (value.startsWith("<")) {
+          element.innerHTML = value;
+        } else {
+          element.textContent = value;
+        }
+      });
     }
     // ========== PRIVATE METHODS ==============
     // Pour la propriété public keyManager

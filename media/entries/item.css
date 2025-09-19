@@ -18,6 +18,7 @@ div.entry span.entry-genre {
 div.entry div.entry-definition {
   margin-left: 1em;
   margin-top: 5px;
+  text-align: justify;
 }
 
 

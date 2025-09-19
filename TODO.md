@@ -1,7 +1,7 @@
 # Todo list
 
 * J'EN SUIS À :
-  - Refactorisation complète avec rationnalisation des types
+  - Affichage complet des items dans la liste
   - Procédure d'ajout ou d'actualisation d'une donnée dans accessTable + Panneau
     [BUG] Réussir à faire passer les choses (demander à Clause)
   - [si update]

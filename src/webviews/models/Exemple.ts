@@ -16,6 +16,7 @@ export class Exemple extends ClientItem<ExempleType> {
   static currentItem: Exemple;
   
   // Constructor and data access
+  // Mais bon… on s'en sert le moins possible
   constructor(public data: ExempleType) {
     super(data);
   }
@@ -73,11 +74,11 @@ class ExemplePanelClass extends PanelClient<ExempleType> {
 
   // Certaines propriétés reçoivent un traitement particulier :
   // - l'entrée reçoit un lien pour rejoindre la définition dans le panneau des définitions
-  formateProp(ex: Exemple, prop: string, value: string | number): string {
+  formateProp(ex: ExempleType, prop: string, value: string | number): string {
 
     switch(prop) {
       case 'entree_formated':
-        return `<a data-type="entry" data-id="${ex.data.dbData.entry_id}">${value}</a>`;
+        return `<a data-type="entry" data-id="${ex.dbData.entry_id}">${value}</a>`;
       default: return String(value);
     }
   }
