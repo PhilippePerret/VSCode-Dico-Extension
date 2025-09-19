@@ -210,7 +210,7 @@ export class AccessTable<T extends EntryType | OeuvreType | ExempleType> {
 
   // Boucle sur tous les éléments (sans retour)
   each(traverseMethod: (item: T) => void){
-    this.eachSince(traverseMethod, this.firstItem.dbData.id);
+    this.eachSince(traverseMethod, this.firstItem.id);
   }
 
   // Boucle depuis l'élément d'identifiant +id+
@@ -218,6 +218,8 @@ export class AccessTable<T extends EntryType | OeuvreType | ExempleType> {
     traverseMethod: (item: T) => any,
     id: string 
   ){
+    console.log("keyMap dans eachSince", this.keysMap);
+    console.log("Premier item dans eachSince", this.firstItem);
     let item: T | undefined = this.get(id);
     do {
       if ( item ) {

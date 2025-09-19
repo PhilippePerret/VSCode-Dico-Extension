@@ -88,6 +88,9 @@
       const allItems = items.map((item) => JSON.parse(item));
       this.setAccessTableWithItems(allItems);
     }
+    /* Surclassée */
+    static setAccessTableWithItems(items) {
+    }
     get id() {
       return this.item.id;
     }
@@ -342,10 +345,12 @@
     }
     // Boucle sur tous les éléments (sans retour)
     each(traverseMethod) {
-      this.eachSince(traverseMethod, this.firstItem.dbData.id);
+      this.eachSince(traverseMethod, this.firstItem.id);
     }
     // Boucle depuis l'élément d'identifiant +id+
     eachSince(traverseMethod, id) {
+      console.log("keyMap dans eachSince", this.keysMap);
+      console.log("Premier item dans eachSince", this.firstItem);
       let item = this.get(id);
       do {
         if (item) {
