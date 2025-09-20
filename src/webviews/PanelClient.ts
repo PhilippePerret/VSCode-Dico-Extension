@@ -139,7 +139,7 @@ export class PanelClient<T extends AnyItemType> {
     obj.scrollIntoView({behavior: 'auto', block: 'center'});
   }
 
-  // Pour créer le nouvel élément
+  // Pour créer le nouvel élément 
   public insertInDom(item: T, before: T | undefined) {
     const clone = this.cloneItemTemplate() as DocumentFragment;
     const mainElement = clone.querySelector('.' + this.minName);

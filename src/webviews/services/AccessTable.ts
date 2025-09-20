@@ -151,14 +151,15 @@ export class AccessTable<T extends EntryType | OeuvreType | ExempleType> {
     let cachedItem;
     if ( this.exists(checkedId)) {
       // Update
-      console.log("C'est une actualisation de l'item ", checkedId);
-      cachedItem = this.get(checkedId);
-      console.log("Actualisation de", this.get(checkedId));
-      Object.assign(cachedItem, item);
+      const accKey: AccedableItem = this.getAccKey(checkedId);
+      // console.log("Ancienne valeur de l'œuvre", structuredClone(this.arrayItems[accKey.index]));
+      this.arrayItems[accKey.index] = item as T;
+      // console.log("Nouvelle valeur de l'œuvre", this.arrayItems[accKey.index]);
+      // Pour l'update dans le DOM
       return [item as T, undefined];
     } else {
       // Create
-      console.log("C'est une création de l'item", item);
+      // (retour) Pour l'affichage des informations
       return this.createNewAccedableItem(item as T);
     }
   }
@@ -182,8 +183,8 @@ export class AccessTable<T extends EntryType | OeuvreType | ExempleType> {
         console.log("Item avant le nouveau", this.get(prevItemId), prevAccKey);
       }
     }
-   const arrayIndex = this.arrayItems.length; // car l'item n'a pas encore été inséré
-    const newAccKey: AccedableItem = this.addInTable(newItem, arrayIndex, nextItemId, prevItemId);  // <===== TODO : LE ZÉRO EST À CALCULER !
+    const arrayIndex = this.arrayItems.length; // car l'item n'a pas encore été inséré
+    const newAccKey: AccedableItem = this.addInTable(newItem, arrayIndex, nextItemId, prevItemId); 
     console.log("Item nouveau", newItem, newAccKey);
     console.log("Item après le nouveau", nextItem, nextAccKey);
     // TODO il faut l'ajouter dans le DOM

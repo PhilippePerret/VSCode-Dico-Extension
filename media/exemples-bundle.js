@@ -566,9 +566,10 @@
       let cachedItem;
       if (this.exists(checkedId)) {
         console.log("C'est une actualisation de l'item ", checkedId);
-        cachedItem = this.get(checkedId);
-        console.log("Actualisation de", this.get(checkedId));
-        Object.assign(cachedItem, item);
+        const accKey = this.getAccKey(checkedId);
+        console.log("Ancienne valeur de l'\u0153uvre", structuredClone(this.arrayItems[accKey.index]));
+        this.arrayItems[accKey.index] = item;
+        console.log("Nouvelle valeur de l'\u0153uvre", this.arrayItems[accKey.index]);
         return [item, void 0];
       } else {
         console.log("C'est une cr\xE9ation de l'item", item);
@@ -1181,7 +1182,7 @@
     scrollTo(obj) {
       obj.scrollIntoView({ behavior: "auto", block: "center" });
     }
-    // Pour créer le nouvel élément
+    // Pour créer le nouvel élément 
     insertInDom(item, before) {
       const clone = this.cloneItemTemplate();
       const mainElement = clone.querySelector("." + this.minName);
@@ -1199,12 +1200,11 @@
     updateInDom(item) {
       const obj = this.accessTable.getObj(item.id);
       if (!obj) {
-        this.flash(`Impossible de trouver l'objet DOM de ${item.id}\u2026 Je ne peux pas actualiser l'affichage.`);
+        this.flash(`Impossible de trouver l'objet DOM de ${item.id}\u2026 Je ne peux pas actualiser l'affichage.`, "error");
         return false;
       }
       Object.keys(item.dbData).forEach((prop) => {
         let value = item.dbData[prop];
-        console.log("Actualisation de prop '%s' avec valeur '%s'", prop, value);
         this.setPropValue(obj, item, prop, value);
       });
       Object.keys(item.cachedData).forEach((prop) => {
