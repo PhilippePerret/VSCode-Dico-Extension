@@ -1481,8 +1481,10 @@
       this.properties.forEach((dprop) => {
         const prop = dprop.propName;
         if (data[prop]) {
-          console.log("Propri\xE9t\xE9 %s mise \xE0 %s", prop, data[prop]);
           dprop.field.value = String(data[prop]);
+          if (dprop.locked) {
+            dprop.field.disabled = true;
+          }
         } else {
           console.log("La valeur de la propri\xE9t\xE9 %s n'est pas d\xE9finie dans ", prop, data);
         }
@@ -1680,10 +1682,10 @@
         const prefix = this.prefix;
         const prefprop = `${prefix}-${prop}`;
         const container = this.obj.querySelector(`#${prefprop}-container`);
-        const label = container.querySelector("label");
-        const shortcut = "<shortcut>" + lettres.pop() + "</shortcut>\xA0";
-        label.innerHTML = shortcut + label.innerHTML;
         if (container) {
+          const label = container.querySelector("label");
+          const shortcut = "<shortcut>" + lettres.pop() + "</shortcut>\xA0";
+          label.innerHTML = shortcut + label.innerHTML;
           Object.assign(dproperty, { container });
         } else {
           console.error('La propri\xE9t\xE9 "%s" devrait \xEAtre dans un conteneur d\u2019identifiant "#%s-container"', prop, prefprop);
@@ -1741,7 +1743,7 @@
     formId = "exemple-form";
     prefix = "exemple";
     properties = [
-      { propName: "id", type: String, required: true, fieldType: "text" },
+      { propName: "id", type: String, required: true, fieldType: "text", locked: true },
       { propName: "entry_id", type: String, required: true, fieldType: "text" },
       { propName: "oeuvre_id", type: String, required: true, fieldType: "text" },
       { propName: "content", type: String, required: true, fieldType: "textarea" },

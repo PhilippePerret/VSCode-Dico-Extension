@@ -5,6 +5,10 @@ button.simple {
 	border: none;
 	background-color: inherit;
 }
+
+.explication { font-size: 0.75em; opacity: 0.5; }
+.explication:hover {opacity: 1}
+
 /* Pour styliser un raccourci clavier */
 shortcut {
 	font-family: Arial, Helvetica, sans-serif;

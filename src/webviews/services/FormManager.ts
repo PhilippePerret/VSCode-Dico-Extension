@@ -10,6 +10,7 @@ export interface FormProperty {
   field?: any; // renseigné à la vérificatiaon
   values?: string[][];
   default?: any;
+  locked?: boolean; // si true, le champ est verrouillé
   onChange?(): void; // la fonction optionnelle à appeler en cas de changement de cette propriété
 }
 
@@ -181,8 +182,10 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
     this.properties.forEach( dprop => {
       const prop = dprop.propName;
       if ( data[prop] ) { 
-        console.log("Propriété %s mise à %s", prop, data[prop]);
+        // console.log("Propriété %s mise à %s", prop, data[prop]);
         dprop.field.value = String(data[prop]);
+        // Si le champ doit être verrouillé
+        if (dprop.locked) { dprop.field.disabled = true; }
       } else {
         console.log("La valeur de la propriété %s n'est pas définie dans ", prop, data);
       }
@@ -403,11 +406,11 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
       const prefprop = `${prefix}-${prop}`;
       // Chaque propriété doit avoir son conteneur de nom '<propName>-container'
       const container = this.obj.querySelector(`#${prefprop}-container`);
-      const label = ((container as HTMLElement).querySelector('label') as HTMLElement);
-      const shortcut = '<shortcut>' + lettres.pop() + '</shortcut> ';
-      label.innerHTML = shortcut + label.innerHTML;
-      if ( container ) {
-        Object.assign(dproperty, {container: container});
+      if (container) {
+        const label = ((container as HTMLElement).querySelector('label') as HTMLElement);
+        const shortcut = '<shortcut>' + lettres.pop() + '</shortcut> ';
+        label.innerHTML = shortcut + label.innerHTML;
+        Object.assign(dproperty, { container: container });
       } else {
         console.error('La propriété "%s" devrait être dans un conteneur d’identifiant "#%s-container"', prop, prefprop);
         ok = false;

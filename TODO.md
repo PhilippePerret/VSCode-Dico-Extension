@@ -2,6 +2,10 @@
 
 * J'EN SUIS À :
   - Implémenter toute la sauvegarde et création pour les exemples
+    * "Enregistrer et finir" : améliorer les boutons (pas de ":", pas de "|")
+    * bloquer les champs
+    * activer panneau quand clic sur champ
+    * possibilité de vider la donnée "entrée" ou "oeuvre"
 
   - Procédure d'ajout ou d'actualisation d'une donnée dans accessTable + Panneau
     [BUG] Réussir à faire passer les choses (demander à Clause)

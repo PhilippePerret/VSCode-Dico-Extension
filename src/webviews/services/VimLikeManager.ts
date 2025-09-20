@@ -1,4 +1,4 @@
-import { AnyItemType } from "../../bothside/types";
+import { AnyDbType, AnyItemType } from "../../bothside/types";
 import { Entry } from "../models/Entry";
 import { Exemple } from "../models/Exemple";
 import { Oeuvre } from "../models/Oeuvre";
@@ -20,7 +20,7 @@ export class VimLikeManager {
   protected _keylistener: (ev: KeyboardEvent) => true | false | undefined | void;
   protected _mode: MODES = 'normal' ; 
   protected get mode() { return this._mode ; }
-  private form: FormManager<AnyItemType>;
+  private form: FormManager<AnyItemType, AnyDbType>;
   public setMode(mode: MODES) { this.mode = mode; }
   protected set mode(mode: MODES) { // de l'extérieur, utiliser la méthode setMode 
     // console.info("[VimLikeManager mode] Mise du mode à '%s')", mode);
