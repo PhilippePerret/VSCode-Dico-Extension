@@ -2,8 +2,8 @@
 
 * J'EN SUIS À :
   - Implémenter toute la sauvegarde et création pour les exemples
-    * Choix d'une entrée
-    * Choix d'une œuvre 
+    * [BUG] Le formulaire d'édition de l'exemple sort de l'édition 
+      => à l'activation de la fenêtre, si form.isActive(), repasser en édition.
     * Création depuis l'entrée (E majuscule et confirmation)
     * Création depuis l'œuvre (E majuscule et confirmation)
     * activer panneau quand clic sur champ

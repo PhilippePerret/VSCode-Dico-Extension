@@ -1171,7 +1171,6 @@
           outils.push(`<shortcut>${lettre}</shortcut> ${ordre}`);
           realButtons.set(lettre, fonction);
         });
-        console.log("outils", outils);
         const o = document.createElement("div");
         o.id = "footer-shortcuts";
         o.innerHTML = outils.join("&nbsp;&nbsp;");
@@ -1437,6 +1436,11 @@
     // le panneau contenant le formulaire
     originalData;
     saving = false;
+    // Pour savoir si une édition est en cours
+    // if this.form.isActive()
+    isActive() {
+      return !this.obj.classList.contains("hidden");
+    }
     // Maintenant c'est celui-ci
     editedItem;
     checked = false;
@@ -1854,6 +1858,14 @@
     // Ce qu'il faut faire juste après l'édition de l'exemple
     afterEdit() {
     }
+    setEntry(entryId, entryEntree) {
+      this.setValueOf("entry_id", entryId);
+      this.obj.querySelector("span#exemple-entry-explicit").innerText = entryEntree;
+    }
+    setOeuvre(oeuvreId, oeuvreTitre) {
+      this.setValueOf("oeuvre_id", oeuvreId);
+      this.obj.querySelector("span#exemple-oeuvre-explicit").innerText = oeuvreTitre;
+    }
   };
 
   // src/webviews/models/Exemple.ts
@@ -2049,6 +2061,7 @@
     klass: Exemple,
     form: new ExempleForm()
   });
+  ExemplePanel.form = new ExempleForm();
   ExemplePanel.form.setPanel(ExemplePanel);
   Exemple.panel = ExemplePanel;
   var RpcEx = createRpcClient();
@@ -2077,6 +2090,22 @@
     const resultat = Exemple.doExemplesExist(params.exemples);
     console.log("R\xE9sultat du check", resultat);
     RpcEx.notify("check-exemples-resultat", { CRId: params.CRId, resultat });
+  });
+  RpcEx.on("entry-for-exemple", (params) => {
+    console.log("Je re\xE7ois dans le panneau exemple l'entr\xE9e '%s'", params.entryId);
+    if (ExemplePanel.form.isActive()) {
+      ExemplePanel.form.setEntry(params.entryId, params.entryEntree);
+    } else {
+      ExemplePanel.flash("Aucun exemple n\u2019est en \xE9dition\u2026", "error");
+    }
+  });
+  RpcEx.on("oeuvre-for-exemple", (params) => {
+    console.log("Je re\xE7ois dans le panneau exemple l'oeuvre '%s'", params.oeuvreId);
+    if (ExemplePanel.form.isActive()) {
+      ExemplePanel.form.setOeuvre(params.oeuvreId, params.oeuvreTitre);
+    } else {
+      ExemplePanel.flash("Aucun exemple n\u2019est en \xE9dition\u2026", "error");
+    }
   });
   window.Exemple = Exemple;
 })();

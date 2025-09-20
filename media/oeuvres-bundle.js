@@ -805,7 +805,6 @@
           outils.push(`<shortcut>${lettre}</shortcut> ${ordre}`);
           realButtons.set(lettre, fonction);
         });
-        console.log("outils", outils);
         const o = document.createElement("div");
         o.id = "footer-shortcuts";
         o.innerHTML = outils.join("&nbsp;&nbsp;");
@@ -1472,6 +1471,11 @@
     // le panneau contenant le formulaire
     originalData;
     saving = false;
+    // Pour savoir si une édition est en cours
+    // if this.form.isActive()
+    isActive() {
+      return !this.obj.classList.contains("hidden");
+    }
     // Maintenant c'est celui-ci
     editedItem;
     checked = false;
@@ -2706,6 +2710,31 @@
   var OeuvrePanelClass = class extends PanelClient {
     get accessTable() {
       return Oeuvre.accessTable;
+    }
+    tableKeys = {
+      C: this.chooseSelectedItemForExemple.bind(this),
+      E: this.createExempleForSelectedItem.bind(this)
+    };
+    chooseSelectedItemForExemple(confirmed) {
+      if (confirmed === true) {
+        const oeuvreId = this.getSelection();
+        RpcOeuvre.notify("oeuvre-for-exemple", { oeuvreId, oeuvreTitre: this.accessTable.get(oeuvreId).dbData.titre_affiche });
+      } else if (confirmed === false) {
+        this.flash("Ok, on renonce.", "notice");
+      } else {
+        const selected = this.getSelection();
+        if (selected) {
+          const boutons = /* @__PURE__ */ new Map();
+          boutons.set("o", ["Oui", this.chooseSelectedItemForExemple.bind(this, true)]);
+          boutons.set("n", ["Renoncer", this.chooseSelectedItemForExemple.bind(this, false)]);
+          this.flashAction("Veux-tu choisir cette \u0153uvre pour l'exemple \xE9dit\xE9 ?", boutons);
+        } else {
+          this.flash("Il faut s\xE9lectionner l'\u0153uvre voulue\xA0!", "warn");
+        }
+      }
+    }
+    createExempleForSelectedItem() {
+      this.flash("Je dois cr\xE9er un exemple pour l'entr\xE9e courante.", "notice");
     }
     searchMatchingItems(searched) {
       const searchLower = StringNormalizer.toLower(searched);

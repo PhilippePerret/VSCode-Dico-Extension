@@ -226,6 +226,11 @@ footer {
 	align-items: center;
 }
 
+div#footer {
+	margin-top: 1em;
+	padding-left: 1em;
+}
+
 #footer-shortcuts {
 	background-color: darkorange;
 	padding: 0.5em;

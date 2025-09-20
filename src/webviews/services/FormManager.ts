@@ -62,6 +62,12 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
   private originalData!: {[x: string]: any};
   public saving: boolean = false;
 
+  // Pour savoir si une édition est en cours
+  // if this.form.isActive()
+  public isActive(){
+    return !this.obj.classList.contains('hidden');
+  }
+ 
   // Maintenant c'est celui-ci
   protected editedItem!: EditedIType;
 
@@ -272,7 +278,8 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
     this.obj.classList.add('hidden'); 
     this.setMode('normal');
   }
-  
+
+ 
   // Tout remettre à rien (vider les champs)
   reset(){
     this.properties.forEach(dprop => {

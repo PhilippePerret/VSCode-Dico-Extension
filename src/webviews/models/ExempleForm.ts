@@ -53,4 +53,13 @@ export class ExempleForm extends FormManager<ExempleType, DBExempleType> {
   afterEdit(): void {
     // TODO
   }
+
+  setEntry(entryId: string, entryEntree: string){
+    this.setValueOf('entry_id', entryId);
+    (this.obj.querySelector('span#exemple-entry-explicit') as HTMLElement).innerText = entryEntree;
+  }
+  setOeuvre(oeuvreId: string, oeuvreTitre: string){
+    this.setValueOf('oeuvre_id', oeuvreId);
+    (this.obj.querySelector('span#exemple-oeuvre-explicit') as HTMLElement).innerText = oeuvreTitre;
+  }
 }

@@ -97,8 +97,28 @@ class EntryPanelClass extends PanelClient<EntryType> {
     E: this.createExempleForSelectedItem.bind(this),
   };
 
-  chooseSelectedItemForExemple(){
-    this.flash("Je dois choisir l'entrée courante pour l'exemple", 'notice');
+  chooseSelectedItemForExemple(confirmed: boolean | undefined) {
+    if (confirmed === true) {
+      // on y va
+      const entryId: string = this.getSelection() as string;
+      RpcEntry.notify('entry-for-exemple', {entryId: entryId, entryEntree: this.accessTable.get(entryId).dbData.entree});
+    } else if (confirmed === false) {
+      this.flash("Ok, on renonce.", 'notice');
+    } else {
+      // On demande confirmation
+      const selected: string | undefined = this.getSelection();
+      if (selected) {
+        // On demande confirmation
+        const boutons: Map<string, any> = new Map();
+        boutons.set('o', ['Oui', this.chooseSelectedItemForExemple.bind(this, true)]);
+        boutons.set('n', ['Renoncer', this.chooseSelectedItemForExemple.bind(this, false)]);
+        this.flashAction("Veux-tu choisir cette entrée pour l'exemple édité ?", boutons);
+      } else {
+        this.flash("Il faut sélectionner l'entrée voulue !", 'warn');
+      }
+    }
+
+
   }
   createExempleForSelectedItem(){
     this.flash("Je dois créer un exemple pour l'entrée courante.", 'notice');

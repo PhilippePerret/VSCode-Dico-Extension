@@ -103,6 +103,39 @@ export class Oeuvre extends ClientItem<OeuvreType> {
 class OeuvrePanelClass extends PanelClient<OeuvreType> {
   protected get accessTable(){ return Oeuvre.accessTable ; }
 
+  public tableKeys = {
+    C: this.chooseSelectedItemForExemple.bind(this),
+    E: this.createExempleForSelectedItem.bind(this),
+  };
+
+  chooseSelectedItemForExemple(confirmed: boolean | undefined) {
+    if (confirmed === true) {
+      // on y va
+      const oeuvreId: string = this.getSelection() as string;
+      RpcOeuvre.notify('oeuvre-for-exemple', {oeuvreId: oeuvreId, oeuvreTitre: this.accessTable.get(oeuvreId).dbData.titre_affiche});
+    } else if (confirmed === false) {
+      this.flash("Ok, on renonce.", 'notice');
+    } else {
+      // On demande confirmation
+      const selected: string | undefined = this.getSelection();
+      if (selected) {
+        // On demande confirmation
+        const boutons: Map<string, any> = new Map();
+        boutons.set('o', ['Oui', this.chooseSelectedItemForExemple.bind(this, true)]);
+        boutons.set('n', ['Renoncer', this.chooseSelectedItemForExemple.bind(this, false)]);
+        this.flashAction("Veux-tu choisir cette œuvre pour l'exemple édité ?", boutons);
+      } else {
+        this.flash("Il faut sélectionner l'œuvre voulue !", 'warn');
+      }
+    }
+
+
+  }
+  createExempleForSelectedItem(){
+    this.flash("Je dois créer un exemple pour l'entrée courante.", 'notice');
+  }
+
+
   searchMatchingItems(searched: string): OeuvreType[] {
     const searchLower = StringNormalizer.toLower(searched);
     return this.filter(Oeuvre.accessTable, (oeuvre: AnyItemType) => {

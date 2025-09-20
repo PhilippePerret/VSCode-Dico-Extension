@@ -17,7 +17,7 @@ interface PanelConstructorData {
   minName: string;
   titName: string;
   klass: typeof Entry | typeof Oeuvre | typeof Exemple;
-  form: FormManager<any, any>; // gestionnaire de formulaire
+  form: any; // gestionnaire de formulaire
 }
 
 export class PanelClient<T extends AnyItemType> {
@@ -60,7 +60,7 @@ export class PanelClient<T extends AnyItemType> {
         outils.push(`<shortcut>${lettre}</shortcut> ${ordre}`);
         realButtons.set(lettre, fonction);
       });
-      console.log("outils", outils);
+      // console.log("outils", outils);
       // On écrit les raccourcis dans le pied de page
       const o = document.createElement('div');
       o.id = 'footer-shortcuts';

@@ -237,14 +237,14 @@ class ExemplePanelClass extends PanelClient<ExempleType> {
 }
 
 
-
 // Instancier le panneau
 const ExemplePanel = new ExemplePanelClass({
   minName: 'exemple',
   titName: 'Exemples',
   klass: Exemple,
-  form: new ExempleForm()
+  form: new ExempleForm() as ExempleForm,
 });
+ExemplePanel.form = new ExempleForm() as ExempleForm;
 ExemplePanel.form.setPanel(ExemplePanel);
 Exemple.panel = ExemplePanel;
 
@@ -286,6 +286,25 @@ RpcEx.on('check-exemples', (params) => {
   const resultat = Exemple.doExemplesExist(params.exemples);
   console.log("Résultat du check", resultat);
   RpcEx.notify('check-exemples-resultat', {CRId: params.CRId, resultat: resultat});
+});
+
+RpcEx.on('entry-for-exemple', (params: {entryId: string, entryEntree: string}) => {
+  console.log("Je reçois dans le panneau exemple l'entrée '%s'", params.entryId);
+  if ( ExemplePanel.form.isActive() ) {
+    (ExemplePanel.form as ExempleForm).setEntry(params.entryId, params.entryEntree);
+  } else {
+    ExemplePanel.flash('Aucun exemple n’est en édition…', 'error');
+  }
+});
+
+RpcEx.on('oeuvre-for-exemple', (params: {oeuvreId: string, oeuvreTitre: string}) => {
+  console.log("Je reçois dans le panneau exemple l'oeuvre '%s'", params.oeuvreId);
+  if ( ExemplePanel.form.isActive() ) {
+    (ExemplePanel.form as ExempleForm).setOeuvre(params.oeuvreId, params.oeuvreTitre);
+  } else {
+    ExemplePanel.flash('Aucun exemple n’est en édition…', 'error');
+  }
+
 });
 
 (window as any).Exemple = Exemple;

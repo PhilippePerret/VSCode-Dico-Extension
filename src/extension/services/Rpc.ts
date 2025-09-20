@@ -99,6 +99,10 @@ class RpcEntry extends Rpc {
       Entry.saveItem(params);
     });
 
+    this.rpc.on('entry-for-exemple', async (params: {entryId: string, entryEntree: string}) => {
+      CanalExemple.notify('entry-for-exemple', params);
+    });
+
     this.rpc.on('export-all-data', async (params: any) => {
       console.log("[EXTENSION] Demande de sauvegarde des données");
       execSync(`ruby ${App._context.extensionPath}/src/data/export-data.rb`);
@@ -148,6 +152,10 @@ class RpcOeuvre extends Rpc {
       // console.log("[EXTENSION OEUVRE] Réception de l'œuvre à sauver", params);
       Object.assign(params, {ok: null, errors: []});
       Oeuvre.saveItem(params);
+    });
+
+    this.rpc.on('oeuvre-for-exemple', async (params: {oeuvreId: string, oeuvreTitre: string}) => {
+      CanalExemple.notify('oeuvre-for-exemple', params);
     });
 
     this.rpc.on('tmdb-secrets', async () => {

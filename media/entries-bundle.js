@@ -805,7 +805,6 @@
           outils.push(`<shortcut>${lettre}</shortcut> ${ordre}`);
           realButtons.set(lettre, fonction);
         });
-        console.log("outils", outils);
         const o = document.createElement("div");
         o.id = "footer-shortcuts";
         o.innerHTML = outils.join("&nbsp;&nbsp;");
@@ -1502,6 +1501,11 @@
     // le panneau contenant le formulaire
     originalData;
     saving = false;
+    // Pour savoir si une édition est en cours
+    // if this.form.isActive()
+    isActive() {
+      return !this.obj.classList.contains("hidden");
+    }
     // Maintenant c'est celui-ci
     editedItem;
     checked = false;
@@ -2195,8 +2199,23 @@
       C: this.chooseSelectedItemForExemple.bind(this),
       E: this.createExempleForSelectedItem.bind(this)
     };
-    chooseSelectedItemForExemple() {
-      this.flash("Je dois choisir l'entr\xE9e courante pour l'exemple", "notice");
+    chooseSelectedItemForExemple(confirmed) {
+      if (confirmed === true) {
+        const entryId = this.getSelection();
+        RpcEntry.notify("entry-for-exemple", { entryId, entryEntree: this.accessTable.get(entryId).dbData.entree });
+      } else if (confirmed === false) {
+        this.flash("Ok, on renonce.", "notice");
+      } else {
+        const selected = this.getSelection();
+        if (selected) {
+          const boutons = /* @__PURE__ */ new Map();
+          boutons.set("o", ["Oui", this.chooseSelectedItemForExemple.bind(this, true)]);
+          boutons.set("n", ["Renoncer", this.chooseSelectedItemForExemple.bind(this, false)]);
+          this.flashAction("Veux-tu choisir cette entr\xE9e pour l'exemple \xE9dit\xE9 ?", boutons);
+        } else {
+          this.flash("Il faut s\xE9lectionner l'entr\xE9e voulue\xA0!", "warn");
+        }
+      }
     }
     createExempleForSelectedItem() {
       this.flash("Je dois cr\xE9er un exemple pour l'entr\xE9e courante.", "notice");
