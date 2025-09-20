@@ -20,3 +20,10 @@ h2.titre-oeuvre {
   border-radius: 1em;
   margin-left: 0.5em;
 }
+
+form textarea#exemple-content {
+  height: 120px;
+}
+form textarea#exemple-notes {
+  height: 80px;
+}
