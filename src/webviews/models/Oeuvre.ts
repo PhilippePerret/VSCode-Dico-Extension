@@ -90,6 +90,16 @@ export class Oeuvre extends ClientItem<OeuvreType> {
 }
 
 
+/**
+ * 
+ * 
+ * ============== PANNEAU OEUVRES ====================
+ * 
+ * 
+ * 
+ */
+
+
 class OeuvrePanelClass extends PanelClient<OeuvreType> {
   protected get accessTable(){ return Oeuvre.accessTable ; }
 
@@ -102,9 +112,14 @@ class OeuvrePanelClass extends PanelClient<OeuvreType> {
     }) as OeuvreType[];
   }
 
-  // initKeyManager() {
-  //   this._keyManager = new VimLikeManager(document.body as HTMLBodyElement, this, Oeuvre);
-  // }
+  protected formateProp(item: OeuvreType, prop: string, value: string | number | boolean): string {
+    switch(prop){
+      case 'titre_francais':
+        const titfr: string | undefined = item.dbData.titre_francais;
+        if (!titfr || titfr === item.dbData.titre_original) { return ''; }
+    }
+    return String(value);
+  }
 }
 
 const OeuvrePanel = new OeuvrePanelClass({

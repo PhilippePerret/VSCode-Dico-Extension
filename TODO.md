@@ -1,9 +1,6 @@
 # Todo list
 
 * J'EN SUIS À :
-  - Implémenter toute la sauvegarder et création pour les œuvres
-   [BUG] Après avoir remonté la valeur corrigée, il faut modifier les données conservées
-   [IMPROVE] Afficher le titre_affiche entre parenthèses après le titre original (en plus petit) 
   - Implémenter toute la sauvegarde et création pour les exemples
 
   - Procédure d'ajout ou d'actualisation d'une donnée dans accessTable + Panneau

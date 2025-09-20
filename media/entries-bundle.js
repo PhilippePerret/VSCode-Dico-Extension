@@ -1124,14 +1124,10 @@
       const checkedId = item.id;
       let cachedItem;
       if (this.exists(checkedId)) {
-        console.log("C'est une actualisation de l'item ", checkedId);
         const accKey = this.getAccKey(checkedId);
-        console.log("Ancienne valeur de l'\u0153uvre", structuredClone(this.arrayItems[accKey.index]));
         this.arrayItems[accKey.index] = item;
-        console.log("Nouvelle valeur de l'\u0153uvre", this.arrayItems[accKey.index]);
         return [item, void 0];
       } else {
-        console.log("C'est une cr\xE9ation de l'item", item);
         return this.createNewAccedableItem(item);
       }
     }
