@@ -2,9 +2,8 @@
 
 * J'EN SUIS À :
   - Implémenter toute la sauvegarde et création pour les exemples
-    * voir comment créer un nouvel exemple pour un nouveau film (insertion dans le dom)
-    * [BUG] Un nouvel exemple se met après le titre du film suivant
-    * voir comment définir l'indice d'un nouvel exemple d'un film connu
+    * [BUG] Le titre ne se place pas avant une nouvelle entrée
+    * [BUG] Faire fonctionner le fait de pouvoir sélectionner le premier élément d'une liste filtrée.
     * Création depuis l'entrée (E majuscule et confirmation)
     * Création depuis l'œuvre (E majuscule et confirmation)
     * activer panneau quand clic sur champ

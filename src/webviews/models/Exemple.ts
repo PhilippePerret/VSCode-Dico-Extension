@@ -164,31 +164,49 @@ class ExemplePanelClass extends PanelClient<ExempleType> {
     let currentOeuvreId: string = ''; // le titre couramment affiché
     accessTable.each((item: ExempleType): undefined => {
       const ditem = item;
+      // console.log("dbData.oeuvre_id = '%s' / currentOeuvreId = '%s'", ditem.dbData.oeuvre_id, currentOeuvreId);
       if ( ditem.dbData.oeuvre_id === currentOeuvreId ) { return ; }
+      // console.log("Nouveau titre pour %s ", ditem.cachedData.oeuvre_titre);
       // --- NOUVEAU TITRE ---
-      currentOeuvreId = ditem.dbData.oeuvre_id;
-      const obj = document.createElement('h2');
-      obj.dataset.id = currentOeuvreId;
-      obj.addEventListener('click', this.onClickLinkToOeuvre.bind(this, obj));
-      obj.className = 'titre-oeuvre';
-      const spanTit = document.createElement('span');
-      spanTit.className = 'titre';
-      spanTit.innerHTML = ditem.cachedData.oeuvre_titre;
-      obj.appendChild(spanTit);
-      const titre = {
-        id: ditem.dbData.oeuvre_id,
-        obj: obj,
-        titre: ditem.cachedData.oeuvre_titre,
-        display: 'block'
-      } as OTitre;
-      // On consigne ce titre pour pouvoir le manipuler facilement
-      this.BlockTitres.set(titre.id, titre);
-
-      const firstEx = document.querySelector(`main#items > div[data-id="${ditem.id}"]`);
-      this.container.insertBefore(obj, firstEx);
-    });
+      this.insertTitleInDom(ditem);
+      currentOeuvreId = String(ditem.dbData.oeuvre_id);
+   });
   }
 
+  public insertInDom(item: ExempleType, before: ExempleType | undefined) {
+    super.insertInDom(item, before);
+    if (before && item.dbData.indice === 0) {
+      this.insertTitleInDom(item);
+    }
+  }
+
+  /**
+   * Fonction pour insérer un titre d'œuvre dans le DOM et dans la
+   * donnée des titres this.BlockTitres.
+   * 
+   * @param item Le premier exemple de l'oeuvre
+   */
+  private insertTitleInDom(item: ExempleType) {
+    const oeuvreId:string = item.dbData.oeuvre_id;
+    const obj = document.createElement('h2');
+    obj.dataset.id = oeuvreId;
+    obj.addEventListener('click', this.onClickLinkToOeuvre.bind(this, obj));
+    obj.className = 'titre-oeuvre';
+    const spanTit = document.createElement('span');
+    spanTit.className = 'titre';
+    spanTit.innerHTML = item.cachedData.oeuvre_titre;
+    obj.appendChild(spanTit);
+    const titre = {
+      id: oeuvreId,
+      obj: obj,
+      titre: item.cachedData.oeuvre_titre,
+      display: 'block'
+    } as OTitre;
+    // On consigne ce titre pour pouvoir le manipuler facilement
+    this.BlockTitres.set(titre.id, titre);
+    const firstEx = document.querySelector(`main#items > div[data-id="${item.id}"]`);
+    this.container.insertBefore(obj, firstEx);
+  }
   /**
    * Filtrage des exemples 
    * Méthode spécifique Exemple
