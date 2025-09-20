@@ -159,276 +159,6 @@
     );
   }
 
-  // src/webviews/services/DomUtils.ts
-  var stopEvent = function(ev) {
-    ev.preventDefault();
-    ev.stopImmediatePropagation();
-    return false;
-  };
-
-  // src/webviews/services/VimLikeManager.ts
-  var VimLikeManager = class {
-    constructor(root, panel, klass) {
-      this.root = root;
-      this.panel = panel;
-      this.klass = klass;
-      this.mode = "null";
-      this.form = this.panel.form;
-      this.root.addEventListener("keydown", this.universelKeyboardCapture.bind(this), true);
-      this.root.addEventListener("keydown", this.onKeyDown.bind(this));
-      this._keylistener = this.onKeyDownModeNull.bind(this);
-      this.searchInput = this.root.querySelector("input#search-input");
-      this.consoleInput = this.root.querySelector("input#panel-console");
-      this.searchInput.addEventListener("focus", this.onFocusEditField.bind(this, this.searchInput));
-      this.searchInput.addEventListener("blur", this.onBlurEditField.bind(this, this.searchInput));
-      this.consoleInput.addEventListener("focus", this.onFocusEditField.bind(this, this.consoleInput));
-      this.consoleInput.addEventListener("blur", this.onBlurEditField.bind(this, this.consoleInput));
-    }
-    // 
-    /**
-     * MODE DU PANNEAU
-     * 
-     * Pour le moment, le panneau peut être dans deux états, en
-     * fonction du fait que le curseur se trouve dans un champ
-     * éditable ou non.
-     */
-    _keylistener;
-    _mode = "normal";
-    get mode() {
-      return this._mode;
-    }
-    form;
-    setMode(mode) {
-      this.mode = mode;
-    }
-    set mode(mode) {
-      this._mode = mode;
-      switch (mode) {
-        case "edit":
-          this._keylistener = this.onKeyDownModeEdit.bind(this);
-          break;
-        case "normal":
-          this._keylistener = this.onKeyDownModeNormal.bind(this);
-          break;
-        case "null":
-          console.log("Le panneau est en mode NULL (sans action");
-          this._keylistener = this.onKeyDownModeNull.bind(this);
-          break;
-        case "form":
-          console.log("Panneau en mode FORMulaire");
-          this._keylistener = this.onKeyDownModeForm.bind(this);
-          break;
-      }
-      this.root.dataset.mode = `mode-${mode}`;
-      if (this.root.querySelector("span#mode-name")) {
-        const spanName = this.root.querySelector("span#mode-name");
-        spanName.innerHTML = mode.toLocaleUpperCase();
-      } else {
-        console.warn("Bizarrement, le span #mode-name affichant le mode du panneau est introuvable.");
-      }
-    }
-    searchInput;
-    consoleInput;
-    onFocusEditField(field, ev) {
-      this.setMode("edit");
-    }
-    onBlurEditField(field, ev) {
-      this.setMode("normal");
-    }
-    keyboardBypass;
-    // La méthode qui choppe normalement toutes les touches, quel que soit le mode
-    /**
-       * Capteur Universel de Touche clavier
-       * 
-       * Quel que soit le mode, cette méthode reçoit les touches clavier
-       * avant tout le monde.
-    
-       * Cela permet : 
-       *    - d'implémenter un système de "coupe-circuit" qui est
-       *      utilisé par exemple pour les messages de type "action 
-       *      demandée". (voir le manuel pour le détail). 
-       *    - d'implémenter la gestion de touche "?" qui permet, quelle
-       *      que soit la situation, d'obtenir de l'aide.
-       */
-    universelKeyboardCapture(ev) {
-      if (ev.key === "?") {
-        this.panel.activateContextualHelp();
-        return stopEvent(ev);
-      } else if (ev.target.tagName.toLowerCase() === "select") {
-        console.log("Sur select", ev.key);
-        const select = ev.target;
-        switch (ev.key) {
-          case "j":
-          case "ArrowDown":
-            select.selectedIndex += 1;
-            break;
-          case "k":
-          case "ArrowUp":
-            select.selectedIndex -= 1;
-            break;
-        }
-        return true;
-      } else if (this.keyboardBypass) {
-        if (this.keyboardBypass.has(ev.key)) {
-          const methodBypass = this.keyboardBypass.get(ev.key);
-          delete this.keyboardBypass;
-          this.panel.cleanFlash();
-          this.panel.cleanFooterShortcuts();
-          methodBypass();
-        }
-        return ev && stopEvent(ev);
-      }
-      return true;
-    }
-    /**
-     * API
-     * Méthode de discrimination dans l'objet +obj+. Tous les champs qu'il contient
-     * qui sont des champs d'édition textuels vont faire basculer dans le mode :editMode
-     * quand ils sont focusser et le mode :normalMode (souvent 'normal') quand on va
-     * les blurer 
-     * 
-     * @param obj {HTMLElement} Bloc contenant les champs d'édition
-     * @param modes {Hash} Table définisssant :edit et :normal pour savoir le nom des
-     * modes à utiliser en édition (dans un champ éditable) et hors édition.
-     */
-    discrimineFieldsForModeIn(obj, modes) {
-      const selectors = 'input[type="text"], input[type="email"], input[type="password"], textarea, [contenteditable]';
-      obj.querySelectorAll(selectors).forEach((field) => {
-        console.log("Discrimination du champ ", field);
-        field.addEventListener("focus", this.setMode.bind(this, modes.edit));
-        field.addEventListener("blur", this.setMode.bind(this, modes.normal));
-      });
-    }
-    // Sera remplacé par la bonne méthode suivant le mode.
-    onKeyDown(ev) {
-      return this._keylistener(ev);
-    }
-    /**
-     * ============ TOUS LES MODES DE CLAVIER ================
-     */
-    // Quand la touche meta est pressée, on passe toujours par là
-    onKeyDownWithMeta(ev) {
-      switch (ev.key) {
-        case "q":
-        case "Q":
-          stopEvent(ev);
-          console.log("On ne peut pas quitter comme \xE7a\u2026");
-          break;
-        case "s":
-        case "S":
-          stopEvent(ev);
-          console.log("Demande de sauvegarde forc\xE9e.");
-          break;
-      }
-    }
-    onKeyDownModeNormal(ev) {
-      if (ev.metaKey) {
-        return this.onKeyDownWithMeta(ev);
-      }
-      stopEvent(ev);
-      switch (ev.key) {
-        case "j":
-          this.klass.accessTable.selectNextItem(this.panel);
-          break;
-        case "k":
-          this.klass.accessTable.selectPrevItem(this.panel);
-          break;
-        case "s":
-          this.searchInput.focus();
-          break;
-        case "c":
-          this.consoleInput.focus();
-          break;
-        case "e":
-          if (this.panel.getSelection()) {
-            this.klass.editItem(this.panel.getSelection());
-          } else {
-            console.log("Pas de s\xE9lection \xE0 \xE9diter");
-          }
-          break;
-        case "n":
-          this.klass.createNewItem();
-          break;
-        default:
-          console.log("Pour le moment, je ne fais rien de '%s'", ev.key);
-      }
-      return false;
-    }
-    /**
-     * Gestionnaire des touches de clavier en mode EDIT (dans un
-     * champ d'édition) 
-     */
-    onKeyDownModeEdit(ev) {
-      if (ev.metaKey) {
-        return this.onKeyDownWithMeta(ev);
-      }
-      switch (ev.key) {
-        case "Tab":
-          ev.target.blur();
-          return stopEvent(ev);
-      }
-      return true;
-    }
-    // Mode clavier pour le formulaire
-    onKeyDownModeForm(ev) {
-      console.log("-> onKeyDownModeForm");
-      if (this.form.saving === true) {
-        return;
-      }
-      if (ev.metaKey) {
-        return this.onKeyDownWithMeta(ev);
-      }
-      switch (ev.key) {
-        case "a":
-          this.form.focusField(1);
-          break;
-        case "b":
-          this.form.focusField(2);
-          break;
-        case "c":
-          this.form.focusField(3);
-          break;
-        case "d":
-          this.form.focusField(4);
-          break;
-        case "e":
-          this.form.focusField(5);
-          break;
-        case "f":
-          this.form.focusField(6);
-          break;
-        case "g":
-          this.form.focusField(7);
-          break;
-        case "l":
-          this.form.toggleIdLock();
-          break;
-        case "s":
-          this.form.saveItem(false);
-          break;
-        case "w":
-          this.form.saveItem(true);
-          break;
-        case "q":
-          this.form.cancelEdit();
-          break;
-        default:
-          if (this.form.tableKeys[ev.key]) {
-            this.form.tableKeys[ev.key].call(null);
-          }
-      }
-      return stopEvent(ev);
-    }
-    onKeyDownModeNull(ev) {
-      console.error("Il faut activer un mode de clavier");
-      return stopEvent(ev);
-    }
-    // @return true si la cible de l'évènement +ev+ est un champ éditable
-    targetEventIsEditable(ev) {
-      return ev.target.matches("input, textarea, [contenteditable]");
-    }
-  };
-
   // src/webviews/services/AccessTable.ts
   var AccessTable = class {
     // Table des pointeurs de données
@@ -1043,6 +773,276 @@
       document.body.appendChild(o);
       this.CHObj = o;
       this.CHbuilt = true;
+    }
+  };
+
+  // src/webviews/services/DomUtils.ts
+  var stopEvent = function(ev) {
+    ev.preventDefault();
+    ev.stopImmediatePropagation();
+    return false;
+  };
+
+  // src/webviews/services/VimLikeManager.ts
+  var VimLikeManager = class {
+    constructor(root, panel, klass) {
+      this.root = root;
+      this.panel = panel;
+      this.klass = klass;
+      this.mode = "null";
+      this.form = this.panel.form;
+      this.root.addEventListener("keydown", this.universelKeyboardCapture.bind(this), true);
+      this.root.addEventListener("keydown", this.onKeyDown.bind(this));
+      this._keylistener = this.onKeyDownModeNull.bind(this);
+      this.searchInput = this.root.querySelector("input#search-input");
+      this.consoleInput = this.root.querySelector("input#panel-console");
+      this.searchInput.addEventListener("focus", this.onFocusEditField.bind(this, this.searchInput));
+      this.searchInput.addEventListener("blur", this.onBlurEditField.bind(this, this.searchInput));
+      this.consoleInput.addEventListener("focus", this.onFocusEditField.bind(this, this.consoleInput));
+      this.consoleInput.addEventListener("blur", this.onBlurEditField.bind(this, this.consoleInput));
+    }
+    // 
+    /**
+     * MODE DU PANNEAU
+     * 
+     * Pour le moment, le panneau peut être dans deux états, en
+     * fonction du fait que le curseur se trouve dans un champ
+     * éditable ou non.
+     */
+    _keylistener;
+    _mode = "normal";
+    get mode() {
+      return this._mode;
+    }
+    form;
+    setMode(mode) {
+      this.mode = mode;
+    }
+    set mode(mode) {
+      this._mode = mode;
+      switch (mode) {
+        case "edit":
+          this._keylistener = this.onKeyDownModeEdit.bind(this);
+          break;
+        case "normal":
+          this._keylistener = this.onKeyDownModeNormal.bind(this);
+          break;
+        case "null":
+          console.log("Le panneau est en mode NULL (sans action");
+          this._keylistener = this.onKeyDownModeNull.bind(this);
+          break;
+        case "form":
+          console.log("Panneau en mode FORMulaire");
+          this._keylistener = this.onKeyDownModeForm.bind(this);
+          break;
+      }
+      this.root.dataset.mode = `mode-${mode}`;
+      if (this.root.querySelector("span#mode-name")) {
+        const spanName = this.root.querySelector("span#mode-name");
+        spanName.innerHTML = mode.toLocaleUpperCase();
+      } else {
+        console.warn("Bizarrement, le span #mode-name affichant le mode du panneau est introuvable.");
+      }
+    }
+    searchInput;
+    consoleInput;
+    onFocusEditField(field, ev) {
+      this.setMode("edit");
+    }
+    onBlurEditField(field, ev) {
+      this.setMode("normal");
+    }
+    keyboardBypass;
+    // La méthode qui choppe normalement toutes les touches, quel que soit le mode
+    /**
+       * Capteur Universel de Touche clavier
+       * 
+       * Quel que soit le mode, cette méthode reçoit les touches clavier
+       * avant tout le monde.
+    
+       * Cela permet : 
+       *    - d'implémenter un système de "coupe-circuit" qui est
+       *      utilisé par exemple pour les messages de type "action 
+       *      demandée". (voir le manuel pour le détail). 
+       *    - d'implémenter la gestion de touche "?" qui permet, quelle
+       *      que soit la situation, d'obtenir de l'aide.
+       */
+    universelKeyboardCapture(ev) {
+      if (ev.key === "?") {
+        this.panel.activateContextualHelp();
+        return stopEvent(ev);
+      } else if (ev.target.tagName.toLowerCase() === "select") {
+        console.log("Sur select", ev.key);
+        const select = ev.target;
+        switch (ev.key) {
+          case "j":
+          case "ArrowDown":
+            select.selectedIndex += 1;
+            break;
+          case "k":
+          case "ArrowUp":
+            select.selectedIndex -= 1;
+            break;
+        }
+        return true;
+      } else if (this.keyboardBypass) {
+        if (this.keyboardBypass.has(ev.key)) {
+          const methodBypass = this.keyboardBypass.get(ev.key);
+          delete this.keyboardBypass;
+          this.panel.cleanFlash();
+          this.panel.cleanFooterShortcuts();
+          methodBypass();
+        }
+        return ev && stopEvent(ev);
+      }
+      return true;
+    }
+    /**
+     * API
+     * Méthode de discrimination dans l'objet +obj+. Tous les champs qu'il contient
+     * qui sont des champs d'édition textuels vont faire basculer dans le mode :editMode
+     * quand ils sont focusser et le mode :normalMode (souvent 'normal') quand on va
+     * les blurer 
+     * 
+     * @param obj {HTMLElement} Bloc contenant les champs d'édition
+     * @param modes {Hash} Table définisssant :edit et :normal pour savoir le nom des
+     * modes à utiliser en édition (dans un champ éditable) et hors édition.
+     */
+    discrimineFieldsForModeIn(obj, modes) {
+      const selectors = 'input[type="text"], input[type="email"], input[type="password"], textarea, [contenteditable]';
+      obj.querySelectorAll(selectors).forEach((field) => {
+        console.log("Discrimination du champ ", field);
+        field.addEventListener("focus", this.setMode.bind(this, modes.edit));
+        field.addEventListener("blur", this.setMode.bind(this, modes.normal));
+      });
+    }
+    // Sera remplacé par la bonne méthode suivant le mode.
+    onKeyDown(ev) {
+      return this._keylistener(ev);
+    }
+    /**
+     * ============ TOUS LES MODES DE CLAVIER ================
+     */
+    // Quand la touche meta est pressée, on passe toujours par là
+    onKeyDownWithMeta(ev) {
+      switch (ev.key) {
+        case "q":
+        case "Q":
+          stopEvent(ev);
+          console.log("On ne peut pas quitter comme \xE7a\u2026");
+          break;
+        case "s":
+        case "S":
+          stopEvent(ev);
+          console.log("Demande de sauvegarde forc\xE9e.");
+          break;
+      }
+    }
+    onKeyDownModeNormal(ev) {
+      if (ev.metaKey) {
+        return this.onKeyDownWithMeta(ev);
+      }
+      stopEvent(ev);
+      switch (ev.key) {
+        case "j":
+          this.klass.accessTable.selectNextItem(this.panel);
+          break;
+        case "k":
+          this.klass.accessTable.selectPrevItem(this.panel);
+          break;
+        case "s":
+          this.searchInput.focus();
+          break;
+        case "c":
+          this.consoleInput.focus();
+          break;
+        case "e":
+          if (this.panel.getSelection()) {
+            this.klass.editItem(this.panel.getSelection());
+          } else {
+            console.log("Pas de s\xE9lection \xE0 \xE9diter");
+          }
+          break;
+        case "n":
+          this.klass.createNewItem();
+          break;
+        default:
+          console.log("Pour le moment, je ne fais rien de '%s'", ev.key);
+      }
+      return false;
+    }
+    /**
+     * Gestionnaire des touches de clavier en mode EDIT (dans un
+     * champ d'édition) 
+     */
+    onKeyDownModeEdit(ev) {
+      if (ev.metaKey) {
+        return this.onKeyDownWithMeta(ev);
+      }
+      switch (ev.key) {
+        case "Tab":
+          ev.target.blur();
+          return stopEvent(ev);
+      }
+      return true;
+    }
+    // Mode clavier pour le formulaire
+    onKeyDownModeForm(ev) {
+      console.log("-> onKeyDownModeForm");
+      if (this.form.saving === true) {
+        return;
+      }
+      if (ev.metaKey) {
+        return this.onKeyDownWithMeta(ev);
+      }
+      switch (ev.key) {
+        case "a":
+          this.form.focusField(1);
+          break;
+        case "b":
+          this.form.focusField(2);
+          break;
+        case "c":
+          this.form.focusField(3);
+          break;
+        case "d":
+          this.form.focusField(4);
+          break;
+        case "e":
+          this.form.focusField(5);
+          break;
+        case "f":
+          this.form.focusField(6);
+          break;
+        case "g":
+          this.form.focusField(7);
+          break;
+        case "l":
+          this.form.toggleIdLock();
+          break;
+        case "s":
+          this.form.saveItem(false);
+          break;
+        case "w":
+          this.form.saveItem(true);
+          break;
+        case "q":
+          this.form.cancelEdit();
+          break;
+        default:
+          if (this.form.tableKeys[ev.key]) {
+            this.form.tableKeys[ev.key].call(null);
+          }
+      }
+      return stopEvent(ev);
+    }
+    onKeyDownModeNull(ev) {
+      console.error("Il faut activer un mode de clavier");
+      return stopEvent(ev);
+    }
+    // @return true si la cible de l'évènement +ev+ est un champ éditable
+    targetEventIsEditable(ev) {
+      return ev.target.matches("input, textarea, [contenteditable]");
     }
   };
 
@@ -1740,22 +1740,45 @@
   var ExempleForm = class extends FormManager {
     formId = "exemple-form";
     prefix = "exemple";
-    properties = [];
+    properties = [
+      { propName: "id", type: String, required: true, fieldType: "text" },
+      { propName: "entry_id", type: String, required: true, fieldType: "text" },
+      { propName: "oeuvre_id", type: String, required: true, fieldType: "text" },
+      { propName: "content", type: String, required: true, fieldType: "textarea" },
+      { propName: "notes", type: String, required: true, fieldType: "textarea" }
+    ];
     // Table des raccourcis 'one key' propre au formulaire
     tableKeys = {
       // <touche>: <fonction bindée>, par exemple
       // 'i': this.showInfo.bind(this)
     };
+    /**
+     * Grand méthode de check de l'item.
+     * 
+     * Pour un exemple, il suffit de vérifier que le contenu contienne
+     * ce qu'il faut. Car les autres valeurs sont des identifiants qui
+     * n'ont pas pu être forcés.
+     * 
+     * @returns undefined si la donnée est valide ou le string du message d'erreur dans le cas contraire.
+     */
     async checkEditedItem() {
       return "Les donn\xE9es ne sont pas check\xE9s";
     }
+    /**
+     * Méthode pour enregistrer les données si elles ont été modifiées.
+     * 
+     * @param data2save Les données à sauvegarder
+     * @returns True si tout s'est bien passé
+     */
     async onSaveEditedItem(data2save) {
       console.log("Il faut que j'apprendre \xE0 sauver l'exemple : ", this.editedItem);
       console.log("Donn\xE9es \xE0 sauver", data2save);
       return true;
     }
+    // Pour observer le formulaire
     observeForm() {
     }
+    // Ce qu'il faut faire juste après l'édition de l'exemple
     afterEdit() {
     }
   };
@@ -1883,9 +1906,6 @@
         this.container.insertBefore(obj, firstEx);
       });
     }
-    initKeyManager() {
-      this._keyManager = new VimLikeManager(document.body, this, Exemple);
-    }
     /**
      * Filtrage des exemples 
      * Méthode spécifique Exemple
@@ -1956,6 +1976,7 @@
     klass: Exemple,
     form: new ExempleForm()
   });
+  ExemplePanel.form.setPanel(ExemplePanel);
   Exemple.panel = ExemplePanel;
   var RpcEx = createRpcClient();
   RpcEx.on("activate", () => {

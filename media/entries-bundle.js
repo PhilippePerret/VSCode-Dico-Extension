@@ -1842,7 +1842,7 @@
       this.panel.context = isNew ? "create-entry" : "edit-entry";
     }
     /**
-     * Grand méthode de check de la validité de l'item. On ne l'envoie
+     * Grande méthode de check de la validité de l'item. On ne l'envoie
      * en enregistrement que s'il est parfaitement conforme. 
      */
     async checkEditedItem() {

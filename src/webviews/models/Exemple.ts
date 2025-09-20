@@ -60,8 +60,20 @@ interface OTitre {
   titre: string;              // le titre affiché
 }
 
+
+/**
+ * 
+ * 
+ * ============== PANNEAU EXEMPLES =================
+ * 
+ * 
+ * 
+ */
+
+
 class ExemplePanelClass extends PanelClient<ExempleType> {
   protected get accessTable(){ return Exemple.accessTable ; }
+
   modeFiltre = 'by-title';
   BlockTitres: Map<string, OTitre> = new Map();
 
@@ -148,10 +160,6 @@ class ExemplePanelClass extends PanelClient<ExempleType> {
     });
   }
 
-  initKeyManager() {
-    this._keyManager = new VimLikeManager(document.body as HTMLBodyElement, this, Exemple);
-  }
-
   /**
    * Filtrage des exemples 
    * Méthode spécifique Exemple
@@ -228,6 +236,8 @@ class ExemplePanelClass extends PanelClient<ExempleType> {
  }
 }
 
+
+
 // Instancier le panneau
 const ExemplePanel = new ExemplePanelClass({
   minName: 'exemple',
@@ -235,7 +245,18 @@ const ExemplePanel = new ExemplePanelClass({
   klass: Exemple,
   form: new ExempleForm()
 });
+ExemplePanel.form.setPanel(ExemplePanel);
 Exemple.panel = ExemplePanel;
+
+
+/**
+ * 
+ * 
+ * ============== RPC EXEMPLES ================
+ * 
+ * 
+ * 
+ */
 
 export const RpcEx: RpcChannel = createRpcClient();
 

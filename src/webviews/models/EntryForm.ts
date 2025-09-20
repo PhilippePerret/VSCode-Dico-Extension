@@ -5,9 +5,6 @@ import { ComplexRpc } from '../services/ComplexRpc';
 import { ChangeSetType, FormManager, FormProperty } from "../services/FormManager";
 import { Entry, RpcEntry } from "./Entry";
 
-class FEntry extends Entry {
-  [x:string]: any;
-}
 const allg: {[x: string]: string} = Constants.ENTRIES_GENRES;
 const genres = Object.keys(allg).map( key => [key, allg[key]] );
 
@@ -53,7 +50,7 @@ export class EntryForm extends FormManager<EntryType, DBEntryType> {
   }
 
   /**
-   * Grand méthode de check de la validité de l'item. On ne l'envoie
+   * Grande méthode de check de la validité de l'item. On ne l'envoie
    * en enregistrement que s'il est parfaitement conforme. 
    */
   async checkEditedItem(): Promise<string | undefined> {
