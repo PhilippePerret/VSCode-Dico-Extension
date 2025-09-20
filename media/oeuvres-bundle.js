@@ -145,7 +145,6 @@
      */
     static deserializeItems(items) {
       const allItems = items.map((item) => JSON.parse(item));
-      console.log("Tous les items", allItems);
       this.setAccessTableWithItems(allItems);
     }
     /* Surclassée */
@@ -894,7 +893,11 @@
         mainElement.setAttribute("data-id", item.id);
       }
       if (before) {
-        this.container.insertBefore(clone, this.accessTable.getObj(before.id));
+        let beforeObj = this.accessTable.getObj(before.id);
+        if (this.minName === "exemple") {
+          beforeObj = beforeObj.previousSibling;
+        }
+        this.container.insertBefore(clone, beforeObj);
       } else {
         this.container.appendChild(clone);
       }
@@ -1475,6 +1478,12 @@
     // le panneau contenant le formulaire
     originalData;
     saving = false;
+    // Les propriétés à retirer des données à finalement sauver.
+    // Note: les propriétés isNew et size sont déjà traitées
+    /* surclasser (if any) */
+    propsToRemove() {
+      return [];
+    }
     // Pour savoir si une édition est en cours
     // if this.form.isActive()
     isActive() {
@@ -1559,13 +1568,29 @@
       }
       return false;
     }
+    /**
+     * Méthode appelée après confirmation de la sauvegarde.
+     * 
+     * Elle finalise la donnée finale à enregistrer, notamment en 
+     * retirant les propriétés non persistantes.
+     */
     async onConfirmSave(andQuit) {
       console.log("Sauvegarde confirm\xE9e");
       const fakeItem = this.collectValues();
       const data2save = structuredClone(this.editedItem.original);
       Object.assign(data2save, this.editedItem.data2save);
-      Object.assign(data2save, { isNew: void 0, size: void 0 });
-      await this.onSaveEditedItem(data2save);
+      const removedProps = ["isNew", "size"];
+      removedProps.push(...this.propsToRemove());
+      console.log("Propri\xE9t\xE9s \xE0 remover", removedProps);
+      const data2saveEpured = {};
+      for (var k in data2save) {
+        if (removedProps.includes(k)) {
+          continue;
+        }
+        Object.assign(data2saveEpured, { [k]: data2save[k] });
+      }
+      console.log("Donn\xE9es FINALES \xE0 sauvegarder", structuredClone(data2saveEpured));
+      await this.onSaveEditedItem(data2saveEpured);
       this.saving = false;
       if (andQuit) {
         this.closeForm();

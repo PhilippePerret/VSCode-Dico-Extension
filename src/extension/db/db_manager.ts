@@ -60,7 +60,7 @@ export class DBManager {
     params.ok = true ; // soyons optimistes
     try {
       await this.createBackup();
-      const exists = await this.checkIfExists(item.id, table);      
+      const exists = await this.checkIfExists(item, table);      
       Object.assign(params, {isNewItem: !exists}); // pour indiquer que c'est une création
       // Prendre le nombre d'entrées et déterminer le nouveau nombre attendu
       const countBefore = await this.getRowCountIn(table);
@@ -91,9 +91,20 @@ export class DBManager {
     let sql, params;
     if (exists) {
       // UPDATE générique
+      let whereClause: string;
+      let dataClause: string[];
+      switch(table){
+        case 'exemples':
+          whereClause = 'oeuvre_id = ? AND indice = ?';
+          dataClause = [data.oeuvre_id, data.indice];
+          break;
+        default:
+          whereClause = 'id = ?';
+          dataClause = [data.id];
+      }
       const fields = Object.keys(data).filter(k => k !== 'id');
-      sql = `UPDATE ${table} SET ${fields.map(f => `${f} = ?`).join(', ')} WHERE id = ?`;
-      params = [...fields.map(f => data[f]), data.id];
+      sql = `UPDATE ${table} SET ${fields.map(f => `${f} = ?`).join(', ')} WHERE ${whereClause}`;
+      params = [...fields.map(f => data[f]), ...dataClause];
     } else {
       // INSERT générique  
       const fields = Object.keys(data);
@@ -103,8 +114,19 @@ export class DBManager {
     await this.dbService.run(sql, params);
   }
 
-  async checkIfExists(id: string, table: string): Promise<boolean> {
-    const exists = await this.dbService.get(`SELECT 1 FROM ${table} WHERE id = ?`, [id]);
+  async checkIfExists(item: Record<string, any>, table: string): Promise<boolean> {
+    let whereClause: string;
+    let dataClause: string[];
+    switch(table){
+      case 'exemples':
+        whereClause = 'oeuvre_id = ? AND indice = ?';
+        dataClause  = [item.oeuvre_id, item.indice]; 
+        break;
+      default:
+        whereClause = 'id = ?';
+        dataClause = [item.id];
+    }
+    const exists = await this.dbService.get(`SELECT 1 FROM ${table} WHERE ${whereClause}`, dataClause);
     return !!exists;
   }
   

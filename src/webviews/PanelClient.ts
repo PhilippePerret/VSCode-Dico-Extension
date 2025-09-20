@@ -155,7 +155,9 @@ export class PanelClient<T extends AnyItemType> {
     }
     // Et on l'ajoute au conteneur
     if (before) {
-      this.container.insertBefore(clone, this.accessTable.getObj(before.id));
+      let beforeObj = this.accessTable.getObj(before.id);
+      if (this.minName === 'exemple') { beforeObj = (beforeObj.previousSibling as HTMLDivElement); }
+      this.container.insertBefore(clone, beforeObj);
     } else {
       this.container.appendChild(clone);
     }

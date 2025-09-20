@@ -62,6 +62,9 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
   public panel!: PanelClient<AnyItemType>; // le panneau contenant le formulaire
   private originalData!: {[x: string]: any};
   public saving: boolean = false;
+  // Les propriétés à retirer des données à finalement sauver.
+  // Note: les propriétés isNew et size sont déjà traitées
+  /* surclasser (if any) */ propsToRemove(): string[] {return [];}
 
   // Pour savoir si une édition est en cours
   // if this.form.isActive()
@@ -150,17 +153,33 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
     return false; // enregistrable
   }
 
+  /**
+   * Méthode appelée après confirmation de la sauvegarde.
+   * 
+   * Elle finalise la donnée finale à enregistrer, notamment en 
+   * retirant les propriétés non persistantes.
+   */
   public async onConfirmSave(andQuit: boolean): Promise<void> {
     console.log("Sauvegarde confirmée");
     const fakeItem = this.collectValues();
     // Données persistantes
     const data2save: Tdb = structuredClone(this.editedItem.original) as Tdb;
     Object.assign(data2save, this.editedItem.data2save);
-    Object.assign(data2save, {isNew: undefined, size: undefined});
-    await this.onSaveEditedItem(data2save);
+    // Données particulières à retirer
+    const removedProps = ['isNew','size'];
+    removedProps.push(...this.propsToRemove());
+    console.log("Propriétés à remover", removedProps);
+    const data2saveEpured = {};
+    for(var k in data2save){
+      if (removedProps.includes(k)) { continue; }
+      Object.assign(data2saveEpured, {[k]: data2save[k]});
+    }
+    console.log("Données FINALES à sauvegarder", structuredClone(data2saveEpured));
+    await this.onSaveEditedItem(data2saveEpured as Tdb);
     this.saving = false;
     if (andQuit) { this.closeForm(); }
   }
+
   private itemIsEmpty(): boolean {
     var isEmpty = true;
     const item = this.editedItem as Record<string, any>;

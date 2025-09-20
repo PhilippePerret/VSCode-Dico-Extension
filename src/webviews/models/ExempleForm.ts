@@ -20,6 +20,9 @@ export class ExempleForm extends FormManager<ExempleType, DBExempleType> {
     // 'i': this.showInfo.bind(this)
   };
 
+  public propsToRemove(): string[] {
+    return ['id'];
+  }
 
   /**
    * Grand méthode de check de l'item.
@@ -65,8 +68,6 @@ export class ExempleForm extends FormManager<ExempleType, DBExempleType> {
       }
     }
 
-    errors.push('Juste pour ne pas enregistrer tout de suite');
-
     // résultat final retourné
     if (errors.length) {
       console.error("Données invalides", errors);
@@ -81,7 +82,7 @@ export class ExempleForm extends FormManager<ExempleType, DBExempleType> {
    * @returns True si tout s'est bien passé
    */
   async onSaveEditedItem(data2save: DBExempleType): Promise<boolean> {
-    console.log("Exemple à sauvegarder", this.editedItem);
+    console.log("Exemple à sauvegarder (item complet)", this.editedItem);
     console.log("Données à sauvegarder", data2save);
     const itemSaver = new ComplexRpc({
       call: Exemple.saveItem.bind(Exemple, data2save)
