@@ -287,18 +287,21 @@
       
       \xC0 tout moment, taper **?** pour afficher l'aide contextuelle.
       
-      ## Backup des donn\xE9es dans fichiers
+      ## Commandes
 
-      Tu peux faire un backup de toutes les donn\xE9es vers des fichiers
-      dans le format JSON, YAML, CSV et simple TEXT. Pour ce faire, deux moyens : 
+      Taper <shortcut>c</shortcut> pour rejoindre la console puis\u2026
 
-      \u2013 Ouvrez un Terminal \xE0 ce dossier et jouer le script <code>ruby ./src/data/export-data.rb</code>.
-      - Taper <code>exportAllData</code> dans la console (<shortcut>c</shortcut> pour rejoindre directement la console).
+      <table>
+      <tr>
+      <td>openSupport</td>
+      <td>\u2026 pour ouvrir le dossier support dans le Finder, qui contient la base et tous les backups.</td>
+      </tr>
+      <tr>
+        <td>exportAllData</td>
+        <td>\u2026 pour faire un export des donn\xE9es dans quatre formats, JSON, YAML, CSV et Simple Text.
+      </tr>
+      </table>
 
-      Pour ouvrir le dossier support contenant la base et les backups : taper <code>openSupport</code> en console:w
-      .
-
-      <button onclick="PanelClient.ici()">Essai fonction Help</button>
       `,
         // Crétation d'un élément
         "create-element": `
@@ -826,14 +829,20 @@
     // Pour actualiser les valeurs dans le DOM
     updateInDom(item) {
       const obj = this.accessTable.getObj(item.id);
+      if (!obj) {
+        this.flash(`Impossible de trouver l'objet DOM de ${item.id}\u2026 Je ne peux pas actualiser l'affichage.`);
+        return false;
+      }
       Object.keys(item.dbData).forEach((prop) => {
         let value = item.dbData[prop];
+        console.log("Actualisation de prop '%s' avec valeur '%s'", prop, value);
         this.setPropValue(obj, item, prop, value);
       });
       Object.keys(item.cachedData).forEach((prop) => {
         let value = item.cachedData[prop];
         this.setPropValue(obj, item, prop, value);
       });
+      return true;
     }
     // Pour peupler le panneau
     populate(accessTable) {

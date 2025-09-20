@@ -57,11 +57,12 @@ export class Oeuvre {
 	 * 
 	 * Sauvegarde de l'œuvre 
 	 */
-	public static async saveItem(params: {CRId: string, item: DBOeuvreType, ok: boolean, errors: any, [x: string]: any}){
+	public static async saveItem(params: {CRId: string, item: DBOeuvreType, ok: boolean, errors: any, itemPrepared: OeuvreType, [x: string]: any}){
 		const dbManager = DBManager.getInstance(App._context);
 		params = await dbManager.saveItemIn('oeuvres', params.item, params, this);
 		let itemPrepared: OeuvreType = this.prepareItemForCache(params.item);
 		itemPrepared = this.finalizeCachedItem(itemPrepared);
+		Object.assign(params, {itemPrepared: itemPrepared});
 		CanalOeuvre.afterSaveItem(params);
 	}
 

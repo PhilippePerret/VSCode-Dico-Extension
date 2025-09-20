@@ -12,7 +12,7 @@ abstract class Rpc {
 
   // Appelée après l'enregistrement de l'item, pour confirmation ou 
   // signalement d'une erreur
-  afterSaveItem(params: {CRId: string, ok: boolean, errors: any, item: any}){
+  afterSaveItem(params: {CRId: string, ok: boolean, errors: any, item: any, itemPrepared: any}){
     // console.log("[ENTENSIONS] Remontée au panneau après sauvegarde Item", params);
     this.rpc.notify('after-saved-item', params);
   }
@@ -134,10 +134,6 @@ class RpcOeuvre extends Rpc {
     this.rpc.notify('display-oeuvre', param);
   }
 
-  afterSaveItem(params: {CRId: string, ok: boolean, errors: any, item: any}){
-    // console.log("[EXTENSION RpcOeuvre] Remontée au panneau après save", params);
-    this.rpc.notify('after-save-item', params);
-  }
 
   // Définition des récepteurs on
   initialize(panel: vscode.WebviewPanel): void {

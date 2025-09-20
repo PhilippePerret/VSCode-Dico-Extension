@@ -257,8 +257,7 @@ export class OeuvreForm extends FormManager<OeuvreType, DBOeuvreType> {
    * @returns True si l'enregistrement a pu se faire correctement.
    */
   async onSaveEditedItem(data2save: DBOeuvreType): Promise<boolean> {
-    console.log("Il faut que j'apprendre à sauver : ", this.editedItem);
-    console.log("Données oeuvre à sauvegarder", data2save);
+    // console.log("Données oeuvre à sauvegarder", data2save);
     const itemSaver = new ComplexRpc({
       call: Oeuvre.saveItem.bind(Oeuvre, data2save) 
     });

@@ -157,20 +157,26 @@ export class PanelClient<T extends AnyItemType> {
   }
 
   // Pour actualiser les valeurs dans le DOM
-  public updateInDom(item: T) {
-    const obj = this.accessTable.getObj(item.id);
+  public updateInDom(item: T): boolean {
+    const obj = this.accessTable.getObj(item.id); // || throwError('item-obj-unfound');
+    if (!obj){
+      this.flash(`Impossible de trouver l'objet DOM de ${item.id}… Je ne peux pas actualiser l'affichage.`, 'error');
+      return false;
+    }
     // Régler les props
     // (maintenant, elles peuvent se trouver dans dbData, qui 
     // contient les données persistantes, ou dans cachedData, qui
     // contient les données formatées)
     Object.keys(item.dbData).forEach((prop: string) => {
       let value = ((item.dbData as unknown) as Record<string, string>)[prop] as string;
+      // console.log("Actualisation de prop '%s' avec valeur '%s'", prop, value);
       this.setPropValue(obj, item, prop, value);
     });
     Object.keys(item.cachedData).forEach((prop: string) => {
       let value = ((item.cachedData as unknown) as Record<string, string>)[prop] as string;
       this.setPropValue(obj, item, prop, value);
     });
+    return true;
   }
 
   // Pour peupler le panneau

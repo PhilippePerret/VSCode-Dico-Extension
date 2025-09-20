@@ -53,7 +53,7 @@ export class Entry {
 	/**
 	 * Sauvegarde de l'entrée
 	 */
-	public static async saveItem(params: {CRId: string, item: DBEntryType, ok: boolean, errors: any, [x: string]: any}){
+	public static async saveItem(params: {CRId: string, item: DBEntryType, itemPrepared: EntryType, ok: boolean, errors: any, [x: string]: any}){
 		const dbManager = DBManager.getInstance(App._context);
 		params = await dbManager.saveItemIn('entrees', params.item, params, this);
 		let itemPrepared: EntryType = this.prepareItemForCache(params.item);

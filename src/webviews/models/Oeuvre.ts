@@ -83,7 +83,7 @@ export class Oeuvre extends ClientItem<OeuvreType> {
     RpcOeuvre.notify('save-item', {CRId: compRpcId, item: item});
   }
 
-  public static onSavedItem(params: {CRId: string, ok: boolean, errors: any, item: DBOeuvreType, itemPrepared: EntryType}){
+  public static onSavedItem(params: {CRId: string, ok: boolean, errors: any, item: DBOeuvreType, itemPrepared: OeuvreType}){
     // console.log("[CLIENT OEUVRE] Retour dans le panneau des oeuvres", params);
     ComplexRpc.resolveRequest(params.CRId, params);
   }
@@ -152,8 +152,8 @@ RpcOeuvre.on('check-oeuvres', (params) => {
   RpcOeuvre.notify('check-oeuvres-resultat', { CRId: params.CRId, resultat: resultat });
 });
 
-RpcOeuvre.on('after-save-item', (params) => {
-  console.log("[CLIENT Oeuvre] Réception du after-save-item", params);
+RpcOeuvre.on('after-saved-item', (params) => {
+  console.log("[CLIENT Oeuvre] Réception du after-saved-item", params);
   Oeuvre.onSavedItem(params);
 });
 
