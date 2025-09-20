@@ -6,6 +6,7 @@ export interface FormProperty {
   propName: string;
   type: typeof String | typeof Number | typeof Boolean;
   required: boolean;
+  no_shortcut?: boolean;
   fieldType: 'text' | 'select' | 'textarea' | 'checkbox' | 'radio';
   field?: any; // renseigné à la vérificatiaon
   values?: string[][];
@@ -376,9 +377,15 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
   
   focusField(indice: number) {
     const dproperty = this.properties[indice - 1];
-    if (!dproperty) { return; }
-    // console.log("[focusField] Focus dans le champ %i (%s)", indice, dproperty.propName, dproperty.field);
-    dproperty.field.focus();
+    let curIndice = 0;
+    let foundProp: FormProperty | undefined = undefined;
+    this.properties.forEach((dprop) => {
+      if (foundProp) {return; /* accélérateur… */}
+      if (dprop.no_shortcut) { return; }
+      curIndice ++;
+      if ( curIndice === indice) { foundProp = dprop; }
+    });
+    if (foundProp) { (foundProp as FormProperty).field.focus(); }
   }
 
   // S'il y a un champ d'identifiant, cette fonction permet de le déloquer
@@ -415,7 +422,12 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
       const container = this.obj.querySelector(`#${prefprop}-container`);
       if (container) {
         const label = ((container as HTMLElement).querySelector('label') as HTMLElement);
-        const shortcut = '<shortcut>' + lettres.pop() + '</shortcut> ';
+        let shortcut: string;
+        if (dproperty.no_shortcut) {
+          shortcut = '';
+        } else {
+          shortcut = '<shortcut>' + lettres.pop() + '</shortcut> ';
+        }
         label.innerHTML = shortcut + label.innerHTML;
         Object.assign(dproperty, { container: container });
       } else {

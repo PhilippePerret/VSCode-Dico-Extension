@@ -6,9 +6,9 @@ export class ExempleForm extends FormManager<ExempleType, DBExempleType> {
   formId = 'exemple-form';
   prefix = 'exemple';
   properties: FormProperty[] = [
-    {propName: 'id', type: String, required: true, fieldType: 'text', locked: true},
-    {propName: 'entry_id', type: String, required: true, fieldType: 'text'},
-    {propName: 'oeuvre_id', type: String, required: true, fieldType: 'text'},
+    {propName: 'id', type: String, required: true, fieldType: 'text', locked: true, no_shortcut: true},
+    {propName: 'entry_id', type: String, required: true, fieldType: 'text', no_shortcut: true},
+    {propName: 'oeuvre_id', type: String, required: true, fieldType: 'text', no_shortcut: true},
     {propName: 'content', type: String, required: true, fieldType: 'textarea'},
     {propName: 'notes', type: String, required: true, fieldType: 'textarea'},
   ];

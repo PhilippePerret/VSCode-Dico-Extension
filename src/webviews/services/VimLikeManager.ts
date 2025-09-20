@@ -253,7 +253,7 @@ export class VimLikeManager {
     if ( this.form.saving === true ) { return; }
     if (ev.metaKey) { return this.onKeyDownWithMeta(ev); }
     switch (ev.key) {
-      case 'a': // focusser dans premier champ
+      case 'a': // focusser dans premier champ (avec shortcut)
         this.form.focusField(1); break;
       case 'b': // focusser dans le second champ
         this.form.focusField(2); break;

@@ -1721,10 +1721,23 @@
     }
     focusField(indice) {
       const dproperty = this.properties[indice - 1];
-      if (!dproperty) {
-        return;
+      let curIndice = 0;
+      let foundProp = void 0;
+      this.properties.forEach((dprop) => {
+        if (foundProp) {
+          return;
+        }
+        if (dprop.no_shortcut) {
+          return;
+        }
+        curIndice++;
+        if (curIndice === indice) {
+          foundProp = dprop;
+        }
+      });
+      if (foundProp) {
+        foundProp.field.focus();
       }
-      dproperty.field.focus();
     }
     // S'il y a un champ d'identifiant, cette fonction permet de le déloquer
     toggleIdLock() {
@@ -1759,7 +1772,12 @@
         const container = this.obj.querySelector(`#${prefprop}-container`);
         if (container) {
           const label = container.querySelector("label");
-          const shortcut = "<shortcut>" + lettres.pop() + "</shortcut>\xA0";
+          let shortcut;
+          if (dproperty.no_shortcut) {
+            shortcut = "";
+          } else {
+            shortcut = "<shortcut>" + lettres.pop() + "</shortcut>\xA0";
+          }
           label.innerHTML = shortcut + label.innerHTML;
           Object.assign(dproperty, { container });
         } else {
@@ -1818,9 +1836,9 @@
     formId = "exemple-form";
     prefix = "exemple";
     properties = [
-      { propName: "id", type: String, required: true, fieldType: "text", locked: true },
-      { propName: "entry_id", type: String, required: true, fieldType: "text" },
-      { propName: "oeuvre_id", type: String, required: true, fieldType: "text" },
+      { propName: "id", type: String, required: true, fieldType: "text", locked: true, no_shortcut: true },
+      { propName: "entry_id", type: String, required: true, fieldType: "text", no_shortcut: true },
+      { propName: "oeuvre_id", type: String, required: true, fieldType: "text", no_shortcut: true },
       { propName: "content", type: String, required: true, fieldType: "textarea" },
       { propName: "notes", type: String, required: true, fieldType: "textarea" }
     ];
