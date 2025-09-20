@@ -175,7 +175,7 @@ class ExemplePanelClass extends PanelClient<ExempleType> {
 
   public insertInDom(item: ExempleType, before: ExempleType | undefined) {
     super.insertInDom(item, before);
-    if (before && item.dbData.indice === 0) {
+    if (before && item.dbData.indice === 1) {
       this.insertTitleInDom(item);
     }
   }

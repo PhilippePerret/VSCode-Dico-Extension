@@ -2136,7 +2136,6 @@
      * afficher les titres des oeuvres dans le DOM.
      */
     afterDisplayItems(accessTable) {
-      console.log("-> afterDisplayItem");
       let currentOeuvreId = "";
       accessTable.each((item) => {
         const ditem = item;
@@ -2149,7 +2148,7 @@
     }
     insertInDom(item, before) {
       super.insertInDom(item, before);
-      if (before && item.dbData.indice === 0) {
+      if (before && item.dbData.indice === 1) {
         this.insertTitleInDom(item);
       }
     }
@@ -2160,6 +2159,7 @@
      * @param item Le premier exemple de l'oeuvre
      */
     insertTitleInDom(item) {
+      console.log("-> insertTitleInDom avec :", item);
       const oeuvreId = item.dbData.oeuvre_id;
       const obj = document.createElement("h2");
       obj.dataset.id = oeuvreId;
@@ -2175,8 +2175,10 @@
         titre: item.cachedData.oeuvre_titre,
         display: "block"
       };
+      console.log("Nouveau titre:", titre);
       this.BlockTitres.set(titre.id, titre);
       const firstEx = document.querySelector(`main#items > div[data-id="${item.id}"]`);
+      console.log("Insertion du titre x avant y", obj, firstEx);
       this.container.insertBefore(obj, firstEx);
     }
     /**

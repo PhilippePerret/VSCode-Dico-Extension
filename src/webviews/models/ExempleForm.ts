@@ -82,24 +82,21 @@ export class ExempleForm extends FormManager<ExempleType, DBExempleType> {
    * @returns True si tout s'est bien passé
    */
   async onSaveEditedItem(data2save: DBExempleType): Promise<boolean> {
-    console.log("Exemple à sauvegarder (item complet)", this.editedItem);
-    console.log("Données à sauvegarder", data2save);
+    // console.log("Exemple à sauvegarder (item complet)", this.editedItem);
+    // console.log("Données à sauvegarder", data2save);
     const itemSaver = new ComplexRpc({
       call: Exemple.saveItem.bind(Exemple, data2save)
     });
     const res = await itemSaver.run() as {ok: boolean, errors: any, item: DBExempleType, itemPrepared: ExempleType};
-    console.log("res dans onSave de l'exemple", res);
+    // console.log("res dans onSave de l'exemple", res);
     if (res.ok) {
       this.panel.flash('Exemple enregistré avec succès en Db.', 'notice');
       let item: AnyItemType, nextItem: AnyItemType | undefined;
       [item, nextItem] = Exemple.accessTable.upsert(res.itemPrepared);
       if (nextItem /* Quand création d'un nouvel exemple */) {
         this.panel.insertInDom(item, nextItem);
-        // Si c'est l'exemple dans un nouveau film, il faut ajouter le
-        // titre.
-        if ((item.dbData as DBExempleType).indice === 1) {
-          console.warn("Je dois apprendre à ajouter le titre de la nouvelle œuvre.");
-        }
+        // Note : La méthode ajoutera aussi le titre si c'est le premier
+        // exemple
       } else {
         this.panel.updateInDom(item);
       }

@@ -2,7 +2,6 @@
 
 * J'EN SUIS À :
   - Implémenter toute la sauvegarde et création pour les exemples
-    * [BUG] Le titre ne se place pas avant une nouvelle entrée
     * [BUG] Faire fonctionner le fait de pouvoir sélectionner le premier élément d'une liste filtrée.
     * Création depuis l'entrée (E majuscule et confirmation)
     * Création depuis l'œuvre (E majuscule et confirmation)
