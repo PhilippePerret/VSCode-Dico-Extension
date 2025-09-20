@@ -124,7 +124,7 @@ header {
 
 header h2 {
 	position: absolute;
-	top: 27px;
+	top: 16px;
 	left: 4px;
 	margin: 0;
 	font-size: 50px;
@@ -138,7 +138,7 @@ header h2 {
 header div#message {
 	position: absolute;
 	display:block;
-	width: 96%;
+	width: calc(100% - 28px);
 	font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
 	font-size: 11pt;
 	padding: 4px 8px;
@@ -147,6 +147,7 @@ header div#message {
 	overflow-y: auto;
 	background-color: #DDDDDD;
 	z-index: 10;
+	opacity:0.6;
 }
 header div#message div.notice {background-color:lightblue; color:blue;}
 header div#message div.action {background-color: darkorange; color: darkred;}
