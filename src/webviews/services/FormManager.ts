@@ -347,7 +347,7 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
     this.checked = true;
   }
   inscritAideInFooter(){
-    let aide = '<shortcut>q</shortcut> : Renoncer | <shortcut>s</shortcut> : Enregistrer | <shortcut>w</shortcut> : Enregistrer et finir';
+    let aide = '<shortcut>q</shortcut><span>Renoncer</span><shortcut>s</shortcut><span>Enregistrer</span><shortcut>w</shortcut><span>Enregistrer et finir</span>';
     (this.obj.querySelector('div#footer') as HTMLElement).innerHTML = aide;
   }
   checkBoutonsValidity(): boolean {
