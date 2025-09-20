@@ -23,18 +23,21 @@ export class Help {
       
       À tout moment, taper **?** pour afficher l'aide contextuelle.
       
-      ## Backup des données dans fichiers
+      ## Commandes
 
-      Tu peux faire un backup de toutes les données vers des fichiers
-      dans le format JSON, YAML, CSV et simple TEXT. Pour ce faire, deux moyens : 
+      Taper <shortcut>c</shortcut> pour rejoindre la console puis…
 
-      – Ouvrez un Terminal à ce dossier et jouer le script <code>ruby ./src/data/export-data.rb</code>.
-      - Taper <code>exportAllData</code> dans la console (<shortcut>c</shortcut> pour rejoindre directement la console).
+      <table>
+      <tr>
+      <td>openSupport</td>
+      <td>… pour ouvrir le dossier support dans le Finder, qui contient la base et tous les backups.</td>
+      </tr>
+      <tr>
+        <td>exportAllData</td>
+        <td>… pour faire un export des données dans quatre formats, JSON, YAML, CSV et Simple Text.
+      </tr>
+      </table>
 
-      Pour ouvrir le dossier support contenant la base et les backups : taper <code>openSupport</code> en console:w
-      .
-
-      <button onclick="PanelClient.ici()">Essai fonction Help</button>
       `,
       
       // Crétation d'un élément

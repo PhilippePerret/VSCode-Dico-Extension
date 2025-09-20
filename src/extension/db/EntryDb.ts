@@ -1,5 +1,5 @@
 import { DatabaseService } from '../services/db/DatabaseService';
-import { DBEntryType} from '../models/Entry';
+import { DBEntryType} from '../../bothside/types';
 
 export class EntryDb {
 	private dbService: DatabaseService;

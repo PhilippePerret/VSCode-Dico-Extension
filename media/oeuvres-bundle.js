@@ -1,5 +1,22 @@
 "use strict";
 (() => {
+  // src/bothside/StringUtils.ts
+  var StringNormalizer = class {
+    /**
+     * Normalise une chaîne en minuscules
+     */
+    static toLower(text) {
+      return text.toLowerCase();
+    }
+    /**
+     * Normalise une chaîne en supprimant les accents et diacritiques
+     * TODO: À améliorer avec une vraie fonction de normalisation
+     */
+    static rationalize(text) {
+      return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "");
+    }
+  };
+
   // src/bothside/RpcChannel.ts
   var RpcChannel = class {
     constructor(sender, receiver) {
@@ -139,23 +156,6 @@
     // Pour obtenir l'AccKey (ak) de l'item
     static getAccKey(id) {
       return this.accessTable.getAccKey(id);
-    }
-  };
-
-  // src/bothside/StringUtils.ts
-  var StringNormalizer = class {
-    /**
-     * Normalise une chaîne en minuscules
-     */
-    static toLower(text) {
-      return text.toLowerCase();
-    }
-    /**
-     * Normalise une chaîne en supprimant les accents et diacritiques
-     * TODO: À améliorer avec une vraie fonction de normalisation
-     */
-    static rationalize(text) {
-      return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "");
     }
   };
 
@@ -2318,10 +2318,10 @@
       this.panel.context = isNew ? "create-oeuvre" : "edit-oeuvre";
     }
     async checkEditedItem() {
-      const errors = [];
-      let errs;
       const item = this.editedItem;
       const changeset = item.changeset;
+      const errors = [];
+      let errs;
       if (changeset.isNew) {
       }
       const dbData = item.original;
@@ -2335,8 +2335,10 @@
           errors.push("Il faut fournir le titre de l\u2019\u0153uvre original.");
         }
       }
-      if (errs = this.checkAuteurs(changeset.auteurs)) {
-        errors.push("erreurs trouv\xE9s sur les auteurs : " + errs);
+      if (changeset.auteurs !== void 0) {
+        if (errs = this.checkAuteurs(changeset.auteurs)) {
+          errors.push("erreurs trouv\xE9s sur les auteurs : " + errs);
+        }
       }
       if (errors.length) {
         console.error("Donn\xE9es invalides", errors);
@@ -2351,7 +2353,7 @@
      * @returns true/false
      */
     checkAuteurs(auteurs) {
-      let auts = String(auteurs).trim();
+      let auts = auteurs.trim();
       if (auts.length === 0) {
         return "Il faut imp\xE9rativement fournir les autrices et auteurs";
       }
@@ -2507,22 +2509,28 @@
       return proposId;
     }
     /**
+     * ENREGISTREMENT DE L'ŒUVRE
+     * --------------------------
      * 
      * @param item L'oeuvre à enregistrer
      * @returns True si l'enregistrement a pu se faire correctement.
      */
     async onSaveEditedItem(data2save) {
-      const item = this.editedItem;
-      console.log("Il faut que j'apprendre \xE0 sauver : ", item);
-      console.log("Pour le moment je ne fais rien");
-      return false;
+      console.log("Il faut que j'apprendre \xE0 sauver : ", this.editedItem);
+      console.log("Donn\xE9es oeuvre \xE0 sauvegarder", data2save);
       const itemSaver = new ComplexRpc({
-        call: Oeuvre.saveItem.bind(Oeuvre, item)
+        call: Oeuvre.saveItem.bind(Oeuvre, data2save)
       });
       const res = await itemSaver.run();
       if (res.ok) {
-        console.log("Je dois apprendre \xE0 actualiser l'affichage de l'oeuvre ou l'ins\xE9rer.");
         Oeuvre.panel.flash("\u0152uvre enregistr\xE9e avec succ\xE8s.", "notice");
+        let item, nextItem;
+        [item, nextItem] = Oeuvre.accessTable.upsert(res.itemPrepared);
+        if (nextItem) {
+          Oeuvre.panel.insertInDom(item, nextItem);
+        } else {
+          Oeuvre.panel.updateInDom(item);
+        }
       } else {
         console.error("ERREUR LORS DE L'ENREGISTREMENT DE L'OEUVRE", res.errors);
         Oeuvre.panel.flash("Erreur (enregistrement de l\u2019\u0153uvre (voir la console", "error");
@@ -2534,9 +2542,9 @@
   // src/webviews/models/Oeuvre.ts
   var Oeuvre = class _Oeuvre extends ClientItem {
     // Constructor and data access
-    constructor(data) {
-      super(data);
-      this.data = data;
+    constructor(item) {
+      super(item);
+      this.item = item;
     }
     type = "oeuvre";
     static minName = "oeuvre";
@@ -2544,25 +2552,25 @@
     static currentItem;
     // Getters pour accès direct aux propriétés courantes
     get titre_affiche() {
-      return this.data.dbData.titre_affiche;
+      return this.item.dbData.titre_affiche;
     }
     get titre_original() {
-      return this.data.dbData.titre_original;
+      return this.item.dbData.titre_original;
     }
     get titre_francais() {
-      return this.data.dbData.titre_francais;
+      return this.item.dbData.titre_francais;
     }
     get annee() {
-      return this.data.dbData.annee;
+      return this.item.dbData.annee;
     }
     get auteurs() {
-      return this.data.dbData.auteurs;
+      return this.item.dbData.auteurs;
     }
     get notes() {
-      return this.data.dbData.notes;
+      return this.item.dbData.notes;
     }
     get resume() {
-      return this.data.dbData.resume;
+      return this.item.dbData.resume;
     }
     static setAccessTableWithItems(items) {
       this._accessTable = new AccessTable(items);
@@ -2613,10 +2621,9 @@
      * Méthodes pour enregistrer les oeuvres
      */
     static saveItem(item, compRpcId) {
-      RpcOeuvre.notify("save-oeuvre", { CRId: compRpcId, item });
+      RpcOeuvre.notify("save-item", { CRId: compRpcId, item });
     }
-    static onSavedOeuvre(params) {
-      console.log("[CLIENT OEUVRE] Retour dans le panneau des oeuvres", params);
+    static onSavedItem(params) {
       ComplexRpc.resolveRequest(params.CRId, params);
     }
   };
@@ -2674,9 +2681,9 @@
     console.log("r\xE9sultat du check", resultat);
     RpcOeuvre.notify("check-oeuvres-resultat", { CRId: params.CRId, resultat });
   });
-  RpcOeuvre.on("after-save-oeuvre", (params) => {
-    console.log("[CLIENT Oeuvre] R\xE9ception du after-save-oeuvre", params);
-    Oeuvre.onSavedOeuvre(params);
+  RpcOeuvre.on("after-save-item", (params) => {
+    console.log("[CLIENT Oeuvre] R\xE9ception du after-save-item", params);
+    Oeuvre.onSavedItem(params);
   });
   window.Oeuvre = Oeuvre;
 })();

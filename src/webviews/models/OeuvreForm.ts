@@ -58,11 +58,14 @@ export class OeuvreForm extends FormManager<OeuvreType, DBOeuvreType> {
         errors.push('Il faut fournir le titre de l’œuvre original.');
       }
     }
-   
-    if ( errs = this.checkAuteurs(changeset.auteurs)) {
-      errors.push('erreurs trouvés sur les auteurs : ' + errs);
+
+    if (changeset.auteurs !== undefined) {
+      if (errs = this.checkAuteurs(changeset.auteurs)) {
+        errors.push('erreurs trouvés sur les auteurs : ' + errs);
+      }
     }
 
+    // S'il y a des erreurs
     if (errors.length) {
       console.error("Données invalides", errors);
       return errors.join(', ').toLowerCase();

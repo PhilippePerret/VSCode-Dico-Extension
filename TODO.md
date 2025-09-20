@@ -2,6 +2,7 @@
 
 * J'EN SUIS À :
   - Implémenter toute la sauvegarder et création pour les œuvres
+  - Implémenter toute la sauvegarde et création pour les exemples
 
   - Procédure d'ajout ou d'actualisation d'une donnée dans accessTable + Panneau
     [BUG] Réussir à faire passer les choses (demander à Clause)

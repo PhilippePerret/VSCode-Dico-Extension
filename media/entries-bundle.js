@@ -159,375 +159,6 @@
     );
   }
 
-  // src/webviews/services/AccessTable.ts
-  var AccessTable = class {
-    // Table des pointeurs de données
-    keysMap = /* @__PURE__ */ new Map();
-    // Table de toutes les données des items, dans un ordre
-    // d'arrivée jamais changé.
-    arrayItems = [];
-    // Table de la table (pour vérification)
-    _size;
-    // Le premier item, qui doit forcément être le premier chargé
-    _firstItem;
-    get firstItem() {
-      return this._firstItem || (this._firstItem = this.arrayItems[0]);
-    }
-    constructor(items) {
-      this.populateInTable(items);
-    }
-    // après un ajout ou une suppression, par exemple
-    reset() {
-      this._size = null;
-    }
-    get size() {
-      return this._size || (this._size = this.keysMap.size);
-    }
-    isVisible(id) {
-      return this.getAccKey(id).visible === true;
-    }
-    setVisibility(id, state) {
-      const ak = this.getAccKey(id);
-      if (ak.visible !== state) {
-        ak.visible = state;
-        if (ak.obj === void 0) {
-          ak.obj = this.DOMElementOf(id);
-        }
-        const display = state ? "block" : "none";
-        ak.display = display;
-        ak.obj.style.display = display;
-      }
-    }
-    selectNextItem(panel) {
-      const selection = panel.getSelection();
-      let nextId;
-      if (selection) {
-        let nextItemVisible;
-        nextItemVisible = this.getNextVisible(selection);
-        if (nextItemVisible) {
-          nextId = nextItemVisible.id;
-        }
-      }
-      const finalNextId = nextId || this.firstItem.id;
-      panel.select(finalNextId);
-    }
-    selectPrevItem(panel) {
-      const selection = panel.getSelection();
-      let prevId;
-      if (selection) {
-        let prevItemVisible;
-        prevItemVisible = this.getPrevVisible(selection);
-        if (prevItemVisible) {
-          prevId = prevItemVisible.id;
-        }
-      }
-      const finalPrevId = prevId || this.firstItem.id;
-      panel.select(finalPrevId);
-    }
-    getNextVisible(refId) {
-      let ak;
-      let nextAk;
-      while (ak = this.getNextAccKey(refId)) {
-        if (ak.visible) {
-          return this.get(ak.id);
-        }
-      }
-    }
-    getPrevVisible(refId) {
-      let ak;
-      let prevAk;
-      while (ak = this.getPrevAccKey(refId)) {
-        if (ak.visible) {
-          return this.get(ak.id);
-        }
-      }
-    }
-    setSelectState(id, state) {
-      this.getAccKey(id).selected = state;
-    }
-    // @return true si l'élément d'identifiant +id+ existe.
-    exists(id) {
-      return this.keysMap.has(id);
-    }
-    get(id) {
-      return this.arrayItems[this.keysMap.get(id).index];
-    }
-    getByAccKey(ak) {
-      return this.get(ak.id);
-    }
-    /**
-     * Retourne l'objet DOM de l'item en s'assurant qu'il est défini
-     * dans l'AccKey (ce qui n'est pas fait par défaut)
-     */
-    getObj(id) {
-      const ak = this.getAccKey(id);
-      if (!ak) {
-        console.error("Impossible d'obtenir l'AK de l'id '%s'\u2026", id, this.arrayItems);
-      }
-      ak.obj || Object.assign(ak, { obj: this.DOMElementOf(id) });
-      if (!ak.obj) {
-        console.error("Impossible d'obtenir l'objet de l'item '%'\u2026", id);
-      }
-      return ak.obj;
-    }
-    getAccKey(itemId) {
-      return this.keysMap.get(itemId);
-    }
-    /**
-     * Actualise ou Crée le nouvel item Item après son enregistrement.
-     * 
-     * Pour savoir si c'est une création ou une actualisation, il
-     * suffit de voir si l'identifiant est connu de la table (noter
-     * que pour les exemples, il n'y a pas d'identifiant autre que
-     * volatile).
-     * 
-     * Noter que ce sont toujours les données compolètes qui sont
-     * remontées, même pour une actualisation. Car l'actualisation
-     * a pu modifier des données qui servent pour le tri, le formatage,
-     * etc.
-     * 
-     * @returns [<item>, <next item>] Pour soit updater les données pour une
-     * update soit insérer le nouvel élément dans le DOM pour une création
-     * Note : c'est le panneau qui s'en charge.
-     */
-    upsert(item) {
-      console.log("Item re\xE7u par upsert", item);
-      const checkedId = item.id;
-      let cachedItem;
-      if (this.exists(checkedId)) {
-        console.log("C'est une actualisation de l'item ", checkedId);
-        cachedItem = this.get(checkedId);
-        console.log("Actualisation de", this.get(checkedId));
-        Object.assign(cachedItem, item);
-        return [item, void 0];
-      } else {
-        console.log("C'est une cr\xE9ation de l'item", item);
-        return this.createNewAccedableItem(item);
-      }
-    }
-    createNewAccedableItem(newItem) {
-      let nextItem = this.find((compItem) => {
-        return compItem.id > newItem.id;
-      });
-      console.log("Item apr\xE8s", nextItem);
-      let nextItemId, prevItemId, prevItem;
-      let nextAccKey;
-      if (nextItem) {
-        nextItemId = nextItem.id;
-        nextAccKey = this.getAccKey(nextItemId);
-        const prevAccKey = this.getAccKey(nextAccKey.prev);
-        prevItemId = nextAccKey.prev;
-        if (prevItemId) {
-          Object.assign(prevAccKey, { next: newItem.id });
-          Object.assign(nextAccKey, { prev: newItem.id });
-          console.log("Item avant le nouveau", this.get(prevItemId), prevAccKey);
-        }
-      }
-      const arrayIndex = this.arrayItems.length;
-      const newAccKey = this.addInTable(newItem, arrayIndex, nextItemId, prevItemId);
-      console.log("Item nouveau", newItem, newAccKey);
-      console.log("Item apr\xE8s le nouveau", nextItem, nextAccKey);
-      return [newItem, nextItem];
-    }
-    getNextItem(id) {
-      const nextAK = this.getNextAccKey(id);
-      return nextAK ? this.get(nextAK.id) : void 0;
-    }
-    getNextItemByAccKey(ak) {
-      return ak.next ? this.get(ak.next) : void 0;
-    }
-    getPrevItem(id) {
-      const prevAK = this.getPrevAccKey(id);
-      return prevAK ? this.get(prevAK.id) : void 0;
-    }
-    getPrevItemByAccKey(ak) {
-      return ak.prev ? this.get(ak.prev) : void 0;
-    }
-    getNextAccKey(id) {
-      const ak = this.getAccKey(id);
-      return ak.next ? this.getAccKey(ak.next) : void 0;
-    }
-    getNextAccKeyByAccKey(ak) {
-      return ak.next ? this.getNextAccKey(ak.next) : void 0;
-    }
-    getPrevAccKey(id) {
-      const ak = this.getAccKey(id);
-      return ak.prev ? this.getAccKey(ak.prev) : void 0;
-    }
-    getPrevAccKeyByAccKey(ak) {
-      return ak.prev ? this.getPrevAccKey(ak.prev) : void 0;
-    }
-    // Boucle sur tous les éléments (sans retour)
-    each(traverseMethod) {
-      this.eachSince(traverseMethod, this.firstItem.id);
-    }
-    // Boucle depuis l'élément d'identifiant +id+
-    eachSince(traverseMethod, id) {
-      let item = this.get(id);
-      do {
-        if (item) {
-          traverseMethod(item);
-          item = this.getNextItem(item.id);
-        } else {
-          break;
-        }
-      } while (item);
-    }
-    /**
-     * Boucle sur toutes les AcceedableItem (AccKey/ak)
-     */
-    eachAccKey(fnEach) {
-      this.keysMap.forEach(fnEach);
-    }
-    /**
-     * Boucle sur tous les items à partir de l'item d'id +id+ en
-     * collectant une donnée quelconque.
-     */
-    mapSince(traverseMethod, id) {
-      const collected = [];
-      let item = this.get(id);
-      do {
-        if (item) {
-          let retour = traverseMethod(item);
-          collected.push(retour);
-          item = this.getNextItem(item.id);
-        } else {
-          break;
-        }
-      } while (item);
-      return collected;
-    }
-    // Boucle sur TOUTES les données en collectant une donnée
-    map(traverseMethod) {
-      return this.mapSince(traverseMethod, this.firstItem.id);
-    }
-    /**
-     * Méthode qui boucle sur tous les éléments depuis l'élément d'id
-     * +itemId+ et retourne une Map avec en clé l'identifiant de
-     * l'item et en valeur la valeur retournée par la méthode
-     * +traverseMethod+
-     */
-    collectSince(traverseMethod, itemId) {
-      const collected = /* @__PURE__ */ new Map();
-      let item = this.get(itemId);
-      do {
-        if (item) {
-          let retour = traverseMethod(item);
-          collected.set(item.id, retour);
-          item = this.getNextItem(item.id);
-        } else {
-          break;
-        }
-      } while (item);
-      return collected;
-    }
-    // Boucle sur tous les éléments en récoltant une valeur qu'on met
-    // dans une Map qui a en clé l'identifiant de l'item
-    collect(traverseMethod) {
-      return this.collectSince(traverseMethod, this.firstItem.id);
-    }
-    /**
-     * Boucle sur les items, depuis l'item d'identifiant +id+ ou depuis le premier et 
-     * retourne le premier qui répond à la condition +condition+
-     */
-    find(condition) {
-      return this.findAfter(condition, void 0);
-    }
-    findAfter(condition, id) {
-      let item;
-      if (id === void 0) {
-        item = this.firstItem;
-      } else {
-        item = this.getNextItem(id);
-      }
-      let found;
-      do {
-        if (item) {
-          if (condition(item) === true) {
-            found = item;
-            break;
-          }
-          item = this.getNextItem(item.id);
-        }
-      } while (item);
-      return found;
-    }
-    /**
-     * Recherche dans l'ordre tous les éléments répondant à la condition +condition+
-     * 
-     * @param condition Methode qui doit retourner true pour que l'item soit retenu
-     * @param options   Table d'options {count: nombre attendu} 
-     * @returns 
-     */
-    findAll(condition, options) {
-      return this.findAllAfter(condition, void 0, options);
-    }
-    // Idem que précédente mais permet de spécifier le premier élément
-    findAllAfter(condition, id, options) {
-      const collected = [];
-      let collected_count = 0;
-      let item;
-      if (id === void 0) {
-        item = this.firstItem;
-      } else {
-        item = this.getNextItem(id);
-      }
-      do {
-        if (item) {
-          if (condition(item) === true) {
-            collected.push(item);
-            collected_count++;
-            if (options.count && collected_count === options.count) {
-              break;
-            }
-          }
-          item = this.getNextItem(item.id);
-        }
-      } while (item);
-      return collected;
-    }
-    /**
-     * Peuplement de la table d'accès avec création des 'chainedItem'
-     * 
-     * @param items Les éléments transmis, tels que relevés dans les tables (Entry, Oeuvre, Exemple);
-     */
-    // Méthode qui "initie" la table d'accès en transformant chaque
-    // item (Entry, Oeuvre, Exemple) en un AccedableItem, en prenant
-    // son index et son index suivant pour les mettres dans la Map
-    // qui consignes les valeurs d'accès
-    populateInTable(items) {
-      this.keysMap = /* @__PURE__ */ new Map();
-      this.arrayItems = [];
-      for (let i = 0, len = items.length; i < len; ++i) {
-        const item = items[i];
-        const nextItemId = items[i + 1]?.id || void 0;
-        const prevItemId = items[i - 1]?.id || void 0;
-        this.addInTable(item, i, nextItemId, prevItemId);
-      }
-    }
-    // Insertion séparée pour pouvoir ajouter en cours de travail
-    addInTable(item, arrayIndex, nextItemId, prevItemId) {
-      const chained = {
-        type: "accedable-item",
-        id: item.id,
-        obj: void 0,
-        index: arrayIndex,
-        next: nextItemId,
-        prev: prevItemId,
-        visible: true,
-        display: "block",
-        selected: false,
-        modified: false
-      };
-      this.keysMap.set(item.id, chained);
-      this.arrayItems.push(item);
-      return chained;
-    }
-    DOMElementOf(id) {
-      return document.querySelector(`main#items > div[data-id="${id}"]`);
-    }
-  };
-
   // src/webviews/services/App.ts
   var App = class _App {
     /**
@@ -1349,6 +980,375 @@
     }
   };
 
+  // src/webviews/services/AccessTable.ts
+  var AccessTable = class {
+    // Table des pointeurs de données
+    keysMap = /* @__PURE__ */ new Map();
+    // Table de toutes les données des items, dans un ordre
+    // d'arrivée jamais changé.
+    arrayItems = [];
+    // Table de la table (pour vérification)
+    _size;
+    // Le premier item, qui doit forcément être le premier chargé
+    _firstItem;
+    get firstItem() {
+      return this._firstItem || (this._firstItem = this.arrayItems[0]);
+    }
+    constructor(items) {
+      this.populateInTable(items);
+    }
+    // après un ajout ou une suppression, par exemple
+    reset() {
+      this._size = null;
+    }
+    get size() {
+      return this._size || (this._size = this.keysMap.size);
+    }
+    isVisible(id) {
+      return this.getAccKey(id).visible === true;
+    }
+    setVisibility(id, state) {
+      const ak = this.getAccKey(id);
+      if (ak.visible !== state) {
+        ak.visible = state;
+        if (ak.obj === void 0) {
+          ak.obj = this.DOMElementOf(id);
+        }
+        const display = state ? "block" : "none";
+        ak.display = display;
+        ak.obj.style.display = display;
+      }
+    }
+    selectNextItem(panel) {
+      const selection = panel.getSelection();
+      let nextId;
+      if (selection) {
+        let nextItemVisible;
+        nextItemVisible = this.getNextVisible(selection);
+        if (nextItemVisible) {
+          nextId = nextItemVisible.id;
+        }
+      }
+      const finalNextId = nextId || this.firstItem.id;
+      panel.select(finalNextId);
+    }
+    selectPrevItem(panel) {
+      const selection = panel.getSelection();
+      let prevId;
+      if (selection) {
+        let prevItemVisible;
+        prevItemVisible = this.getPrevVisible(selection);
+        if (prevItemVisible) {
+          prevId = prevItemVisible.id;
+        }
+      }
+      const finalPrevId = prevId || this.firstItem.id;
+      panel.select(finalPrevId);
+    }
+    getNextVisible(refId) {
+      let ak;
+      let nextAk;
+      while (ak = this.getNextAccKey(refId)) {
+        if (ak.visible) {
+          return this.get(ak.id);
+        }
+      }
+    }
+    getPrevVisible(refId) {
+      let ak;
+      let prevAk;
+      while (ak = this.getPrevAccKey(refId)) {
+        if (ak.visible) {
+          return this.get(ak.id);
+        }
+      }
+    }
+    setSelectState(id, state) {
+      this.getAccKey(id).selected = state;
+    }
+    // @return true si l'élément d'identifiant +id+ existe.
+    exists(id) {
+      return this.keysMap.has(id);
+    }
+    get(id) {
+      return this.arrayItems[this.keysMap.get(id).index];
+    }
+    getByAccKey(ak) {
+      return this.get(ak.id);
+    }
+    /**
+     * Retourne l'objet DOM de l'item en s'assurant qu'il est défini
+     * dans l'AccKey (ce qui n'est pas fait par défaut)
+     */
+    getObj(id) {
+      const ak = this.getAccKey(id);
+      if (!ak) {
+        console.error("Impossible d'obtenir l'AK de l'id '%s'\u2026", id, this.arrayItems);
+      }
+      ak.obj || Object.assign(ak, { obj: this.DOMElementOf(id) });
+      if (!ak.obj) {
+        console.error("Impossible d'obtenir l'objet de l'item '%'\u2026", id);
+      }
+      return ak.obj;
+    }
+    getAccKey(itemId) {
+      return this.keysMap.get(itemId);
+    }
+    /**
+     * Actualise ou Crée le nouvel item Item après son enregistrement.
+     * 
+     * Pour savoir si c'est une création ou une actualisation, il
+     * suffit de voir si l'identifiant est connu de la table (noter
+     * que pour les exemples, il n'y a pas d'identifiant autre que
+     * volatile).
+     * 
+     * Noter que ce sont toujours les données compolètes qui sont
+     * remontées, même pour une actualisation. Car l'actualisation
+     * a pu modifier des données qui servent pour le tri, le formatage,
+     * etc.
+     * 
+     * @returns [<item>, <next item>] Pour soit updater les données pour une
+     * update soit insérer le nouvel élément dans le DOM pour une création
+     * Note : c'est le panneau qui s'en charge.
+     */
+    upsert(item) {
+      console.log("Item re\xE7u par upsert", item);
+      const checkedId = item.id;
+      let cachedItem;
+      if (this.exists(checkedId)) {
+        console.log("C'est une actualisation de l'item ", checkedId);
+        cachedItem = this.get(checkedId);
+        console.log("Actualisation de", this.get(checkedId));
+        Object.assign(cachedItem, item);
+        return [item, void 0];
+      } else {
+        console.log("C'est une cr\xE9ation de l'item", item);
+        return this.createNewAccedableItem(item);
+      }
+    }
+    createNewAccedableItem(newItem) {
+      let nextItem = this.find((compItem) => {
+        return compItem.id > newItem.id;
+      });
+      console.log("Item apr\xE8s", nextItem);
+      let nextItemId, prevItemId, prevItem;
+      let nextAccKey;
+      if (nextItem) {
+        nextItemId = nextItem.id;
+        nextAccKey = this.getAccKey(nextItemId);
+        const prevAccKey = this.getAccKey(nextAccKey.prev);
+        prevItemId = nextAccKey.prev;
+        if (prevItemId) {
+          Object.assign(prevAccKey, { next: newItem.id });
+          Object.assign(nextAccKey, { prev: newItem.id });
+          console.log("Item avant le nouveau", this.get(prevItemId), prevAccKey);
+        }
+      }
+      const arrayIndex = this.arrayItems.length;
+      const newAccKey = this.addInTable(newItem, arrayIndex, nextItemId, prevItemId);
+      console.log("Item nouveau", newItem, newAccKey);
+      console.log("Item apr\xE8s le nouveau", nextItem, nextAccKey);
+      return [newItem, nextItem];
+    }
+    getNextItem(id) {
+      const nextAK = this.getNextAccKey(id);
+      return nextAK ? this.get(nextAK.id) : void 0;
+    }
+    getNextItemByAccKey(ak) {
+      return ak.next ? this.get(ak.next) : void 0;
+    }
+    getPrevItem(id) {
+      const prevAK = this.getPrevAccKey(id);
+      return prevAK ? this.get(prevAK.id) : void 0;
+    }
+    getPrevItemByAccKey(ak) {
+      return ak.prev ? this.get(ak.prev) : void 0;
+    }
+    getNextAccKey(id) {
+      const ak = this.getAccKey(id);
+      return ak.next ? this.getAccKey(ak.next) : void 0;
+    }
+    getNextAccKeyByAccKey(ak) {
+      return ak.next ? this.getNextAccKey(ak.next) : void 0;
+    }
+    getPrevAccKey(id) {
+      const ak = this.getAccKey(id);
+      return ak.prev ? this.getAccKey(ak.prev) : void 0;
+    }
+    getPrevAccKeyByAccKey(ak) {
+      return ak.prev ? this.getPrevAccKey(ak.prev) : void 0;
+    }
+    // Boucle sur tous les éléments (sans retour)
+    each(traverseMethod) {
+      this.eachSince(traverseMethod, this.firstItem.id);
+    }
+    // Boucle depuis l'élément d'identifiant +id+
+    eachSince(traverseMethod, id) {
+      let item = this.get(id);
+      do {
+        if (item) {
+          traverseMethod(item);
+          item = this.getNextItem(item.id);
+        } else {
+          break;
+        }
+      } while (item);
+    }
+    /**
+     * Boucle sur toutes les AcceedableItem (AccKey/ak)
+     */
+    eachAccKey(fnEach) {
+      this.keysMap.forEach(fnEach);
+    }
+    /**
+     * Boucle sur tous les items à partir de l'item d'id +id+ en
+     * collectant une donnée quelconque.
+     */
+    mapSince(traverseMethod, id) {
+      const collected = [];
+      let item = this.get(id);
+      do {
+        if (item) {
+          let retour = traverseMethod(item);
+          collected.push(retour);
+          item = this.getNextItem(item.id);
+        } else {
+          break;
+        }
+      } while (item);
+      return collected;
+    }
+    // Boucle sur TOUTES les données en collectant une donnée
+    map(traverseMethod) {
+      return this.mapSince(traverseMethod, this.firstItem.id);
+    }
+    /**
+     * Méthode qui boucle sur tous les éléments depuis l'élément d'id
+     * +itemId+ et retourne une Map avec en clé l'identifiant de
+     * l'item et en valeur la valeur retournée par la méthode
+     * +traverseMethod+
+     */
+    collectSince(traverseMethod, itemId) {
+      const collected = /* @__PURE__ */ new Map();
+      let item = this.get(itemId);
+      do {
+        if (item) {
+          let retour = traverseMethod(item);
+          collected.set(item.id, retour);
+          item = this.getNextItem(item.id);
+        } else {
+          break;
+        }
+      } while (item);
+      return collected;
+    }
+    // Boucle sur tous les éléments en récoltant une valeur qu'on met
+    // dans une Map qui a en clé l'identifiant de l'item
+    collect(traverseMethod) {
+      return this.collectSince(traverseMethod, this.firstItem.id);
+    }
+    /**
+     * Boucle sur les items, depuis l'item d'identifiant +id+ ou depuis le premier et 
+     * retourne le premier qui répond à la condition +condition+
+     */
+    find(condition) {
+      return this.findAfter(condition, void 0);
+    }
+    findAfter(condition, id) {
+      let item;
+      if (id === void 0) {
+        item = this.firstItem;
+      } else {
+        item = this.getNextItem(id);
+      }
+      let found;
+      do {
+        if (item) {
+          if (condition(item) === true) {
+            found = item;
+            break;
+          }
+          item = this.getNextItem(item.id);
+        }
+      } while (item);
+      return found;
+    }
+    /**
+     * Recherche dans l'ordre tous les éléments répondant à la condition +condition+
+     * 
+     * @param condition Methode qui doit retourner true pour que l'item soit retenu
+     * @param options   Table d'options {count: nombre attendu} 
+     * @returns 
+     */
+    findAll(condition, options) {
+      return this.findAllAfter(condition, void 0, options);
+    }
+    // Idem que précédente mais permet de spécifier le premier élément
+    findAllAfter(condition, id, options) {
+      const collected = [];
+      let collected_count = 0;
+      let item;
+      if (id === void 0) {
+        item = this.firstItem;
+      } else {
+        item = this.getNextItem(id);
+      }
+      do {
+        if (item) {
+          if (condition(item) === true) {
+            collected.push(item);
+            collected_count++;
+            if (options.count && collected_count === options.count) {
+              break;
+            }
+          }
+          item = this.getNextItem(item.id);
+        }
+      } while (item);
+      return collected;
+    }
+    /**
+     * Peuplement de la table d'accès avec création des 'chainedItem'
+     * 
+     * @param items Les éléments transmis, tels que relevés dans les tables (Entry, Oeuvre, Exemple);
+     */
+    // Méthode qui "initie" la table d'accès en transformant chaque
+    // item (Entry, Oeuvre, Exemple) en un AccedableItem, en prenant
+    // son index et son index suivant pour les mettres dans la Map
+    // qui consignes les valeurs d'accès
+    populateInTable(items) {
+      this.keysMap = /* @__PURE__ */ new Map();
+      this.arrayItems = [];
+      for (let i = 0, len = items.length; i < len; ++i) {
+        const item = items[i];
+        const nextItemId = items[i + 1]?.id || void 0;
+        const prevItemId = items[i - 1]?.id || void 0;
+        this.addInTable(item, i, nextItemId, prevItemId);
+      }
+    }
+    // Insertion séparée pour pouvoir ajouter en cours de travail
+    addInTable(item, arrayIndex, nextItemId, prevItemId) {
+      const chained = {
+        type: "accedable-item",
+        id: item.id,
+        obj: void 0,
+        index: arrayIndex,
+        next: nextItemId,
+        prev: prevItemId,
+        visible: true,
+        display: "block",
+        selected: false,
+        modified: false
+      };
+      this.keysMap.set(item.id, chained);
+      this.arrayItems.push(item);
+      return chained;
+    }
+    DOMElementOf(id) {
+      return document.querySelector(`main#items > div[data-id="${id}"]`);
+    }
+  };
+
   // src/bothside/UConstants.ts
   var Constants = class {
     static ENTRIES_GENRES = {
@@ -1829,11 +1829,12 @@
     }
     // À faire juste après la mise en édition d'une Entrée
     afterEdit() {
-      const id = this.field("id").value;
-      const isNewItem = id === "";
-      if (isNewItem) {
+      const id = this.getValueOf("id");
+      const isNew = id === "";
+      if (isNew) {
         this.setIdLock(false);
       }
+      this.panel.context = isNew ? "create-entry" : "edit-entry";
     }
     /**
      * Grand méthode de check de la validité de l'item. On ne l'envoie
@@ -1841,15 +1842,16 @@
      */
     async checkEditedItem() {
       const item = this.editedItem;
+      const changeset = item.changeset;
       const isNew = item.changeset.isNew;
       const errors = [];
       this.diverseChecks(item.changeset, errors);
-      if (item.changeset.definiition !== void 0) {
-        const unknownOeuvres = await this.checkExistenceOeuvres(item.changeset.definition);
+      if (changeset.definiition !== void 0) {
+        const unknownOeuvres = await this.checkExistenceOeuvres(changeset.definition);
         if (unknownOeuvres.length) {
           errors.push(`des \u0153uvres sont introuvables : ${unknownOeuvres.map((t) => `"${t}"`).join(", ")}`);
         }
-        const unknownEx = await this.checkExistenceExemples(item.changeset.definition);
+        const unknownEx = await this.checkExistenceExemples(changeset.definition);
         if (unknownEx.length) {
           errors.push(`des exemples sont introuvables: ${unknownEx.join(", ")}`);
         }
@@ -2017,7 +2019,7 @@
       const res = await itemSaver.run();
       console.log("res dans onSave", res);
       if (res.ok) {
-        Entry.panel.flash("Item enregistr\xE9 avec succ\xE8s en DB.", "notice");
+        Entry.panel.flash("Entr\xE9e enregistr\xE9e avec succ\xE8s en DB.", "notice");
         let item, nextItem;
         [item, nextItem] = Entry.accessTable.upsert(res.itemPrepared);
         if (nextItem) {
@@ -2174,6 +2176,5 @@
     Entry.onSavedItem(params);
   });
   window.Entry = Entry;
-  window.RpcEntry = RpcEntry;
 })();
 //# sourceMappingURL=entries-bundle.js.map
