@@ -72,10 +72,10 @@ export class Entry extends ClientItem<EntryType> {
     RpcEntry.notify('save-item', {CRId: compRpcId, item: item});
   }
 
-  public static onSavedItem(params: {CRId: string, ok: boolean, error: any, item: DBEntryType, itemPrepared: EntryType}){
-    // console.log("[CLIENT ENTRY] Retour dans le panneau Entry avec le résultat de l'enregistrement", params);
-    ComplexRpc.resolveRequest(params.CRId, params);
-  }
+  // public static onSavedItem(params: {CRId: string, ok: boolean, error: any, item: DBEntryType, itemPrepared: EntryType}){
+  //   // console.log("[CLIENT ENTRY] Retour dans le panneau Entry avec le résultat de l'enregistrement", params);
+  //   ComplexRpc.resolveRequest(params.CRId, params);
+  // }
 
 }// class Entry
 
@@ -211,7 +211,9 @@ RpcEntry.on('check-exemples-resultat', (params: {CRId: string, resultat: {known:
 
 RpcEntry.on('after-saved-item', (params) => {
   console.log("[CLIENT Entry] Réception du after-saved-item", params);
-  Entry.onSavedItem(params);
+  // Entry.onSavedItem(params);
+  ComplexRpc.resolveRequest(params.CRId, params);
+
 });
 
 // Pour exposer globalement

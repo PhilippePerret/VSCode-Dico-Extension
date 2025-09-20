@@ -181,9 +181,11 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
   dispatchValues(item: T){
     this.reset();
     const itemVals = item as {[x: string]: any};
+    console.log("item à dispatcher", item);
+    console.log("Traformés en record", itemVals);
     this.properties.forEach( dprop => {
       const prop = dprop.propName;
-      const value = itemVals.dbData[prop] || itemVals.cachedData[prop];
+      const value = itemVals.dbData && (itemVals.dbData[prop] || itemVals.cachedData[prop]);
       if ( value ) { 
         // console.log("Propriété %s mise à %s", prop, data[prop]);
         this.setValueOf(prop, String(value));

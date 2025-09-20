@@ -1428,6 +1428,41 @@
     }
   };
 
+  // src/webviews/services/ComplexRpc.ts
+  var ComplexRpc = class _ComplexRpc {
+    static requestTable = /* @__PURE__ */ new Map();
+    static addRequest(req) {
+      this.requestTable.set(req.id, req);
+    }
+    // À appeler à la fin, pour résoudre
+    static resolveRequest(requestId, params) {
+      this.requestTable.get(requestId).resolve(params);
+    }
+    id;
+    call;
+    // Fonction qui va lancer l'appel (reçoit en DERNIER argument l'identifiant de cette instance — pour le transmettre)
+    ok;
+    // le 'resolve' de new Promise((resolve, reject) => {})
+    ko;
+    // le reject de new Promise((resolve,reject) => {})
+    constructor(param) {
+      this.id = crypto.randomUUID();
+      this.call = param.call;
+      _ComplexRpc.addRequest(this);
+    }
+    run() {
+      return new Promise((ok, ko) => {
+        this.ok = ok;
+        this.ko = ko;
+        setTimeout(this.ko.bind(this, "timeout-20"), 10 * 1e4);
+        this.call(this.id);
+      });
+    }
+    resolve(params) {
+      this.ok(params);
+    }
+  };
+
   // src/webviews/services/FormManager.ts
   var FormManager = class {
     // table des raccourcis propres
@@ -1558,9 +1593,11 @@
     dispatchValues(item) {
       this.reset();
       const itemVals = item;
+      console.log("item \xE0 dispatcher", item);
+      console.log("Traform\xE9s en record", itemVals);
       this.properties.forEach((dprop) => {
         const prop = dprop.propName;
-        const value = itemVals.dbData[prop] || itemVals.cachedData[prop];
+        const value = itemVals.dbData && (itemVals.dbData[prop] || itemVals.cachedData[prop]);
         if (value) {
           this.setValueOf(prop, String(value));
           if (dprop.locked) {
@@ -1863,7 +1900,40 @@
      * @returns undefined si la donnée est valide ou le string du message d'erreur dans le cas contraire.
      */
     async checkEditedItem() {
-      return "Les donn\xE9es ne sont pas check\xE9s";
+      const item = this.editedItem;
+      const changeset = item.changeset;
+      const isNew = item.changeset.isNew;
+      const errors = [];
+      if (changeset.oeuvre_id !== void 0) {
+        if (changeset.oeuvre_id === "") {
+          errors.push("L\u2019\u0153uvre de l\u2019exemple doit \xEAtre d\xE9finie. (\u21E7?)");
+        }
+      }
+      if (changeset.entry_id !== void 0) {
+        if (changeset.entry_id === "") {
+          errors.push("L\u2019entr\xE9e de l\u2019exemple doit \xEAtre d\xE9finie. (\u21E7?)");
+        }
+      }
+      if (changeset.content !== void 0) {
+        if (changeset.content === "") {
+          errors.push("Il faut imp\xE9rativement d\xE9crire l'exemple");
+        } else if (changeset.content.length < 30) {
+          errors.push("Cet description d\u2019exemple me parait trop courte\u2026 (ajouter &lt;!-- force content --&gt; pour forcer)");
+        }
+      }
+      if (void 0 === item.original.indice) {
+        if (isNew) {
+          const indice = Exemple.getNextIndiceForOeuvre(changeset.oeuvre_id);
+          Object.assign(changeset, { indice });
+        } else {
+          this.panel.flash("GRAVE PROBL\xC8ME : L'indice devrait \xEAtre d\xE9j\xE0 d\xE9fini, pour un exemple d\xE9j\xE0 sauvegard\xE9\u2026", "error");
+        }
+      }
+      errors.push("Juste pour ne pas enregistrer tout de suite");
+      if (errors.length) {
+        console.error("Donn\xE9es invalides", errors);
+        return errors.join(", ").toLowerCase();
+      }
     }
     /**
      * Méthode pour enregistrer les données si elles ont été modifiées.
@@ -1872,8 +1942,30 @@
      * @returns True si tout s'est bien passé
      */
     async onSaveEditedItem(data2save) {
-      console.log("Il faut que j'apprendre \xE0 sauver l'exemple : ", this.editedItem);
-      console.log("Donn\xE9es \xE0 sauver", data2save);
+      console.log("Exemple \xE0 sauvegarder", this.editedItem);
+      console.log("Donn\xE9es \xE0 sauvegarder", data2save);
+      const itemSaver = new ComplexRpc({
+        call: Exemple.saveItem.bind(Exemple, data2save)
+      });
+      const res = await itemSaver.run();
+      console.log("res dans onSave de l'exemple", res);
+      if (res.ok) {
+        this.panel.flash("Exemple enregistr\xE9 avec succ\xE8s en Db.", "notice");
+        let item, nextItem;
+        [item, nextItem] = Exemple.accessTable.upsert(res.itemPrepared);
+        if (nextItem) {
+          this.panel.insertInDom(item, nextItem);
+          if (item.dbData.indice === 1) {
+            console.warn("Je dois apprendre \xE0 ajouter le titre de la nouvelle \u0153uvre.");
+          }
+        } else {
+          this.panel.updateInDom(item);
+        }
+      } else {
+        console.error("ERREURS \xC0 L'ENREGISTREMENT DE L'EXEMPLE", res.errors);
+        this.panel.flash("Erreur (\xE0 l\u2019enregistre de l\u2019exemple \u2014 voir la console)", "error");
+        return false;
+      }
       return true;
     }
     // Pour observer le formulaire
@@ -1939,6 +2031,34 @@
     }
     static exempleExists(oeuvreId, exIndice) {
       return !!this.accessTable.exists(`${oeuvreId}-${exIndice}`);
+    }
+    /**
+     * Méthode pour enregistrer l'item dans la table
+     * 
+     * 
+     */
+    static saveItem(item, compRpcId) {
+      RpcEx.notify("save-item", { CRId: compRpcId, item });
+    }
+    /**
+     * Fonction qui retourne un indice libre pour un nouvel exemple.
+     * 
+     * (note : cet indice est attribué à la fin de l'édition, au moment 
+     * de la validation de l'exemple).
+     * 
+     * @param oeuvreId Identifiant de l'oeuvre
+     * @returns L'indice pour le nouvel exemple.
+     */
+    static getNextIndiceForOeuvre(oeuvreId) {
+      let indice = 0;
+      this.accessTable.each((item) => {
+        if (item.dbData.oeuvre_id === oeuvreId) {
+          if (indice < item.dbData.indice) {
+            indice = Number(item.dbData.indice);
+          }
+        }
+      });
+      return indice + 1;
     }
   };
   var ExemplePanelClass = class extends PanelClient {
@@ -2130,6 +2250,10 @@
     } else {
       ExemplePanel.flash("Aucun exemple n\u2019est en \xE9dition\u2026", "error");
     }
+  });
+  RpcEx.on("after-saved-item", (params) => {
+    console.log("[CLIENT Exemple] R\xE9ception du after-saved-item", params);
+    ComplexRpc.resolveRequest(params.CRId, params);
   });
   window.Exemple = Exemple;
 })();

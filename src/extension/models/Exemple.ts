@@ -16,6 +16,19 @@ export class Exemple {
 	protected static _cacheManagerInstance: UniversalCacheManager<DBExempleType, ExempleType> = new UniversalCacheManager();
   protected static get cache() { return this._cacheManagerInstance; };
 
+	/**
+	 * Sauvegarde de l'exemple
+	 */
+	public static async saveItem(params: {CRId: string, item: DBExempleType, itemPrepared: ExempleType, ok: boolean, errors: any, [x: string]: any}){
+		const dbManager = DBManager.getInstance(App._context);
+		params = await dbManager.saveItemIn('exemples', params.item, params, this);
+		let itemPrepared: ExempleType = this.prepareItemForCache(params.item);
+		itemPrepared = this.finalizeCachedItem(itemPrepared);
+		Object.assign(params, {itemPrepared: itemPrepared});
+		CanalExemple.afterSaveItem(params);
+	}
+
+
 	// Constructor and data access
 	constructor(public data: ExempleType) {
 		// console.log("data dans constructor Exemple", structuredClone(data));

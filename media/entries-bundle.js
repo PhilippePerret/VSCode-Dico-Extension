@@ -1623,9 +1623,11 @@
     dispatchValues(item) {
       this.reset();
       const itemVals = item;
+      console.log("item \xE0 dispatcher", item);
+      console.log("Traform\xE9s en record", itemVals);
       this.properties.forEach((dprop) => {
         const prop = dprop.propName;
-        const value = itemVals.dbData[prop] || itemVals.cachedData[prop];
+        const value = itemVals.dbData && (itemVals.dbData[prop] || itemVals.cachedData[prop]);
         if (value) {
           this.setValueOf(prop, String(value));
           if (dprop.locked) {
@@ -1949,7 +1951,6 @@
     async checkEditedItem() {
       const item = this.editedItem;
       const changeset = item.changeset;
-      const isNew = item.changeset.isNew;
       const errors = [];
       this.diverseChecks(item.changeset, errors);
       if (changeset.definiition !== void 0) {
@@ -2136,6 +2137,7 @@
       } else {
         console.error("ERREURS LORS DE L'ENREGISTREMENT DE L'ITEM", res.errors);
         Entry.panel.flash("Erreur (enregistrement de l\u2019entr\xE9e (voir la console", "error");
+        return false;
       }
       return true;
     }
@@ -2211,9 +2213,10 @@
     static saveItem(item, compRpcId) {
       RpcEntry.notify("save-item", { CRId: compRpcId, item });
     }
-    static onSavedItem(params) {
-      ComplexRpc.resolveRequest(params.CRId, params);
-    }
+    // public static onSavedItem(params: {CRId: string, ok: boolean, error: any, item: DBEntryType, itemPrepared: EntryType}){
+    //   // console.log("[CLIENT ENTRY] Retour dans le panneau Entry avec le résultat de l'enregistrement", params);
+    //   ComplexRpc.resolveRequest(params.CRId, params);
+    // }
   };
   var EntryPanelClass = class extends PanelClient {
     get accessTable() {
@@ -2304,7 +2307,7 @@
   });
   RpcEntry.on("after-saved-item", (params) => {
     console.log("[CLIENT Entry] R\xE9ception du after-saved-item", params);
-    Entry.onSavedItem(params);
+    ComplexRpc.resolveRequest(params.CRId, params);
   });
   window.Entry = Entry;
 })();

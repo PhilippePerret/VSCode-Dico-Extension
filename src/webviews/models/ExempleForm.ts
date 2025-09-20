@@ -1,5 +1,7 @@
-import { DBExempleType, ExempleType } from "../../bothside/types";
+import { AnyItemType, DBExempleType, ExempleType } from "../../bothside/types";
+import { ComplexRpc } from "../services/ComplexRpc";
 import { FormManager, FormProperty } from "../services/FormManager";
+import { Exemple } from "./Exemple";
 
 
 export class ExempleForm extends FormManager<ExempleType, DBExempleType> {
@@ -29,7 +31,47 @@ export class ExempleForm extends FormManager<ExempleType, DBExempleType> {
    * @returns undefined si la donnée est valide ou le string du message d'erreur dans le cas contraire.
    */
   async checkEditedItem(): Promise<string | undefined> {
-    return 'Les données ne sont pas checkés';
+    const item = this.editedItem;
+    const changeset = item.changeset;
+    const isNew = item.changeset.isNew;
+    const errors: string[] = [];
+
+    // L'identifiant de l'œuvre doit être défini
+    if ( changeset.oeuvre_id !== undefined ) {
+      if (changeset.oeuvre_id === '') {errors.push("L’œuvre de l’exemple doit être définie. (⇧?)");} 
+    }
+
+    // L'identifiant de l'entrée doit être défini
+    if ( changeset.entry_id !== undefined) {
+      if (changeset.entry_id === '') {errors.push("L’entrée de l’exemple doit être définie. (⇧?)");}
+    }
+
+    // Le contenu doit avoir été défini
+    if (changeset.content !== undefined) {
+      if (changeset.content === '') {errors.push("Il faut impérativement décrire l'exemple");}
+      else if (changeset.content.length < 30) {
+        errors.push("Cet description d’exemple me parait trop courte… (ajouter &lt;!-- force content --&gt; pour forcer)");
+      }
+    }
+
+    // L'exemple doit avoir un indice
+    if ( undefined === (item.original as DBExempleType).indice) {
+      if (isNew) {
+        // C'est normal, on doit définir l'indice en fonction des exemples que contient déjà l'oeuvre
+        const indice: number = Exemple.getNextIndiceForOeuvre(changeset.oeuvre_id);
+        Object.assign(changeset, {indice: indice});
+      } else {
+        this.panel.flash("GRAVE PROBLÈME : L'indice devrait être déjà défini, pour un exemple déjà sauvegardé…", 'error');
+      }
+    }
+
+    errors.push('Juste pour ne pas enregistrer tout de suite');
+
+    // résultat final retourné
+    if (errors.length) {
+      console.error("Données invalides", errors);
+      return errors.join(', ').toLowerCase();
+    }
   }
 
   /**
@@ -39,8 +81,32 @@ export class ExempleForm extends FormManager<ExempleType, DBExempleType> {
    * @returns True si tout s'est bien passé
    */
   async onSaveEditedItem(data2save: DBExempleType): Promise<boolean> {
-    console.log("Il faut que j'apprendre à sauver l'exemple : ", this.editedItem);
-    console.log("Données à sauver", data2save);
+    console.log("Exemple à sauvegarder", this.editedItem);
+    console.log("Données à sauvegarder", data2save);
+    const itemSaver = new ComplexRpc({
+      call: Exemple.saveItem.bind(Exemple, data2save)
+    });
+    const res = await itemSaver.run() as {ok: boolean, errors: any, item: DBExempleType, itemPrepared: ExempleType};
+    console.log("res dans onSave de l'exemple", res);
+    if (res.ok) {
+      this.panel.flash('Exemple enregistré avec succès en Db.', 'notice');
+      let item: AnyItemType, nextItem: AnyItemType | undefined;
+      [item, nextItem] = Exemple.accessTable.upsert(res.itemPrepared);
+      if (nextItem /* Quand création d'un nouvel exemple */) {
+        this.panel.insertInDom(item, nextItem);
+        // Si c'est l'exemple dans un nouveau film, il faut ajouter le
+        // titre.
+        if ((item.dbData as DBExempleType).indice === 1) {
+          console.warn("Je dois apprendre à ajouter le titre de la nouvelle œuvre.");
+        }
+      } else {
+        this.panel.updateInDom(item);
+      }
+    } else {
+      console.error("ERREURS À L'ENREGISTREMENT DE L'EXEMPLE", res.errors);
+      this.panel.flash('Erreur (à l’enregistre de l’exemple — voir la console)', 'error');
+      return false;
+    }
     return true;
   }
 

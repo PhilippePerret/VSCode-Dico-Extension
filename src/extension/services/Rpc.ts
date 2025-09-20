@@ -4,6 +4,7 @@ import { Entry } from '../models/Entry';
 import { Oeuvre } from '../models/Oeuvre';
 import { App } from './App';
 import { execSync } from 'child_process';
+import { Exemple } from '../models/Exemple';
 
 abstract class Rpc {
   protected panel: any;
@@ -164,8 +165,20 @@ class RpcOeuvre extends Rpc {
       return secrets;
     });
  }
-  
 }
+
+
+
+
+/**
+ * 
+ * 
+ * ============= RPC EXEMPLES =====================
+ * 
+ * 
+ * 
+ */
+
 class RpcExemple extends Rpc {
   protected panelName = 'panneau des exemples';
   // Définir ici les méthodes messages avec le panneau des exemples
@@ -201,6 +214,14 @@ class RpcExemple extends Rpc {
       // console.log("[EXTENSION] Réception du résultat du check des exemples", params);
       CanalEntry.resultatCheckingExemples(params);
     });
+
+    this.rpc.on('save-item', async (params: any) => {
+      // console.log("[EXTENSION] Reception de l'exemple à sauver", params);
+      Object.assign(params, { ok: null, errors: [] });
+      Exemple.saveItem(params);
+    });
+
+
   }
 }
 

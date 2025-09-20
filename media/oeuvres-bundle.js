@@ -1593,9 +1593,11 @@
     dispatchValues(item) {
       this.reset();
       const itemVals = item;
+      console.log("item \xE0 dispatcher", item);
+      console.log("Traform\xE9s en record", itemVals);
       this.properties.forEach((dprop) => {
         const prop = dprop.propName;
-        const value = itemVals.dbData[prop] || itemVals.cachedData[prop];
+        const value = itemVals.dbData && (itemVals.dbData[prop] || itemVals.cachedData[prop]);
         if (value) {
           this.setValueOf(prop, String(value));
           if (dprop.locked) {

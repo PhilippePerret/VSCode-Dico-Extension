@@ -56,7 +56,6 @@ export class EntryForm extends FormManager<EntryType, DBEntryType> {
   async checkEditedItem(): Promise<string | undefined> {
     const item = this.editedItem;
     const changeset = item.changeset;
-    const isNew = item.changeset.isNew;
     const errors: string[] = [];
 
     // Vérifications diverses et synchrones sur les données
@@ -281,6 +280,7 @@ export class EntryForm extends FormManager<EntryType, DBEntryType> {
     } else {
       console.error("ERREURS LORS DE L'ENREGISTREMENT DE L'ITEM", res.errors);
       Entry.panel.flash('Erreur (enregistrement de l’entrée (voir la console', 'error');
+      return false;
     }
     return true; // quand ça a été bien enregistré
   }

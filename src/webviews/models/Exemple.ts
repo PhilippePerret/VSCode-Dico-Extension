@@ -1,5 +1,5 @@
 import { RpcChannel } from '../../bothside/RpcChannel';
-import { AnyItemType, ExempleType  } from '../../bothside/types';
+import { AnyItemType, DBExempleType, ExempleType  } from '../../bothside/types';
 import { StringNormalizer } from '../../bothside/StringUtils';
 import { ClientItem } from '../ClientItem';
 import { createRpcClient } from '../RpcClient';
@@ -7,6 +7,7 @@ import { VimLikeManager } from '../services/VimLikeManager';
 import { AccessTable } from '../services/AccessTable';
 import { PanelClient } from '../PanelClient';
 import { ExempleForm } from './ExempleForm';
+import { ComplexRpc } from '../services/ComplexRpc';
 
 
 export class Exemple extends ClientItem<ExempleType> {
@@ -48,6 +49,34 @@ export class Exemple extends ClientItem<ExempleType> {
   }
   static exempleExists(oeuvreId: string, exIndice: number) {
     return !!this.accessTable.exists(`${oeuvreId}-${exIndice}`);
+  }
+  
+  /**
+   * Méthode pour enregistrer l'item dans la table
+   * 
+   * 
+   */
+  public static saveItem(item: DBExempleType, compRpcId: string) {
+    RpcEx.notify('save-item', {CRId: compRpcId, item: item});
+  }
+
+  /**
+   * Fonction qui retourne un indice libre pour un nouvel exemple.
+   * 
+   * (note : cet indice est attribué à la fin de l'édition, au moment 
+   * de la validation de l'exemple).
+   * 
+   * @param oeuvreId Identifiant de l'oeuvre
+   * @returns L'indice pour le nouvel exemple.
+   */
+  static getNextIndiceForOeuvre(oeuvreId: string): number {
+    let indice = 0;
+    this.accessTable.each((item: ExempleType) => {
+      if (item.dbData.oeuvre_id === oeuvreId) {
+        if ( indice < item.dbData.indice) { indice = Number(item.dbData.indice);}
+      }
+    });
+    return indice + 1;
   }
 
 }
@@ -302,7 +331,12 @@ RpcEx.on('oeuvre-for-exemple', (params: {oeuvreId: string, oeuvreTitre: string})
   } else {
     ExemplePanel.flash('Aucun exemple n’est en édition…', 'error');
   }
-
 });
+
+RpcEx.on('after-saved-item', (params) => {
+  console.log("[CLIENT Exemple] Réception du after-saved-item", params);
+  ComplexRpc.resolveRequest(params.CRId, params);
+});
+
 
 (window as any).Exemple = Exemple;
