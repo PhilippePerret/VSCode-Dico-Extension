@@ -263,7 +263,8 @@ class ExemplePanelClass extends PanelClient<ExempleType> {
 
     return exemplesFound;
  }
-}
+
+} // class ExemplePanelClass
 
 
 // Instancier le panneau
