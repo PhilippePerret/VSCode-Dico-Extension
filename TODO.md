@@ -2,7 +2,10 @@
 
 * J'EN SUIS À :
   - Implémenter toute la sauvegarde et création pour les exemples
-    * bloquer les champs
+    * Choix d'une entrée
+    * Choix d'une œuvre 
+    * Création depuis l'entrée (E majuscule et confirmation)
+    * Création depuis l'œuvre (E majuscule et confirmation)
     * activer panneau quand clic sur champ
     * possibilité de vider la donnée "entrée" ou "oeuvre"
 

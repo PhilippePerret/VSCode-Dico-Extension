@@ -223,7 +223,11 @@ export class VimLikeManager {
         this.klass.createNewItem();
         break;
       default: 
-        console.log("Pour le moment, je ne fais rien de '%s'", ev.key);
+         // Le panneau peut aussi définir sa propre table
+        if (this.panel.tableKeys[ev.key]) {this.panel.tableKeys[ev.key].call(null);}
+        else {
+          console.log("Pour le moment, je ne fais rien de '%s'", ev.key);
+        }
     }
     return false;
   }

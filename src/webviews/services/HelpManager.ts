@@ -16,10 +16,69 @@ export class Help {
       
       Les raccourcis de base sont les suivants :
       
-      **s** : (comme "search") pour rechercher un élément (par filtrage).
-      **f**/**k** : pour sélectionner d'élément en élément en montant et en descendant.
-      **n** : (comme "nouveau") pour créer un nouvel élément avant la sélection.
-      **e**: (comme "éditer") pour modifier l'élément sélectionné.
+      <table class="shortcuts">
+
+      <tr>
+      <td>Racc.</td><td>MODE</td><td>Effet</td>
+      </tr>
+
+      <tr>
+        <td><b>
+        n
+        </b></td>
+        <td>NORMAL</td>
+        <td>Pour créer un nouvel élément.</td>
+      </tr>
+
+      <tr>
+        <td><b>
+        f
+        </b></td>
+        <td>NORMAL</td>
+        <td>Pour sélectionner l'élément suivant ou le premier.</td>
+      </tr>
+
+      <tr>
+        <td><b>
+        e
+        </b></td>
+        <td>NORMAL</td>
+        <td>Pour mettre en édition l'élément sélectionné.</td>
+      </tr>
+
+      <tr>
+        <td><b>
+        s
+        </b></td>
+        <td>NORMAL</td>
+        <td>Pour se placer dans le champ de filtre et filtrer la liste.</td>
+      </tr>
+
+      <tr>
+        <td><b>
+        c
+        </b></td>
+        <td>NORMAL</td>
+        <td>Pour se placer dans la console et jouer une commande.</td>
+      </tr>
+
+      <tr>
+        <td><b>
+        C (⇧c)
+        </b></td>
+        <td>NORMAL</td>
+        <td>Choisir l'entrée sélectionnée pour le nouvel exemple déjà en édition.</td>
+      </tr>
+
+      <tr>
+        <td><b>
+        E (⇧e)
+        </b></td>
+        <td>NORMAL</td>
+        <td>Créer un nouvel exemple pour l'entrée.</td>
+      </tr>
+
+      </table>
       
       À tout moment, taper **?** pour afficher l'aide contextuelle.
       
@@ -81,7 +140,7 @@ export class Help {
     };    
   }
 
-  constructor(private panel: PanelClient<any, any>) {
+  constructor(private panel: PanelClient<any>) {
   }
   /**
    * API
@@ -119,13 +178,21 @@ export class Help {
   }
 
   formate(str: string): string {
-    return str
+   return str
+      // Pour "compacter" les codes HTML de paragraphe, table, etc.
+      .replace(/>\n+/g, '>')
+      .replace(/\n+<\//g, '</')
       .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
       .replace(/^### (.+)$/g, '<h3>$1</h3>')
       .replace(/^## (.+)$/g, '<h2>$1</h2>')
       .replace(/^# (.+)$/g, '<h1>$1</h1>')
-      .split("\n").map(s => `<div>${s} </div>`).join('');
+      .split("\n")
+      .map(s => {
+        if (s.startsWith('<')){return s;}
+        else {return `<div>${s}</div>`;}
+      })
+      .join('');
   }
   /**
    * Affichage du texte d'aide contextuelle et mise en attente

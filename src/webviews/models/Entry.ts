@@ -92,6 +92,18 @@ export class Entry extends ClientItem<EntryType> {
 class EntryPanelClass extends PanelClient<EntryType> {
   protected get accessTable(){ return Entry.accessTable ; }
 
+  public tableKeys = {
+    C: this.chooseSelectedItemForExemple.bind(this),
+    E: this.createExempleForSelectedItem.bind(this),
+  };
+
+  chooseSelectedItemForExemple(){
+    this.flash("Je dois choisir l'entrée courante pour l'exemple", 'notice');
+  }
+  createExempleForSelectedItem(){
+    this.flash("Je dois créer un exemple pour l'entrée courante.", 'notice');
+  }
+
   /**
    * Méthode de filtrage propre aux Entrées (Entry)
    * 

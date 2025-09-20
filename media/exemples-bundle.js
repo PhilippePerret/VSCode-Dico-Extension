@@ -646,10 +646,69 @@
       
       Les raccourcis de base sont les suivants :
       
-      **s** : (comme "search") pour rechercher un \xE9l\xE9ment (par filtrage).
-      **f**/**k** : pour s\xE9lectionner d'\xE9l\xE9ment en \xE9l\xE9ment en montant et en descendant.
-      **n** : (comme "nouveau") pour cr\xE9er un nouvel \xE9l\xE9ment avant la s\xE9lection.
-      **e**: (comme "\xE9diter") pour modifier l'\xE9l\xE9ment s\xE9lectionn\xE9.
+      <table class="shortcuts">
+
+      <tr>
+      <td>Racc.</td><td>MODE</td><td>Effet</td>
+      </tr>
+
+      <tr>
+        <td><b>
+        n
+        </b></td>
+        <td>NORMAL</td>
+        <td>Pour cr\xE9er un nouvel \xE9l\xE9ment.</td>
+      </tr>
+
+      <tr>
+        <td><b>
+        f
+        </b></td>
+        <td>NORMAL</td>
+        <td>Pour s\xE9lectionner l'\xE9l\xE9ment suivant ou le premier.</td>
+      </tr>
+
+      <tr>
+        <td><b>
+        e
+        </b></td>
+        <td>NORMAL</td>
+        <td>Pour mettre en \xE9dition l'\xE9l\xE9ment s\xE9lectionn\xE9.</td>
+      </tr>
+
+      <tr>
+        <td><b>
+        s
+        </b></td>
+        <td>NORMAL</td>
+        <td>Pour se placer dans le champ de filtre et filtrer la liste.</td>
+      </tr>
+
+      <tr>
+        <td><b>
+        c
+        </b></td>
+        <td>NORMAL</td>
+        <td>Pour se placer dans la console et jouer une commande.</td>
+      </tr>
+
+      <tr>
+        <td><b>
+        C (\u21E7c)
+        </b></td>
+        <td>NORMAL</td>
+        <td>Choisir l'entr\xE9e s\xE9lectionn\xE9e pour le nouvel exemple d\xE9j\xE0 en \xE9dition.</td>
+      </tr>
+
+      <tr>
+        <td><b>
+        E (\u21E7e)
+        </b></td>
+        <td>NORMAL</td>
+        <td>Cr\xE9er un nouvel exemple pour l'entr\xE9e.</td>
+      </tr>
+
+      </table>
       
       \xC0 tout moment, taper **?** pour afficher l'aide contextuelle.
       
@@ -739,7 +798,13 @@
       return [this.formate(content), kbb];
     }
     formate(str) {
-      return str.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\*(.+?)\*/g, "<em>$1</em>").replace(/^### (.+)$/g, "<h3>$1</h3>").replace(/^## (.+)$/g, "<h2>$1</h2>").replace(/^# (.+)$/g, "<h1>$1</h1>").split("\n").map((s) => `<div>${s}\xA0</div>`).join("");
+      return str.replace(/>\n+/g, ">").replace(/\n+<\//g, "</").replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\*(.+?)\*/g, "<em>$1</em>").replace(/^### (.+)$/g, "<h3>$1</h3>").replace(/^## (.+)$/g, "<h2>$1</h2>").replace(/^# (.+)$/g, "<h1>$1</h1>").split("\n").map((s) => {
+        if (s.startsWith("<")) {
+          return s;
+        } else {
+          return `<div>${s}</div>`;
+        }
+      }).join("");
     }
     /**
      * Affichage du texte d'aide contextuelle et mise en attente
@@ -967,7 +1032,11 @@
           this.klass.createNewItem();
           break;
         default:
-          console.log("Pour le moment, je ne fais rien de '%s'", ev.key);
+          if (this.panel.tableKeys[ev.key]) {
+            this.panel.tableKeys[ev.key].call(null);
+          } else {
+            console.log("Pour le moment, je ne fais rien de '%s'", ev.key);
+          }
       }
       return false;
     }
@@ -1056,6 +1125,8 @@
   // src/webviews/PanelClient.ts
   var PanelClient = class {
     // ========== A P I ================
+    tableKeys = {};
+    // shortcuts propres aux panneaux
     context = "start";
     form;
     get isActif() {

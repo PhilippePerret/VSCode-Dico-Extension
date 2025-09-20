@@ -24,6 +24,7 @@ export class PanelClient<T extends AnyItemType> {
   
   // ========== A P I ================
 
+  public tableKeys: Record<string, Function> = {}; // shortcuts propres aux panneaux
   public context: string = 'start';
   public form!: FormManager<any, any>;
   public get isActif(): boolean { return this._actif === true ; }
