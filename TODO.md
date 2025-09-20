@@ -2,8 +2,8 @@
 
 * J'EN SUIS À :
   - Implémenter toute la sauvegarde et création pour les exemples
-    * [BUG] Le formulaire d'édition de l'exemple sort de l'édition 
-      => à l'activation de la fenêtre, si form.isActive(), repasser en édition.
+    * voir comment créer un nouvel exemple pour un nouveau film (insertion dans le dom)
+    * voir comment définir l'indice d'un nouvel exemple d'un film connu
     * Création depuis l'entrée (E majuscule et confirmation)
     * Création depuis l'œuvre (E majuscule et confirmation)
     * activer panneau quand clic sur champ

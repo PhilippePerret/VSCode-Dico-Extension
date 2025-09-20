@@ -155,7 +155,7 @@ class ExemplePanelClass extends PanelClient<ExempleType> {
       // On consigne ce titre pour pouvoir le manipuler facilement
       this.BlockTitres.set(titre.id, titre);
 
-      const firstEx = document.querySelector(`main#items > div[data-id="${ditem.dbData.id}"]`);
+      const firstEx = document.querySelector(`main#items > div[data-id="${ditem.id}"]`);
       this.container.insertBefore(obj, firstEx);
     });
   }
@@ -273,9 +273,7 @@ RpcEx.on('desactivate', () => {
 
 RpcEx.on('populate', (params) => {
   // console.log("[CLIENT-EXemples] Items remontés :", params.data);
-  const items = Exemple.deserializeItems(params.data);
-  // console.log("[CLIENT-Exemple Items désérialisés", items);
-  // console.log("[EXEMPLES] Table d'acces", Exemple.accessTable);
+  Exemple.deserializeItems(params.data);
   ExemplePanel.populate(Exemple.accessTable);
   ExemplePanel.initialize();
   ExemplePanel.initKeyManager();

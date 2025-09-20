@@ -58,7 +58,7 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
   async checkEditedItem(): Promise<string | undefined> { return undefined ; }; // Pour checker les données 
   onCancel?(): void; // Fonction appelée en cas d'annulation
   abstract observeForm(): void; // fonction d'observation propre du formulaire
-  onFocusForm?(ev: FocusEvent): any;
+  onFocusForm?(ev: FocusEvent | undefined): any;
   public panel!: PanelClient<AnyItemType>; // le panneau contenant le formulaire
   private originalData!: {[x: string]: any};
   public saving: boolean = false;
@@ -100,7 +100,7 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
       changeset: {size: 0, isNew: isNewItem}
     }) as any as EditedIType;
     this.openForm();
-    this.dispatchValues(this.editedItem);
+    this.dispatchValues(item);
     if ( 'function' === typeof this.afterEdit ) { this.afterEdit.call(this); }
     this.setMode('form');
   }
@@ -156,12 +156,6 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
     // Données persistantes
     const data2save: Tdb = structuredClone(this.editedItem.original) as Tdb;
     Object.assign(data2save, this.editedItem.data2save);
-    // Les données à retirer des données à sauver, qui appartiennent à 
-    // editedItem.changeset
-    // NOTE : Le plus simple serait quand même d'avoir les propriétés dans une
-    // autre propriété, pour ne rien avoir à faire. Par exemple :
-    // editedItem.changeset.newData. On pourrait aussi prendre les nouvelles
-    // données 
     Object.assign(data2save, {isNew: undefined, size: undefined});
     await this.onSaveEditedItem(data2save);
     this.saving = false;
@@ -184,17 +178,19 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
   }
 
   // Met les données dans le formulaire
-  dispatchValues(data: {[x: string]: any}){
+  dispatchValues(item: T){
     this.reset();
+    const itemVals = item as {[x: string]: any};
     this.properties.forEach( dprop => {
       const prop = dprop.propName;
-      if ( data[prop] ) { 
+      const value = itemVals.dbData[prop] || itemVals.cachedData[prop];
+      if ( value ) { 
         // console.log("Propriété %s mise à %s", prop, data[prop]);
-        dprop.field.value = String(data[prop]);
+        this.setValueOf(prop, String(value));
         // Si le champ doit être verrouillé
         if (dprop.locked) { dprop.field.disabled = true; }
       } else {
-        console.log("La valeur de la propriété %s n'est pas définie dans ", prop, data);
+        console.log("La valeur de la propriété %s n'est pas définie dans ", prop, item);
       }
     });
   }
@@ -309,10 +305,11 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
   __onCancel(){
     this.closeForm();
   }
-  __onFocusOnForm(ev: FocusEvent) {
+  __onFocusOnForm(ev: FocusEvent | undefined) {
     if ('function' === typeof this.onFocusForm) { this.onFocusForm.call(this, ev); }
     (this.panel as PanelClient<AnyItemType>).keyManager.setMode('form');
   }
+
   public setPanel(panel: PanelClient<AnyItemType>) {
     this.panel = panel;
   }

@@ -189,7 +189,7 @@ RpcEntry.on('desactivate', () => {
 });
 
 RpcEntry.on('populate', (params) => {
-  const items = Entry.deserializeItems(params.data);
+  Entry.deserializeItems(params.data);
   EntryPanel.populate(Entry.accessTable);
   EntryPanel.initKeyManager();
 });

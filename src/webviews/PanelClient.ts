@@ -31,7 +31,13 @@ export class PanelClient<T extends AnyItemType> {
   public get isInactif(): boolean { return this._actif === false ; }
   public get keyManager(){ return this._keyManager; }
   // Pour marquer le panneau actif ou inactif
-  public activate() { this.setPanelFocus(true); }
+  public activate() { 
+    this.setPanelFocus(true); 
+    // Si un formulaire était actif, il faut repasser en mode 'form'
+    if (this.form.isActive()) {
+      this.form.__onFocusOnForm(undefined);
+    }
+  }
   public desactivate() { this.setPanelFocus(false); }
 
   /**

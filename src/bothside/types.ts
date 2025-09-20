@@ -60,7 +60,6 @@ export interface OeuvreType {
 
 // Exemple types
 export interface DBExempleType {
-  id: string;
   oeuvre_id: string;
   indice: number;
   entry_id: string;
@@ -69,6 +68,7 @@ export interface DBExempleType {
 }
 
 export interface CachedExempleType {
+  id: string;
   itemType: 'exemple';
   content_formated: string;
   content_min: string;             // Version minuscules pour recherche
@@ -80,7 +80,7 @@ export interface CachedExempleType {
 }
 
 export interface ExempleType {
-  id: string;  // ID at root level for easy access
+  id: string; 
   dbData: DBExempleType;
   cachedData: CachedExempleType;
   domState: DomStateType;

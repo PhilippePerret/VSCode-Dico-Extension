@@ -3,7 +3,7 @@ import { UniversalCacheManager } from '../../bothside/UniversalCacheManager';
 import { DBManager } from '../db/db_manager';
 import { App } from '../services/App';
 import { CanalExemple } from '../services/Rpc';
-import { DBExempleType, ExempleType, EntryType, OeuvreType } from '../../bothside/types';
+import { DBExempleType, ExempleType} from '../../bothside/types';
 import { Entry } from './Entry';
 import { Oeuvre } from './Oeuvre';
 
@@ -63,11 +63,12 @@ export class Exemple {
 		this.cache.inject(items, this.prepareItemForCache.bind(this));
 	}
 	protected static prepareItemForCache(item: DBExempleType): ExempleType {
+		const exId = `${item.oeuvre_id}-${item.indice}`;
 		return {
-			id: `${item.oeuvre_id}-${item.indice}`,  // ID composite at root level
-			// dbData: (item as any).data, // JE NE SAIS PAS POURQUOI JE DOIS PRENDRE .data…
+			id: exId,
 			dbData: item,
 			cachedData: {
+				id: exId,
 				itemType: 'exemple',
 				content_formated: '',
 				content_min: '',
@@ -100,15 +101,15 @@ export class Exemple {
 		} else {
 			content_formated = `dans ${titre_oeuvre}, ${item.dbData.content}`;
 		} 
-		
-		item.cachedData.oeuvre_titre = titre_oeuvre;
-		item.cachedData.entree_formated = entree;
-		item.cachedData.content_formated = content_formated;
-		item.cachedData.content_min = StringNormalizer.toLower(content_formated);
-		item.cachedData.content_min_ra = StringNormalizer.rationalize(content_formated);
-		item.cachedData.titresLookUp = oeuvre.cachedData.titresLookUp;
-		item.cachedData.entry4filter = entry.cachedData.entree_min;
-
+		Object.assign(item.cachedData, {
+			oeuvre_titre: titre_oeuvre,
+			entree_formated: entree,
+			content_formated: content_formated,
+			content_min: StringNormalizer.toLower(content_formated),
+			content_min_ra: StringNormalizer.rationalize(content_formated),
+			titresLookUp: oeuvre.cachedData.titresLookUp,
+			entry4filter: entry.cachedData.entree_min
+		});
 		return item;
 	}
 

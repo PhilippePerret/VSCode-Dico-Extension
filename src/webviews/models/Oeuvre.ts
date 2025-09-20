@@ -183,7 +183,7 @@ RpcOeuvre.on('desactivate', () => {
 
 
 RpcOeuvre.on('populate', (params) => {
-  const items = Oeuvre.deserializeItems(params.data);
+  Oeuvre.deserializeItems(params.data);
   OeuvrePanel.populate(Oeuvre.accessTable);
   OeuvrePanel.initKeyManager();
 });

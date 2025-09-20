@@ -145,6 +145,7 @@
      */
     static deserializeItems(items) {
       const allItems = items.map((item) => JSON.parse(item));
+      console.log("Tous les items", allItems);
       this.setAccessTableWithItems(allItems);
     }
     /* Surclassée */
@@ -775,6 +776,9 @@
     // Pour marquer le panneau actif ou inactif
     activate() {
       this.setPanelFocus(true);
+      if (this.form.isActive()) {
+        this.form.__onFocusOnForm(void 0);
+      }
     }
     desactivate() {
       this.setPanelFocus(false);
@@ -1504,7 +1508,7 @@
         changeset: { size: 0, isNew: isNewItem }
       });
       this.openForm();
-      this.dispatchValues(this.editedItem);
+      this.dispatchValues(item);
       if ("function" === typeof this.afterEdit) {
         this.afterEdit.call(this);
       }
@@ -1586,17 +1590,19 @@
       this.__onCancel();
     }
     // Met les données dans le formulaire
-    dispatchValues(data) {
+    dispatchValues(item) {
       this.reset();
+      const itemVals = item;
       this.properties.forEach((dprop) => {
         const prop = dprop.propName;
-        if (data[prop]) {
-          dprop.field.value = String(data[prop]);
+        const value = itemVals.dbData[prop] || itemVals.cachedData[prop];
+        if (value) {
+          this.setValueOf(prop, String(value));
           if (dprop.locked) {
             dprop.field.disabled = true;
           }
         } else {
-          console.log("La valeur de la propri\xE9t\xE9 %s n'est pas d\xE9finie dans ", prop, data);
+          console.log("La valeur de la propri\xE9t\xE9 %s n'est pas d\xE9finie dans ", prop, item);
         }
       });
     }
@@ -2797,7 +2803,7 @@
     OeuvrePanel.desactivate();
   });
   RpcOeuvre.on("populate", (params) => {
-    const items = Oeuvre.deserializeItems(params.data);
+    Oeuvre.deserializeItems(params.data);
     OeuvrePanel.populate(Oeuvre.accessTable);
     OeuvrePanel.initKeyManager();
   });
