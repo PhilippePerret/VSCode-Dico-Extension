@@ -77,20 +77,31 @@ export class Entry extends ClientItem<EntryType> {
     //*/
     return false;
   }
+
   public static autocompleteDim(ev: KeyboardEvent): false {
-    
-    const entree = this.accessTable
-      .get((this.panel.form.getEditedItem().original as DBEntryType).id)
-      .cachedData.entree_min;
-    const target = ev.target as HTMLTextAreaElement;
-    target.setRangeText(
-      '(' + entree + ')',
-      target.selectionStart,
-      target.selectionEnd,
-      'end'
-    );
+    const edItem = this.panel.form.getEditedItem();
+    if (edItem) {
+      const entree = this.accessTable
+        .get((edItem.original as DBEntryType).id)
+        .cachedData.entree_min;
+      const target = ev.target as HTMLTextAreaElement;
+      target.setRangeText(
+        '(' + entree + ')',
+        target.selectionStart,
+        target.selectionEnd,
+        'end'
+      );
+
+    }
     return stopEvent(ev);
   }
+
+  // Juste parce que cette méthode doit exister pour chaque panneau,
+  // mais pour le panneau entrée, elle ne sert à rien
+  // (elle est invoquée sur les deux autres panneaux pour transmettre
+  // à ce panneau l'identifiant de l'item sélectionné — l'exemple ou 
+  // l'œuvre)
+  public static sendIdCurrentToDefinition(){ }
 
 }// class Entry
 
@@ -186,6 +197,23 @@ class EntryPanelClass extends PanelClient<EntryType> {
   goToExemple(id: string) {
     RpcEntry.notify('show-exemple', {exId: id});
   }
+
+
+  // Pour insérer l'identifiant de l'exemple dans la définition
+  insertExempleIdInDefinition(exempleId: string): void {
+    console.log("Mettre '%s' en exemple dans la définition éditée", exempleId);
+    // =========> TODO <============
+    // Pour savoir si un élément est édité :
+    // - officiellement this.form.isActive
+    // - Ce panneau a le context 'edit-entry' ou 'create-entry'
+    // - form.editedItem est défini
+    // this.form
+    if (this.form.isActive()){
+      (this.form as EntryForm).insertInTextField('definition', exempleId);
+    } else {
+      this.flash('Pour coller un identifiant d’exemple, il faut éditer une définition.', 'warn');
+    }
+  }
 }
 
 const EntryPanel = new EntryPanelClass({
@@ -258,7 +286,11 @@ RpcEntry.on('after-saved-item', (params) => {
   // console.log("[CLIENT Entry] Réception du after-saved-item", params);
   // Entry.onSavedItem(params);
   ComplexRpc.resolveRequest(params.CRId, params);
+});
 
+RpcEntry.on('send-id-exemple-to-definition', (params) => {
+  // console.log("[WEBVIEW Entrées] Réception id-exemple '%s'", params.exempleId);
+  EntryPanel.insertExempleIdInDefinition(params.exempleId);
 });
 
 // Pour exposer globalement

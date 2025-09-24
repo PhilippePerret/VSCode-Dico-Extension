@@ -1,6 +1,10 @@
 # Todo list
 
 * J'EN SUIS À :
+  * [BUG] En mode de filtrage, quand on sélection le dernier élément, on ne peut plus remonter avec la touche "k"
+    - En fait TOUT est bloquer. Peut-être en profiter pour essayer de créer un bouton "Panique" (gros bouton rouge) qui permettrait de sortir de tout blocage…
+  * Documenter le contexte 'edit-entry' ou 'create-entry' avec l'insertion d'un id d'exemple
+    - en profiter pour développer l'assemblage de l'aide. create et edit partage des choses communes
   * Faire une sortie du fichier entrées pour prawn for book (l'essayer pour produire le livre)
 
   * mettre une commande pour exporter le fichier antidote/relecture
@@ -9,7 +13,6 @@
   * mettre une commande pour exporter le fichier pour Prawn-for-book
     (fichiersPFB — en fait, il prépare tous les fichiers utiles)
     -> documenter (aide)
-
  
   * Il faudrait vraiment faire un utilitaire d'autocomplétion qui, à la
     base, servirait d'abord à autocompléter du texte, sans avoir forcément
@@ -26,9 +29,6 @@
   * Continuer de mettre en forme les définitions et les exemples
   * Création d'un exemple depuis l'entrée (E majuscule et confirmation)
   * Création d'un exemple depuis l'œuvre (E majuscule et confirmation)
-
-* BUGS À CORRIGER
-  - quand je clique sur l'erreur, elle ne se ferme pas
 
 * Quand un mot n'est pas encore créé et qu'on y fait référence dans une nouvelle définition, on l'écrit avec `todo(le nouveau mot`)
   - demander s'il faut le créer tout de suite

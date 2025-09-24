@@ -49,13 +49,22 @@ export class Help {
 
       ## Édition de la définition
 
-      ## Autocomplétion
+      ### Autocomplétion
+
 
       ${this.buildShortcutsTable([
         {s: 'tt⇥', m:'EDIT', d: 'Ajouter un mot technique indexé'},
         {s: '->(⇥', m:'EDIT', d: 'Ajouter un mot technique avec numéro de page'},
         {s: 'ttp⇥', m:'EDIT', d: 'Ajouter la page d’un mot technique'}
       ])}
+
+
+      ### Insertion d'un exemple (existant)
+
+
+      Avec l'item en édition et le curseur placé au bon endroit, rejoindre le panneau des exemples (⌘3), filtrer pour n'afficher que le film (<shortcut>s</shortcut> puis 1res lettres), sélectionner l'exemple voulu (<shortcut>j</shortcut>/<shortcut>k</shortcut>) et enfin tapez <shortcut>i</shortcut> (comme « identifiant » ou « insérer »).
+
+      Automatiquement, l'identifiant de l'exemple sera inséré dans l'entrée éditée.
       `
       ;
 
@@ -167,7 +176,7 @@ export class Help {
   }
 
   formate(str: string): string {
-    console.log("-> formate (formatage du texte d'aide", str);
+    // console.log("-> formate (formatage du texte d'aide", str);
    return str
       // Pour "compacter" les codes HTML de paragraphe, table, etc.
       .trim()

@@ -50,10 +50,25 @@ export class EntryForm extends FormManager<EntryType, DBEntryType> {
   }
 
   /**
+   * Pour insérer du texte dans un champ d'édition (pour le moment,
+   * je pense que ça ne fonctionne pour les textareas, mais il
+   * faudrait essayer aussi avec les input-text)
+   */
+  insertInTextField(fieldId: string, texte: string){
+    const target = this.field(fieldId) as HTMLTextAreaElement;
+    target.setRangeText(
+      texte,
+      target.selectionStart, target.selectionEnd, 'end'
+    );
+  }
+  /**
    * Grande méthode de check de la validité de l'item. On ne l'envoie
    * en enregistrement que s'il est parfaitement conforme. 
    */
   async checkEditedItem(): Promise<string | undefined> {
+    if (undefined === this.editedItem) {
+      return 'Curieusement, il ne semble pas y avoir d’item édité…';
+    }
     const item = this.editedItem;
     const changeset = item.changeset;
     const errors: string[] = [];
@@ -63,7 +78,7 @@ export class EntryForm extends FormManager<EntryType, DBEntryType> {
 
     // Vérification de l'existence des oeuvres dans la
     // définition
-    if (changeset.definiition !== undefined) {
+    if (changeset.definition !== undefined) {
       const unknownOeuvres: string[] = await this.checkExistenceOeuvres(changeset.definition);
       if (unknownOeuvres.length) {
         errors.push(`des œuvres sont introuvables : ${unknownOeuvres.map(t => `"${t}"`).join(', ')}`);
@@ -295,32 +310,6 @@ export class EntryForm extends FormManager<EntryType, DBEntryType> {
     // Pour attacher l'autocomplétion
     // this.attachAutocompletion();
   }
-
-  /*
-  private attachAutocompletion(){
-    // Première liste de mots
-    const wordset = this.panel.accessTable.getListMotsForAutocomplete();
-    const tribute = new Tribute({
-      trigger: "tt(",
-      values: wordset,
-      selectTemplate: function(item: {[x: string]: any}){
-        let mark = item.original.value;
-        if (item.original.value !== item.original.key) { mark += `|${item.original.key}`;}
-        return 'tt(' + mark + ')'; 
-      },
-      menuItemTemplate: ((item: any) => {
-        return `${item.original.value} (${item.original.key})`;
-      }),
-      lookup: 'value',
-      fillAttr: 'value',
-      menuItemsLimit: 15,
-      menuShowMinLength: 1,
-      spaceSelectsMatch: true,
-    } as any);
-    
-    tribute.attach(this.field('definition'));
-  }
-  //*/ 
   get btnLockId() { return this.obj.querySelector('button.btn-lock-id') as HTMLButtonElement; }
 
   onLockId() {

@@ -82,6 +82,16 @@ export class Exemple extends ClientItem<ExempleType> {
     return this.panel.flash('Auto complétion seulement pour panneau des entrées.', 'notice');
   }
 
+  public static sendIdCurrentToDefinition(){
+    const exempleId = this.accessTable.getSelection();
+    if ( exempleId) {
+      // console.log("[Panneau Exemples] Envoi id '%s' pour entrée", exempleId);
+      RpcEx.notify('send-id-exemple-to-definition', {exempleId: exempleId});
+    } else {
+      this.panel.flash('Il faut choisir l’exemple dont il faut envoyer l’id !', 'warn');
+    }
+  }
+
 }
 
 
@@ -139,7 +149,6 @@ class ExemplePanelClass extends PanelClient<ExempleType> {
     this.scrollTo(this.container.querySelector(selector) as HTMLElement);
     this.accessTable.selectionManager.selectItem(`${oeuvreId}-${indice}`);
   }
-
 
   observePanel(): void {
     super.observePanel();

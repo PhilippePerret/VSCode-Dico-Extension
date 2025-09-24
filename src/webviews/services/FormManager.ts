@@ -72,7 +72,7 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
   }
  
   // Maintenant c'est celui-ci
-  protected editedItem!: EditedIType;
+  protected editedItem!: EditedIType | undefined;
   public getEditedItem(){ return this.editedItem;}
 
   private checked: boolean = false;
@@ -111,8 +111,10 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
   public async saveItem(andQuit: boolean): Promise<void> {
     const res = await this.itemIsNotSavable();
     if (res) { return ;}
-    let data2save = structuredClone(this.editedItem.changeset) as any as Tdb;
-    this.editedItem.data2save = data2save;
+    if ( this.editedItem){
+      let data2save = structuredClone(this.editedItem.changeset) as any as Tdb;
+      this.editedItem.data2save = data2save;
+    }
     const map = new Map();
     map.set('o', this.onConfirmSave.bind(this, andQuit));
     map.set('n', this.cancelEdit.bind(this));
@@ -128,7 +130,7 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
     this.properties.forEach(dproperty => {
       const prop = dproperty.propName;
       // console.log("Propriété '%s' | Original: '%s' | New: '%s'", prop, item.original[prop], item[prop]);
-      if ( item[prop] !== item.original[prop]) {
+      if ( item[prop] !== item.original[prop] && this.editedItem) {
         Object.assign(this.editedItem.changeset, {
           [prop]: item[prop],
           size: ++item.changeset.size
@@ -140,7 +142,7 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
       this.panel.flash("Aucune donnée n'a été founie…", 'error');
       return true;
     } 
-    if (this.editedItem.changeset.size === 0 ) {
+    if (this.editedItem && this.editedItem.changeset.size === 0 ) {
       this.panel.flash("Les données n'ont pas changé…", 'warn');
       return true;
     }
@@ -160,22 +162,24 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
    * retirant les propriétés non persistantes.
    */
   public async onConfirmSave(andQuit: boolean): Promise<void> {
-    console.log("Sauvegarde confirmée");
+    // console.log("Sauvegarde confirmée");
     const fakeItem = this.collectValues();
     // Données persistantes
-    const data2save: Tdb = structuredClone(this.editedItem.original) as Tdb;
-    Object.assign(data2save, this.editedItem.data2save);
-    // Données particulières à retirer
-    const removedProps = ['isNew','size'];
-    removedProps.push(...this.propsToRemove());
-    console.log("Propriétés à remover", removedProps);
-    const data2saveEpured = {};
-    for(var k in data2save){
-      if (removedProps.includes(k)) { continue; }
-      Object.assign(data2saveEpured, {[k]: data2save[k]});
+    if (this.editedItem) {
+      const data2save: Tdb = structuredClone(this.editedItem.original) as Tdb;
+      Object.assign(data2save, this.editedItem.data2save);
+      // Données particulières à retirer
+      const removedProps = ['isNew', 'size'];
+      removedProps.push(...this.propsToRemove());
+      // console.log("Propriétés à remover", removedProps);
+      const data2saveEpured = {};
+      for (var k in data2save) {
+        if (removedProps.includes(k)) { continue; }
+        Object.assign(data2saveEpured, { [k]: data2save[k] });
+      }
+      console.log("Données FINALES à sauvegarder", structuredClone(data2saveEpured));
+      await this.onSaveEditedItem(data2saveEpured as Tdb);
     }
-    console.log("Données FINALES à sauvegarder", structuredClone(data2saveEpured));
-    await this.onSaveEditedItem(data2saveEpured as Tdb);
     this.saving = false;
     if (andQuit) { this.closeForm(); }
   }
@@ -230,11 +234,13 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
   // Récupère les données dans le formulaire et retourne l'item
   // avec ses nouvelles données.
   collectValues() {
-    this.properties.forEach( dprop => {
-      const prop = dprop.propName;
-      const value = this.getValueOf(dprop);
-      Object.assign(this.editedItem, {[prop]: value});
-    });
+    if (this.editedItem) {
+      this.properties.forEach(dprop => {
+        const prop = dprop.propName;
+        const value = this.getValueOf(dprop);
+        this.editedItem && Object.assign(this.editedItem, { [prop]: value });
+      });
+    }
   }
 
   /**
@@ -293,6 +299,7 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
   closeForm(){ 
     this.obj.classList.add('hidden'); 
     this.setMode('normal');
+    this.editedItem = undefined;
   }
 
  

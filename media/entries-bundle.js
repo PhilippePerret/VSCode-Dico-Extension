@@ -485,13 +485,22 @@
 
       ## \xC9dition de la d\xE9finition
 
-      ## Autocompl\xE9tion
+      ### Autocompl\xE9tion
+
 
       ${this.buildShortcutsTable([
             { s: "tt\u21E5", m: "EDIT", d: "Ajouter un mot technique index\xE9" },
             { s: "->(\u21E5", m: "EDIT", d: "Ajouter un mot technique avec num\xE9ro de page" },
             { s: "ttp\u21E5", m: "EDIT", d: "Ajouter la page d\u2019un mot technique" }
           ])}
+
+
+      ### Insertion d'un exemple (existant)
+
+
+      Avec l'item en \xE9dition et le curseur plac\xE9 au bon endroit, rejoindre le panneau des exemples (\u23183), filtrer pour n'afficher que le film (<shortcut>s</shortcut> puis 1res lettres), s\xE9lectionner l'exemple voulu (<shortcut>j</shortcut>/<shortcut>k</shortcut>) et enfin tapez <shortcut>i</shortcut> (comme \xAB\xA0identifiant\xA0\xBB ou \xAB\xA0ins\xE9rer\xA0\xBB).
+
+      Automatiquement, l'identifiant de l'exemple sera ins\xE9r\xE9 dans l'entr\xE9e \xE9dit\xE9e.
       `;
         // CRÉATION D'UN ÉLÉMENT QUELCONQUE
         case "create-element":
@@ -594,7 +603,6 @@
       return [this.formate(content), kbb];
     }
     formate(str) {
-      console.log("-> formate (formatage du texte d'aide", str);
       return str.trim().replace(/^\s+/gm, "").replace(/>\n+/g, ">").replace(/\n+<\//g, "</").replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\*(.+?)\*/g, "<em>$1</em>").replace(/^### (.+)$/mg, "<h3>$1</h3>").replace(/^## (.+)$/mg, "<h2>$1</h2>").replace(/^# (.+)$/mg, "<h1>$1</h1>").split("\n\n").map((s) => {
         if (s.startsWith("<")) {
           return s;
@@ -835,6 +843,9 @@
         case "f":
           this.selectionManager.historyNext();
           break;
+        case "i":
+          this.klass.sendIdCurrentToDefinition();
+          break;
         case "r":
           this.selectionManager.removeCurrentFromHistory();
           break;
@@ -895,13 +906,11 @@
           ev.target.blur();
           return stopEvent(ev);
         default:
-          console.log("Touche non trait\xE9e : %s", ev.key);
       }
       this.threelast.shift();
       this.threelast.push(ev.key);
       this.twolast.shift();
       this.twolast.push(ev.key);
-      console.log("Deux derni\xE8res lettres = '%s'", this.twolast.join(""));
       return true;
     }
     twolast = ["", ""];
@@ -1901,8 +1910,10 @@
       if (res) {
         return;
       }
-      let data2save = structuredClone(this.editedItem.changeset);
-      this.editedItem.data2save = data2save;
+      if (this.editedItem) {
+        let data2save = structuredClone(this.editedItem.changeset);
+        this.editedItem.data2save = data2save;
+      }
       const map = /* @__PURE__ */ new Map();
       map.set("o", this.onConfirmSave.bind(this, andQuit));
       map.set("n", this.cancelEdit.bind(this));
@@ -1917,7 +1928,7 @@
       const item = this.editedItem;
       this.properties.forEach((dproperty) => {
         const prop = dproperty.propName;
-        if (item[prop] !== item.original[prop]) {
+        if (item[prop] !== item.original[prop] && this.editedItem) {
           Object.assign(this.editedItem.changeset, {
             [prop]: item[prop],
             size: ++item.changeset.size
@@ -1929,7 +1940,7 @@
         this.panel.flash("Aucune donn\xE9e n'a \xE9t\xE9 founie\u2026", "error");
         return true;
       }
-      if (this.editedItem.changeset.size === 0) {
+      if (this.editedItem && this.editedItem.changeset.size === 0) {
         this.panel.flash("Les donn\xE9es n'ont pas chang\xE9\u2026", "warn");
         return true;
       }
@@ -1948,22 +1959,22 @@
      * retirant les propriétés non persistantes.
      */
     async onConfirmSave(andQuit) {
-      console.log("Sauvegarde confirm\xE9e");
       const fakeItem = this.collectValues();
-      const data2save = structuredClone(this.editedItem.original);
-      Object.assign(data2save, this.editedItem.data2save);
-      const removedProps = ["isNew", "size"];
-      removedProps.push(...this.propsToRemove());
-      console.log("Propri\xE9t\xE9s \xE0 remover", removedProps);
-      const data2saveEpured = {};
-      for (var k in data2save) {
-        if (removedProps.includes(k)) {
-          continue;
+      if (this.editedItem) {
+        const data2save = structuredClone(this.editedItem.original);
+        Object.assign(data2save, this.editedItem.data2save);
+        const removedProps = ["isNew", "size"];
+        removedProps.push(...this.propsToRemove());
+        const data2saveEpured = {};
+        for (var k in data2save) {
+          if (removedProps.includes(k)) {
+            continue;
+          }
+          Object.assign(data2saveEpured, { [k]: data2save[k] });
         }
-        Object.assign(data2saveEpured, { [k]: data2save[k] });
+        console.log("Donn\xE9es FINALES \xE0 sauvegarder", structuredClone(data2saveEpured));
+        await this.onSaveEditedItem(data2saveEpured);
       }
-      console.log("Donn\xE9es FINALES \xE0 sauvegarder", structuredClone(data2saveEpured));
-      await this.onSaveEditedItem(data2saveEpured);
       this.saving = false;
       if (andQuit) {
         this.closeForm();
@@ -1983,7 +1994,6 @@
       return isEmpty;
     }
     cancelEdit() {
-      console.log("Sauvegarde annul\xE9e");
       this.saving = false;
       this.__onCancel();
     }
@@ -2019,11 +2029,13 @@
     // Récupère les données dans le formulaire et retourne l'item
     // avec ses nouvelles données.
     collectValues() {
-      this.properties.forEach((dprop) => {
-        const prop = dprop.propName;
-        const value = this.getValueOf(dprop);
-        Object.assign(this.editedItem, { [prop]: value });
-      });
+      if (this.editedItem) {
+        this.properties.forEach((dprop) => {
+          const prop = dprop.propName;
+          const value = this.getValueOf(dprop);
+          this.editedItem && Object.assign(this.editedItem, { [prop]: value });
+        });
+      }
     }
     /**
      * Pendant de la précédente, donne la valeur +value+ à la propriété
@@ -2082,6 +2094,7 @@
     closeForm() {
       this.obj.classList.add("hidden");
       this.setMode("normal");
+      this.editedItem = void 0;
     }
     // Tout remettre à rien (vider les champs)
     reset() {
@@ -2310,15 +2323,32 @@
       this.panel.context = isNew ? "create-entry" : "edit-entry";
     }
     /**
+     * Pour insérer du texte dans un champ d'édition (pour le moment,
+     * je pense que ça ne fonctionne pour les textareas, mais il
+     * faudrait essayer aussi avec les input-text)
+     */
+    insertInTextField(fieldId, texte) {
+      const target = this.field(fieldId);
+      target.setRangeText(
+        texte,
+        target.selectionStart,
+        target.selectionEnd,
+        "end"
+      );
+    }
+    /**
      * Grande méthode de check de la validité de l'item. On ne l'envoie
      * en enregistrement que s'il est parfaitement conforme. 
      */
     async checkEditedItem() {
+      if (void 0 === this.editedItem) {
+        return "Curieusement, il ne semble pas y avoir d\u2019item \xE9dit\xE9\u2026";
+      }
       const item = this.editedItem;
       const changeset = item.changeset;
       const errors = [];
       this.diverseChecks(item.changeset, errors);
-      if (changeset.definiition !== void 0) {
+      if (changeset.definition !== void 0) {
         const unknownOeuvres = await this.checkExistenceOeuvres(changeset.definition);
         if (unknownOeuvres.length) {
           errors.push(`des \u0153uvres sont introuvables : ${unknownOeuvres.map((t) => `"${t}"`).join(", ")}`);
@@ -2506,31 +2536,6 @@
     observeForm() {
       this.btnLockId.addEventListener("click", this.onLockId.bind(this));
     }
-    /*
-    private attachAutocompletion(){
-      // Première liste de mots
-      const wordset = this.panel.accessTable.getListMotsForAutocomplete();
-      const tribute = new Tribute({
-        trigger: "tt(",
-        values: wordset,
-        selectTemplate: function(item: {[x: string]: any}){
-          let mark = item.original.value;
-          if (item.original.value !== item.original.key) { mark += `|${item.original.key}`;}
-          return 'tt(' + mark + ')'; 
-        },
-        menuItemTemplate: ((item: any) => {
-          return `${item.original.value} (${item.original.key})`;
-        }),
-        lookup: 'value',
-        fillAttr: 'value',
-        menuItemsLimit: 15,
-        menuShowMinLength: 1,
-        spaceSelectsMatch: true,
-      } as any);
-      
-      tribute.attach(this.field('definition'));
-    }
-    //*/
     get btnLockId() {
       return this.obj.querySelector("button.btn-lock-id");
     }
@@ -2869,15 +2874,25 @@
       return false;
     }
     static autocompleteDim(ev) {
-      const entree = this.accessTable.get(this.panel.form.getEditedItem().original.id).cachedData.entree_min;
-      const target = ev.target;
-      target.setRangeText(
-        "(" + entree + ")",
-        target.selectionStart,
-        target.selectionEnd,
-        "end"
-      );
+      const edItem = this.panel.form.getEditedItem();
+      if (edItem) {
+        const entree = this.accessTable.get(edItem.original.id).cachedData.entree_min;
+        const target = ev.target;
+        target.setRangeText(
+          "(" + entree + ")",
+          target.selectionStart,
+          target.selectionEnd,
+          "end"
+        );
+      }
       return stopEvent(ev);
+    }
+    // Juste parce que cette méthode doit exister pour chaque panneau,
+    // mais pour le panneau entrée, elle ne sert à rien
+    // (elle est invoquée sur les deux autres panneaux pour transmettre
+    // à ce panneau l'identifiant de l'item sélectionné — l'exemple ou 
+    // l'œuvre)
+    static sendIdCurrentToDefinition() {
     }
   };
   var EntryPanelClass = class extends PanelClient {
@@ -2954,6 +2969,15 @@
     goToExemple(id) {
       RpcEntry.notify("show-exemple", { exId: id });
     }
+    // Pour insérer l'identifiant de l'exemple dans la définition
+    insertExempleIdInDefinition(exempleId) {
+      console.log("Mettre '%s' en exemple dans la d\xE9finition \xE9dit\xE9e", exempleId);
+      if (this.form.isActive()) {
+        this.form.insertInTextField("definition", exempleId);
+      } else {
+        this.flash("Pour coller un identifiant d\u2019exemple, il faut \xE9diter une d\xE9finition.", "warn");
+      }
+    }
   };
   var EntryPanel = new EntryPanelClass({
     minName: "entry",
@@ -2998,6 +3022,9 @@
   });
   RpcEntry.on("after-saved-item", (params) => {
     ComplexRpc.resolveRequest(params.CRId, params);
+  });
+  RpcEntry.on("send-id-exemple-to-definition", (params) => {
+    EntryPanel.insertExempleIdInDefinition(params.exempleId);
   });
   window.Entry = Entry;
   window.RpcEntry = RpcEntry;

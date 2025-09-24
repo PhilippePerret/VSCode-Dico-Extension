@@ -235,6 +235,8 @@ export class VimLikeManager {
         this.selectionManager.historyBack(); break;
       case 'f': // forward to sélection précédentes
         this.selectionManager.historyNext();break;
+      case 'i': // pour obtenir l'identifiant (surtout un exemple)
+        this.klass.sendIdCurrentToDefinition();break;
       case 'r': // remove courante sélection from historique sélections
       this.selectionManager.removeCurrentFromHistory();break;
       case 'c': // focus dans console
@@ -293,7 +295,7 @@ export class VimLikeManager {
         (ev.target as HTMLElement).blur();
         return stopEvent(ev);
       default:
-        console.log("Touche non traitée : %s", ev.key);
+        // console.log("Touche non traitée : %s", ev.key);
     }
     // Pour toujours conserver les trois dernières lettres
     this.threelast.shift();
@@ -301,7 +303,7 @@ export class VimLikeManager {
     // Pour toujours conserver les deux dernières touches
     this.twolast.shift();
     this.twolast.push(ev.key);
-    console.log("Deux dernières lettres = '%s'", this.twolast.join(''));
+    // console.log("Deux dernières lettres = '%s'", this.twolast.join(''));
     return true;
 
   }
