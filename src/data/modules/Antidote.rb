@@ -104,6 +104,8 @@ class Entry
       ensure
         @ref && @ref.close
       end
+
+      puts "\nLe fichier final se trouve dans export/antidote"
     end
   
     # On récupère les genres du fichier JS des constantes
