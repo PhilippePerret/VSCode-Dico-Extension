@@ -474,7 +474,6 @@
     setSelectState(id, state) {
       const itemAK = this.getAccKey(id);
       const obj = itemAK.obj || this.getObj(id);
-      console.log("obj:", obj);
       itemAK.selected = state;
       obj.classList[state ? "add" : "remove"]("selected");
     }
@@ -1329,7 +1328,6 @@
     }
     // Mode clavier pour le formulaire
     onKeyDownModeForm(ev) {
-      console.log("-> onKeyDownModeForm");
       if (this.form.saving === true) {
         return;
       }
@@ -1506,7 +1504,6 @@
      * 
      */
     nextLinkSelection(withMaj) {
-      console.log("-> nextLinkSelection, withMaj = %s", withMaj ? "true" : "false");
       const itemId = this.getSelection();
       if (itemId === void 0) {
         return;
@@ -1960,8 +1957,6 @@
     dispatchValues(item) {
       this.reset();
       const itemVals = item;
-      console.log("item \xE0 dispatcher", item);
-      console.log("Traform\xE9s en record", itemVals);
       this.properties.forEach((dprop) => {
         const prop = dprop.propName;
         const value = itemVals.dbData && (itemVals.dbData[prop] || itemVals.cachedData[prop]);
@@ -2107,7 +2102,6 @@
       if (false === this.checkPropertiesValidity()) {
         return false;
       }
-      console.info("Formulaire %s valide.", this.formId);
       this.__observeForm();
       this.observeForm();
       this.checked = true;

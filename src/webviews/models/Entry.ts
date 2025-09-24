@@ -255,7 +255,7 @@ RpcEntry.on('check-exemples-resultat', (params: {CRId: string, resultat: {known:
 });
 
 RpcEntry.on('after-saved-item', (params) => {
-  console.log("[CLIENT Entry] Réception du after-saved-item", params);
+  // console.log("[CLIENT Entry] Réception du after-saved-item", params);
   // Entry.onSavedItem(params);
   ComplexRpc.resolveRequest(params.CRId, params);
 

@@ -164,15 +164,15 @@ export class EntryForm extends FormManager<EntryType, DBEntryType> {
        * - son entrée plurielle (minuscules)
        */
       if ( Entry.doesIdExist(entryId) ) {
-        console.log("Id d'entrée existante", entryId);
+        // console.log("Id d'entrée existante", entryId);
       } else if ( Entry.doesEntreeExist(entryId)) {
-        console.log("Entrée existante (par son nom)", entryId);
+        // console.log("Entrée existante (par son nom)", entryId);
       } else if (entryId.endsWith('s')) {
         const entryIdSing = entryId.substring(0, entryId.length-1);
         if ( Entry.doesEntreeExist(entryIdSing)) {
-          console.log("Entrée existante (pas son nom singulier)", entryId);
+          // console.log("Entrée existante (pas son nom singulier)", entryId);
         } else if (Entry.doesIdExist(entryIdSing)) {
-          console.log("Id entrée existante (dans sa forme singulière)", entryId);
+          // console.log("Id entrée existante (dans sa forme singulière)", entryId);
         }
       } else { 
         founds.push(entryId);
@@ -261,13 +261,13 @@ export class EntryForm extends FormManager<EntryType, DBEntryType> {
    * Procédure complexe (ComplexRpc)
    */
   async onSaveEditedItem(data2save: DBEntryType): Promise<boolean> {
-    console.info("Item à sauvegarder", this.editedItem);
-    console.info("Données à sauvegarder", data2save);
+    // console.info("Item à sauvegarder", this.editedItem);
+    // console.info("Données à sauvegarder", data2save);
     const itemSaver = new ComplexRpc({
       call: Entry.saveItem.bind(Entry, data2save)
     });
     const res = await itemSaver.run() as {ok: boolean, errors: any, item: DBEntryType, itemPrepared: EntryType};
-    console.log("res dans onSave", res);
+    // console.log("res dans onSave", res);
     if (res.ok) {
       Entry.panel.flash("Entrée enregistrée avec succès en DB.", 'notice');
       let item: AnyItemType, nextItem: AnyItemType | undefined;

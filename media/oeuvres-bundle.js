@@ -930,7 +930,6 @@
     }
     // Mode clavier pour le formulaire
     onKeyDownModeForm(ev) {
-      console.log("-> onKeyDownModeForm");
       if (this.form.saving === true) {
         return;
       }
@@ -1107,7 +1106,6 @@
      * 
      */
     nextLinkSelection(withMaj) {
-      console.log("-> nextLinkSelection, withMaj = %s", withMaj ? "true" : "false");
       const itemId = this.getSelection();
       if (itemId === void 0) {
         return;
@@ -1413,7 +1411,6 @@
     setSelectState(id, state) {
       const itemAK = this.getAccKey(id);
       const obj = itemAK.obj || this.getObj(id);
-      console.log("obj:", obj);
       itemAK.selected = state;
       obj.classList[state ? "add" : "remove"]("selected");
     }
@@ -1960,8 +1957,6 @@
     dispatchValues(item) {
       this.reset();
       const itemVals = item;
-      console.log("item \xE0 dispatcher", item);
-      console.log("Traform\xE9s en record", itemVals);
       this.properties.forEach((dprop) => {
         const prop = dprop.propName;
         const value = itemVals.dbData && (itemVals.dbData[prop] || itemVals.cachedData[prop]);
@@ -2107,7 +2102,6 @@
       if (false === this.checkPropertiesValidity()) {
         return false;
       }
-      console.info("Formulaire %s valide.", this.formId);
       this.__observeForm();
       this.observeForm();
       this.checked = true;
@@ -3155,14 +3149,12 @@
     if (OeuvrePanel.isActif) {
       return;
     }
-    console.log("[CLIENT OEUVRE] Je dois marquer le panneau Oeuvre actif");
     OeuvrePanel.activate();
   });
   RpcOeuvre.on("desactivate", () => {
     if (OeuvrePanel.isInactif) {
       return;
     }
-    console.log("[CLIENT OEUVRE] Je dois marquer le panneau Oeuvre comme inactif.");
     OeuvrePanel.desactivate();
   });
   RpcOeuvre.on("populate", (params) => {
@@ -3171,17 +3163,13 @@
     OeuvrePanel.initKeyManager();
   });
   RpcOeuvre.on("display-oeuvre", (params) => {
-    console.log("[CLIENT Oeuvre] Afficher oeuvre %s", params.oeuvreId);
     OeuvrePanel.scrollToAndSelect(params.oeuvreId);
   });
   RpcOeuvre.on("check-oeuvres", (params) => {
-    console.log("[CLIENT-OEUVRES] V\xE9rification demand\xE9e des \u0153uvres :", params);
     const resultat = Oeuvre.doOeuvresExist(params.oeuvres);
-    console.log("r\xE9sultat du check", resultat);
     RpcOeuvre.notify("check-oeuvres-resultat", { CRId: params.CRId, resultat });
   });
   RpcOeuvre.on("after-saved-item", (params) => {
-    console.log("[CLIENT Oeuvre] R\xE9ception du after-saved-item", params);
     Oeuvre.onSavedItem(params);
   });
   window.Oeuvre = Oeuvre;

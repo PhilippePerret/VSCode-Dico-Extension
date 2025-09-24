@@ -191,7 +191,7 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
   }
 
   public cancelEdit(): void {
-    console.log("Sauvegarde annulée");
+    // console.log("Cancel édition");
     this.saving = false;
     this.__onCancel();
   }
@@ -200,8 +200,6 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
   dispatchValues(item: T){
     this.reset();
     const itemVals = item as {[x: string]: any};
-    console.log("item à dispatcher", item);
-    console.log("Traformés en record", itemVals);
     this.properties.forEach( dprop => {
       const prop = dprop.propName;
       const value = itemVals.dbData && (itemVals.dbData[prop] || itemVals.cachedData[prop]);
@@ -361,7 +359,7 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
      */
     if ( false === this.checkPropertiesValidity() ) { return false ; }
 
-    console.info("Formulaire %s valide.", this.formId);
+    // console.info("Formulaire %s valide.", this.formId);
 
     /**
      * Observation propre de chaque formulaire (la fonction est 

@@ -69,7 +69,6 @@ export class AccessTable<T extends EntryType | OeuvreType | ExempleType> {
     // console.log("[setSelectState° Mettre l'état de l'item '%s' à %s", id, state ? 'true' :'false');
     const itemAK = this.getAccKey(id);
     const obj = itemAK.obj || this.getObj(id); // Le définit s'il n'existe pas
-    console.log("obj:", obj);
     itemAK.selected = state;
     obj.classList[state?'add':'remove']('selected');
   }

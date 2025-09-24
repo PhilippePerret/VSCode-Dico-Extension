@@ -184,19 +184,19 @@ RpcOeuvre.on('populate', (params) => {
 });
 
 RpcOeuvre.on('display-oeuvre', (params) => {
-  console.log("[CLIENT Oeuvre] Afficher oeuvre %s", params.oeuvreId);
+  // console.log("[CLIENT Oeuvre] Afficher oeuvre %s", params.oeuvreId);
   OeuvrePanel.scrollToAndSelect(params.oeuvreId);
 });
 
 RpcOeuvre.on('check-oeuvres', (params) => {
-  console.log("[CLIENT-OEUVRES] Vérification demandée des œuvres :", params);
+  // console.log("[CLIENT-OEUVRES] Vérification demandée des œuvres :", params);
   const resultat = Oeuvre.doOeuvresExist(params.oeuvres);
-  console.log("résultat du check", resultat);
+  // console.log("résultat du check", resultat);
   RpcOeuvre.notify('check-oeuvres-resultat', { CRId: params.CRId, resultat: resultat });
 });
 
 RpcOeuvre.on('after-saved-item', (params) => {
-  console.log("[CLIENT Oeuvre] Réception du after-saved-item", params);
+  // console.log("[CLIENT Oeuvre] Réception du after-saved-item", params);
   Oeuvre.onSavedItem(params);
 });
 

@@ -930,7 +930,6 @@
     }
     // Mode clavier pour le formulaire
     onKeyDownModeForm(ev) {
-      console.log("-> onKeyDownModeForm");
       if (this.form.saving === true) {
         return;
       }
@@ -1107,7 +1106,6 @@
      * 
      */
     nextLinkSelection(withMaj) {
-      console.log("-> nextLinkSelection, withMaj = %s", withMaj ? "true" : "false");
       const itemId = this.getSelection();
       if (itemId === void 0) {
         return;
@@ -1413,7 +1411,6 @@
     setSelectState(id, state) {
       const itemAK = this.getAccKey(id);
       const obj = itemAK.obj || this.getObj(id);
-      console.log("obj:", obj);
       itemAK.selected = state;
       obj.classList[state ? "add" : "remove"]("selected");
     }
@@ -1994,8 +1991,6 @@
     dispatchValues(item) {
       this.reset();
       const itemVals = item;
-      console.log("item \xE0 dispatcher", item);
-      console.log("Traform\xE9s en record", itemVals);
       this.properties.forEach((dprop) => {
         const prop = dprop.propName;
         const value = itemVals.dbData && (itemVals.dbData[prop] || itemVals.cachedData[prop]);
@@ -2141,7 +2136,6 @@
       if (false === this.checkPropertiesValidity()) {
         return false;
       }
-      console.info("Formulaire %s valide.", this.formId);
       this.__observeForm();
       this.observeForm();
       this.checked = true;
@@ -2401,15 +2395,11 @@
         let [entry, entryId] = foo.split("|");
         entryId = (entryId || entry).trim();
         if (Entry.doesIdExist(entryId)) {
-          console.log("Id d'entr\xE9e existante", entryId);
         } else if (Entry.doesEntreeExist(entryId)) {
-          console.log("Entr\xE9e existante (par son nom)", entryId);
         } else if (entryId.endsWith("s")) {
           const entryIdSing = entryId.substring(0, entryId.length - 1);
           if (Entry.doesEntreeExist(entryIdSing)) {
-            console.log("Entr\xE9e existante (pas son nom singulier)", entryId);
           } else if (Entry.doesIdExist(entryIdSing)) {
-            console.log("Id entr\xE9e existante (dans sa forme singuli\xE8re)", entryId);
           }
         } else {
           founds.push(entryId);
@@ -2489,13 +2479,10 @@
      * Procédure complexe (ComplexRpc)
      */
     async onSaveEditedItem(data2save) {
-      console.info("Item \xE0 sauvegarder", this.editedItem);
-      console.info("Donn\xE9es \xE0 sauvegarder", data2save);
       const itemSaver = new ComplexRpc({
         call: Entry.saveItem.bind(Entry, data2save)
       });
       const res = await itemSaver.run();
-      console.log("res dans onSave", res);
       if (res.ok) {
         Entry.panel.flash("Entr\xE9e enregistr\xE9e avec succ\xE8s en DB.", "notice");
         let item, nextItem;
@@ -3010,7 +2997,6 @@
     ComplexRpc.resolveRequest(params.CRId, params.resultat);
   });
   RpcEntry.on("after-saved-item", (params) => {
-    console.log("[CLIENT Entry] R\xE9ception du after-saved-item", params);
     ComplexRpc.resolveRequest(params.CRId, params);
   });
   window.Entry = Entry;

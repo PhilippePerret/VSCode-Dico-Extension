@@ -131,7 +131,6 @@ export class PanelClient<T extends AnyItemType> {
    * 
    */
   public nextLinkSelection(withMaj: boolean){
-    console.log("-> nextLinkSelection, withMaj = %s", withMaj ? 'true' : 'false');
     const itemId: string | undefined = this.getSelection();
     if (itemId === undefined) { return ;}
     const obj = this.accessTable.getObj(itemId);

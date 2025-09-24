@@ -332,7 +332,7 @@ export class VimLikeManager {
 
   // Mode clavier pour le formulaire
   onKeyDownModeForm(ev: KeyboardEvent) {
-    console.log("-> onKeyDownModeForm");
+    // console.log("-> onKeyDownModeForm", ev);
     // Pour empêcher toute action pendant la sauvegarde
     if ( this.form.saving === true ) { return; }
     if (ev.metaKey) { return this.onKeyDownWithMeta(ev); }
