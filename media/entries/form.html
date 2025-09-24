@@ -1,0 +1,25 @@
+<form id="entry-form" class="hidden item-form">
+ <div id="entry-entree-container">
+    <label for="entry-entree">Entrée</label>
+    <input type="text" id="entry-entree" class="main" tabindex="1" />
+  </div>
+   <div id="entry-id-container">
+    <label for="entry-id">Uniq ID</label>
+    <input type="text" id="entry-id" data-state="locked" disabled="disabled" tabindex="2" />
+    <button type="button" class="btn-lock-id simple">🔒</button>
+  </div>
+  <div id="entry-genre-container">
+    <label for="entry-genre">Genre</label>
+    <select id="entry-genre" tabindex="3"></select>
+  </div>
+  <div id="entry-categorie_id-container">
+    <label for="entry-categorie_id">Catégorie</label>
+    <input type="text" id="entry-categorie_id" tabindex="4" />
+  </div>
+  <div id="entry-definition-container">
+    <label for="entry-definition">Définition</label>
+    <textarea id="entry-definition" tabindex="5"></textarea>
+  </div>
+  <!-- Pour ne pas faire de l'ombre au footer du panneau -->
+  <div id="footer"></div>
+</form>

@@ -1,0 +1,7 @@
+
+
+
+gem 'sqlite3', '~>2.7.3'
+gem 'yaml'
+gem 'json'
+gem 'fileutils'

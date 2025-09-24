@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../node_modules/tributejs/dist/tribute.css"],
+  "sourcesContent": [".tribute-container {\n  position: absolute;\n  top: 0;\n  left: 0;\n  height: auto;\n  max-height: 300px;\n  max-width: 500px;\n  overflow: auto;\n  display: block;\n  z-index: 999999;\n}\n.tribute-container ul {\n  margin: 0;\n  margin-top: 2px;\n  padding: 0;\n  list-style: none;\n  background: #efefef;\n}\n.tribute-container li {\n  padding: 5px 5px;\n  cursor: pointer;\n}\n.tribute-container li.highlight {\n  background: #ddd;\n}\n.tribute-container li span {\n  font-weight: bold;\n}\n.tribute-container li.no-match {\n  cursor: default;\n}\n.tribute-container .menu-highlighted {\n  font-weight: bold;\n}"],
+  "mappings": ";AAAA,CAAC;AACC,YAAU;AACV,OAAK;AACL,QAAM;AACN,UAAQ;AACR,cAAY;AACZ,aAAW;AACX,YAAU;AACV,WAAS;AACT,WAAS;AACX;AACA,CAXC,kBAWkB;AACjB,UAAQ;AACR,cAAY;AACZ,WAAS;AACT,cAAY;AACZ,cAAY;AACd;AACA,CAlBC,kBAkBkB;AACjB,WAAS,IAAI;AACb,UAAQ;AACV;AACA,CAtBC,kBAsBkB,EAAE,CAAC;AACpB,cAAY;AACd;AACA,CAzBC,kBAyBkB,GAAG;AACpB,eAAa;AACf;AACA,CA5BC,kBA4BkB,EAAE,CAAC;AACpB,UAAQ;AACV;AACA,CA/BC,kBA+BkB,CAAC;AAClB,eAAa;AACf;",
+  "names": []
+}

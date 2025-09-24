@@ -1,0 +1,50 @@
+<form id="oeuvre-form" class="hidden item-form">
+
+  <div id="oeuvre-titre_affiche-container">
+    <label for="oeuvre-titre_affiche">Tit. affiché</label>
+    <input type="text" id="oeuvre-titre_affiche" class="main" tabindex="1" />
+    <shortcut class="btn-get-infos" title="Pour rechercher sur le web les informations sur l'œuvre.">i</shortcut>
+  </div>
+ 
+  <div id="oeuvre-id-container">
+    <label for="oeuvre-id">Uniq ID</label>
+    <input type="text" id="oeuvre-id" tabindex="2" disabled="disabled" />
+    <button type="button" class="btn-lock-id simple">🔒</button>
+  </div>
+
+  <div id="oeuvre-titre_original-container">
+    <label for="oeuvre-titre_original">Tit original</label>
+    <input type="text" id="oeuvre-titre_original" tabindex="3" />
+  </div>
+  
+  <div id="oeuvre-titre_francais-container">
+    <label for="oeuvre-titre_francais">Tit français</label>
+    <input type="text" id="oeuvre-titre_francais" tabindex="4" /> 
+  </div>
+
+  <div id="oeuvre-auteurs-container">
+    <label for="oeuvre-auteurs">Auteurs</label>
+    <input type="text" id="oeuvre-auteurs" tabindex="5" />
+  </div>
+
+  <div id="oeuvre-annee-container">
+    <label for="oeuvre-annee">Année</label>
+    <input type="text" id="oeuvre-annee" tabindex="6" /> 
+    <span id="oeuvre-type-container" class="container">
+      <label for="oeuvre-type">Type</label>
+      <select id="oeuvre-type"></select>
+    </span>
+ </div>
+
+  <div id="oeuvre-resume-container">
+    <label for="oeuvre-resume">Résumé</label>
+    <textarea id="oeuvre-resume" tabindex="7"></textarea>
+  </div>
+
+  <div id="oeuvre-notes-container">
+    <label for="oeuvre-notes">Notes</label>
+    <textarea id="oeuvre-notes" tabindex="8"></textarea>
+  </div>
+  <!-- Pour ne pas faire de l'ombre au footer du panneau -->
+  <div id="footer"></div>
+</form>

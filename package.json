@@ -1,0 +1,76 @@
+{
+  "name": "dico-cnario",
+  "displayName": "Dico Scénario",
+  "description": "Assistant à la rédaction du Grand Dictionnaire du Scénario et de la Narration",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.102.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "dico-cnario.ouvre",
+        "category": "Dico",
+        "title": "Ouvre"
+      },
+      {
+        "command": "dico-cnario.dev-tools",
+        "category": "Dico",
+        "title": "Ouvrir Developer Tools"
+      },
+      {
+        "command": "dico-cnario.reload-db",
+        "category": "Dico",
+        "title": "Recharger Base de Données"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "npm run compile:extension && npm run compile:webviews",
+    "compile:extension": "tsc -p ./",
+    "compile:webviews": "node build-webviews.mjs",
+    "watch": "npm run watch:extension",
+    "watch:extension": "tsc -watch -p ./",
+    "watch:webviews": "node build-webviews.mjs --watch",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test",
+    "clean": "rm -rf out/ media/*-bundle.js media/*-bundle.js.map",
+    "rebuild": "npm run clean && npm run compile",
+    "dev": "npm run compile && concurrently \"npm run watch:extension\" \"npm run watch:webviews\"",
+    "update-test-data": "node ./scripts/update-db.mjs",
+    "import-data": "ruby ./src/data/import-data.rb",
+    "export-data": "ruby ./src/data/export-data.rb"
+  },
+  "concurrently": "^7.6.0",
+  "scripts_notes": {
+    "dev": "Lance le mode développement avec compilation automatique de l'extension ET des webviews"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "@types/sqlite3": "^3.1.11",
+    "@types/vscode": "^1.102.0",
+    "@typescript-eslint/eslint-plugin": "^8.39.0",
+    "@typescript-eslint/parser": "^8.39.0",
+    "@vscode/codicons": "^0.0.39",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2",
+    "concurrently": "^9.2.0",
+    "esbuild": "^0.25.9",
+    "eslint": "^9.32.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  }
+}

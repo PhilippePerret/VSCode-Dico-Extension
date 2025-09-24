@@ -1,0 +1,40 @@
+<form id="exemple-form" action="" method="POST" class="hidden item-form">
+  <div id="exemple-id-container">
+    <label for="exemple-id">ID (calc)</label>
+    <input type="text" id="exemple-id" disabled="disabled" style="flex: 0 0 140px;" />
+    <span style="margin-left:1em;opacity:0.5;">(id. calculé — &lt;oeuvre>-&lt;indice>)</span>
+  </div>
+  <div id="exemple-entry_id-container">
+    <label for="exemple-entry_id">Entrée</label>
+    <input type="text" id="exemple-entry_id" disabled="disabled" style="flex: 0 0 140px;"/>
+    <span id="exemple-entry-explicit" style="flex: 1 1 auto;margin-left: 1em;"><em>Nom de l'entrée</em></span>
+  </div>
+  <div class="explication">
+    <label for=""></label>
+    <span>Choisissez l'entrée dans le panneau des entrées et tapez <shortcut>C</shortcut> (c majuscule comme « Choisir »).</span>
+  </div>
+  <div id="exemple-oeuvre_id-container">
+    <label for="exemple-oeuvre_id">Œuvre</label>
+    <input type="text" id="exemple-oeuvre_id" disabled="disabled" style="flex: 0 0 140px;" />
+    <span id="exemple-oeuvre-explicit" style="flex: 1 1 auto;margin-left:1em;"><em>Titre de l’œuvre</em></span>
+  </div>
+  <div class="explication">
+    <label for=""></label>
+    <span>Choisissez l’œuvre dans le panneau des œuvres et tapez <shortcut>C</shortcut> (c majuscule comme « Choisir »).</span>
+  </div> 
+  <div id="exemple-content-container">
+    <label for="exemple-content">Contenu</label>
+    <textarea id="exemple-content" tabindex="5"></textarea>
+  </div>
+  <div class="explication">
+    <label for=""></label>
+    <span>(ajouter _TITRE_ à l'endroit où doit être placé le titre, sinon, il sera précisé au début de l'exemple sous la forme <em>« dans le roman TITRE, etc. »</em>.</span>
+  </div> 
+  <div id="exemple-notes-container">
+    <label for="exemple-notes">Notes</label>
+    <textarea id="exemple-notes" tabindex="5"></textarea>
+  </div>
+
+  <!-- Pour ne pas faire de l'ombre au footer du panneau -->
+  <div id="footer"></div>
+</form>

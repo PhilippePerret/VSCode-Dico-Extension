@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>{{PANEL_TITLE}}</title>
+	<link rel="stylesheet" href="{{COMMON_CSS_URI}}">
+	<link rel="stylesheet" href="{{CODICON_CSS_URI}}">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css">
+	{{SPECIFIC_STYLES}}
+</head>
+
+<body>
+	<header>
+		<h2>{{PANEL_TITLE}}</h2>
+		<div id="message"></div>
+		<!-- Pour modifier la modalité de recherche (exemples pour le moment) -->
+		<div id="search-by-div" class="hidden">
+			<span>Recherche par</span>
+			<select id="search-by">
+				<option value="by-title">Titre d’œuvres</option>
+				<option value="by-entry">Entrée du dictionnaire</option>
+				<option value="by-content">Contenu de l’exemple</option>
+			</select>
+		</div>
+		<div id="search-bar">
+			<i class="fa-solid fa-filter"></i>
+			<input type="text" id="search-input" tabindex="-1" />
+		</div>
+</header>
+	<main id="items">
+		{{MAIN_CONTENT}}
+	</main>
+
+	{{TEMPLATES}}
+
+	{{EDIT_FORM_CONTENT}}
+
+	<footer>
+		<input type="text" id="panel-console" tabindex="-1" />
+		<div id="main-tools-container">
+			{{TOOLS_CONTENT}}
+		</div>
+		<div id="current-mode">MODE : <span id="mode-name">NORMAL</span></div>
+	</footer>
+
+	<script src="{{MAIN_JS_URI}}"></script>
+</body>
+
+</html>

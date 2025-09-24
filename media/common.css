@@ -1,0 +1,432 @@
+h1 {
+	font-variant: small-caps;
+	font-size: 2em;
+	font-weight: normal;
+}
+h2 {
+	font-variant: small-caps;
+	font-size: 1.8em;
+	font-weight: normal;
+}
+h3 {
+	font-variant: small-caps;
+	font-size: 1.4em;
+	font-weight: normal;
+}
+a {
+	cursor: pointer;
+}
+/* Un terme technique */
+a.tt {
+	font-family: cursive;
+	font-size: 1.1em;
+	color: #2828a9!important;
+}
+/* ->(mot) */
+a.arrowed {
+	font-family: cursive;
+	font-size: 1.1em;
+	color: rgb(76, 4, 4)!important;
+}
+a.current {
+	background-color: #339ecd;
+	color: white;
+}
+button.simple {
+	border: none;
+	background-color: inherit;
+}
+
+.explication { font-size: 0.75em; opacity: 0.5; }
+.explication:hover {opacity: 1}
+
+/* Pour styliser un raccourci clavier */
+shortcut {
+	font-family: Arial, Helvetica, sans-serif;
+	font-weight: bold;
+	font-size: 8pt;
+	border: 1px solid;
+	padding: 0px 4px 2px;
+	border-radius: 3px;
+	max-width: 8px !important;
+	min-width: 8px !important;
+	max-height: 13px !important;
+	min-height: 13px !important;
+	text-align: center;
+	padding-top: 1px;
+	padding-bottom: 1.6px;
+}
+shortcut + span {margin-left: 0.2em; margin-right: 1em;}
+
+table.shortcuts, table.commands {
+	margin:1em; 
+	border: 1px solid rgba(39, 23, 158, 0.469);
+}
+table.commands tr:not(:first-child) td:nth-child(1) {
+	font-family: 'Courier New', Courier, monospace;
+	font-weight: bold;
+}
+
+table.commands tr:first-child td,
+table.shortcuts tr:first-child td {
+	font-variant: all-small-caps;
+	font-size: 14.5px;
+}
+table.commands tr:first-child td {
+	padding-left: 1em;
+}
+
+table.shortcuts tr:first-child,
+table.commands tr:first-child {
+	background-color: rgba(39, 23, 158, 0.469);
+	color: white;
+	font-weight: bold;
+	font-style: italic;
+}
+
+table.shortcuts tr:first-child td {
+	padding: 2px 12px;
+}
+table.shortcuts tr > td:nth-child(1) {
+	text-align: center;
+}
+table.shortcuts tr:not(:first-child) > td:nth-child(2){
+	text-align: center;
+	font-size: 0.85em;
+	font-variant: small-caps;
+	width: 80px;
+}
+	/* Dans les formulaires (a, b, c, etc. */
+	form label shortcut {
+		float: right;
+    margin-right: 4px;
+    margin-top: 1px;
+	}
+	
+	/*
+		Pour mettre en exergue les champs d'édition
+	*/
+	input[type="text"]:not(:focus), textarea:not(:focus), select:not(:focus) {
+		background-color: darkseagreen;
+	}
+	input[type="text"]:focus, textarea:focus, select:focus {
+		background-color: white;
+		outline: none!important;
+	}
+	
+	body {
+	border: 1px solid;
+	font-family: Charter;
+	background-color: whitesmoke;
+	color: #333;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+}
+
+body:not(.actif) {
+	opacity: 0.5;
+}
+
+body.actif {
+	opacity: 1;
+}
+
+body[data-mode="mode-normal"] {
+	background-color: white;
+}
+body[data-mode="mode-edit"] {
+	background-color: white;
+}
+body[data-mode="mode-null"] div#current-mode {
+	background-color: #CCCCCC;
+}
+body[data-mode="mode-normal"] div#current-mode {
+	background-color: lightgreen;
+}
+body[data-mode="mode-edit"] div#current-mode {
+	background-color: lightsalmon;
+}
+body[data-mode="mode-form"] div#current-mode { 
+	background-color: #fff769; 
+}
+footer div#current-mode {
+	display: block;
+	width: calc(100% - 16px);
+	font-size: 8pt;
+	padding: 2px 8px;
+}
+
+header {
+	position: sticky;
+	top: 0;
+	height: 60px;
+	background-color: #CCCCCC;
+	border-bottom: 1px solid var(--vscode-sideBar-border);
+	padding: 6px;
+}
+
+header h2 {
+	position: absolute;
+	top: -8px;
+	left: 4px;
+	margin: 0;
+	font-size: 50px;
+	font-variant: small-caps;
+	color: #339ecd;
+	opacity: 0.3;
+	font-style: italic;
+	z-index: -1;
+}
+
+header div#message {
+	position: absolute;
+	display:block;
+	width: calc(100% - 28px);
+	font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+	font-size: 11pt;
+	padding: 4px 8px;
+	min-height: 30px;
+	max-height: 64px;
+	overflow-y: auto;
+	background-color: #DDDDDD;
+	z-index: 10;
+	opacity:0.6;
+}
+header div#message div.notice {background-color:lightblue; color:blue;}
+header div#message div.action {background-color: darkorange; color: darkred;}
+header div#message div.warn {background-color: #FFEEEE; color: red;}
+header div#message div.error {background-color: red; color: white;}
+
+#search-bar {
+	display: flex;
+	margin-left: 0px;
+	position: absolute;
+	bottom: 2px;
+	width: 97.4%;
+	gap: 4px;
+}
+#search-bar i {
+	flex:0 0 auto;
+	color: #555;
+}
+
+#search-input {
+	flex: 1 1 auto;
+	background: #FEFEFE;
+	color: #333;
+	border: 1px solid var(--vscode-input-border);
+	padding: 4px 8px;
+	font-size: 11px;
+}
+
+#search-by-div {
+	font-size: 0.8em;
+}
+
+#search-by-div select {
+	font-size: inherit;
+	font-family: inherit;
+}
+
+.tips {
+	font-size: 9px;
+	color: inherit;
+	margin-top: 2px;
+	opacity: 0.5;
+}
+
+.tips:hover {
+	opacity: 1;
+}
+
+main#items {
+	flex: 1;
+	overflow-y: auto;
+	overflow-x: hidden;
+	padding: 10px;
+	/* Force scroll in VSCode webview */
+	max-height: calc(100vh - 120px);
+	position: relative;
+}
+
+#edit-form {
+	padding: 10px;
+	background-color: inherit;
+	border-top: 1px solid var(--vscode-sideBar-border);
+}
+
+.hidden {
+	display: none;
+}
+
+footer {
+	position: sticky;
+	bottom: 0;
+	background-color: #CCC;
+	border-top: 1px solid var(--vscode-statusBar-border);
+	display: block;
+	width: 100%;
+	justify-content: space-between;
+	align-items: center;
+}
+
+div#footer {
+	margin-top: 1em;
+	padding-left: 1em;
+}
+
+#footer-shortcuts {
+	background-color: darkorange;
+	padding: 0.5em;
+}
+
+#panel-console {
+	display: block;
+	width: calc(100% - 16px);
+	background: black;
+	color: #EFEFEF;
+	border: 1px solid var(--vscode-input-border);
+	padding: 4px 8px;
+	font-size: 11px;
+	flex: 1;
+	margin-right: 10px;
+	font-family: menlo;
+}
+
+#main-tools-container {
+	display: flex;
+	gap: 5px;
+}
+
+/* Les éléments principaux de chaque panneau, c'est-à-dire la définition dans le
+dictionnaire, le film dans les films et l'exemple dans les exemples */
+
+main#items .item {
+	border: 2px solid #DDD;
+	border-radius: 0.5em;
+	margin-bottom: 1em;
+	padding: 0.5em 1em;
+}
+
+main#items .item.selected {
+	border-color: blue;
+}
+
+/* L'élément principal, dans l'élément, i.e. l'entrée pour le dictionnaire,
+le titre affiché pour le film, l'entrée pour l'exemple (l'index ? aucun ?) */
+main#items>.item .main-prop {
+	font-weight: bold;
+}
+
+
+/*
+FORMULAIRE
+
+*/
+form.item-form {
+	padding: 1em 10px;
+	border: 2px solid cadetblue;
+	background-color: cadetblue;
+}
+form.item-form input.main {
+	font-size: 15pt!important;
+}
+
+form.item-form > div {
+	display: flex;
+	padding-top: 2px;
+	vertical-align: top;
+}
+form.item-form > div > label,
+.container > label {
+	width: 90px;
+	flex: 0 0 auto;
+	display:inline-block; /* pour que le short-cut reste pas trop loin (cf. definition d'entrée */
+	font-family: 'Arial Narrow', Arial, Helvetica, sans-serif;
+	font-weight: bold;
+	font-size: 10.5pt;
+}
+form.item-form > div > label + * {
+	flex: 1 1 auto;
+}
+
+form.item-form input,
+form.item-form textarea,
+form.item-form select:not(.auto) {
+	width: 100%;
+	font-family: inherit;
+	font-size: inherit;
+}
+form.item-form div.buttons {
+	display:flex; 
+	justify-content:flex-end;
+	margin-top: 1em;
+}
+form.item-form div.buttons button {
+	margin-left: 12px;
+}
+
+/* 
+	=== AIDE CONTEXTUELLE ===
+*/
+
+div.aide-contextuelle {
+	z-index: 1000;
+	background-color: #f7ffff;
+	border: 2px solid green;
+	box-shadow: 8px 6px 8px -2px #888;
+	font-size: 10pt;
+	position: fixed;
+	top: 26px;
+	left: 10%;
+	right: 10%;
+	overflow-y:hidden;
+}
+div.aide-contextuelle div.content {
+	padding: 2em 1em;
+	overflow-y: auto;
+	height: 460px;
+}
+div.aide-contextuelle div.buttons {
+	position: sticky;
+	bottom: 0px;
+	width: calc(100% - 32px);
+	padding: 8px 16px;
+	background-color: #33d033;
+	font-family: Arial, Helvetica, sans-serif;
+}
+
+
+/* 
+========== h(AUTOCOMPLETION) ===================
+*/
+ 
+div.autocompleter {
+	display: block;
+	position: absolute;
+	bottom: 0px;
+	right: 0px;
+	width: 240px;
+	z-index: 100;
+	background-color: white;
+}
+div.autocompleter input {
+	display: block;
+	width: calc(100% - 6px);
+}
+div.autocompleter select {
+	display: block;
+	size: 15;
+	width: 100%;
+	background-color: white;
+}
+div.autocompleter select option {
+	background-color: white;
+}
+div.autocompleter select option.selected {
+	background-color: red;
+	color: white;
+} 

@@ -1,0 +1,37 @@
+div.entry {
+  display: block; /* juste pour avoir quelque chose */
+}
+div.entry span.entry-entree {
+  font-family: 'Arial Narrow', Arial, sans-serif;
+  font-size: 1.1em;
+}
+div.entry span.entry-category , 
+div.entry span.entry-genre {
+  float: right;
+  font-style: italic;
+  font-size: 0.8em;
+}
+div.entry span.entry-genre {
+  margin-left: 2em;
+}
+
+div.entry div.entry-definition {
+  margin-left: 1em;
+  margin-top: 5px;
+  text-align: justify;
+}
+
+
+/**
+*
+* FORM 
+*
+**/
+form.item-form div#entry-definition-container {
+  display:block; /* pas flex comme les autres*/
+}
+form.item-form textarea#entry-definition {
+  height: 300px;
+  font-size:13pt;
+  width:100%;
+}

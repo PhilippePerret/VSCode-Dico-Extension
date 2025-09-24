@@ -1,0 +1,29 @@
+div.exemple {
+  display: block; /* juste pour avoir quelque chose */
+}
+.exemple-entry {
+  font-family: 'Arial Narrow', Arial, Helvetica, sans-serif;
+  font-variant: small-caps;
+  color: #555;
+}
+
+h2.titre-oeuvre {
+  font-family: 'Arial Narrow', Arial, sans-serif ;
+  cursor: pointer;
+}
+
+.exemple span.exemple-indice {
+  float: right;
+  color: #777;
+  border: 1px solid #777;
+  padding: 3px 6px;
+  border-radius: 1em;
+  margin-left: 0.5em;
+}
+
+form textarea#exemple-content {
+  height: 120px;
+}
+form textarea#exemple-notes {
+  height: 80px;
+}
