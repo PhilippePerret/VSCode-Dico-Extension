@@ -167,12 +167,12 @@ export const RpcOeuvre:RpcChannel = createRpcClient();
 
 RpcOeuvre.on('activate', () => {
   if ( OeuvrePanel.isActif ) { return ; }
-  console.log("[CLIENT OEUVRE] Je dois marquer le panneau Oeuvre actif");
+  // console.log("[CLIENT OEUVRE] Je dois marquer le panneau Oeuvre actif");
   OeuvrePanel.activate();
 });
 RpcOeuvre.on('desactivate', () => {
   if ( OeuvrePanel.isInactif ) { return ; }
-  console.log("[CLIENT OEUVRE] Je dois marquer le panneau Oeuvre comme inactif.");
+  // console.log("[CLIENT OEUVRE] Je dois marquer le panneau Oeuvre comme inactif.");
   OeuvrePanel.desactivate();
 });
 

@@ -1,8 +1,15 @@
 # Todo list
 
 * J'EN SUIS À :
-  * Faire une sortie du fichier pour Antidote (en mettant le maximum de choses, les ouvrages de références et les œuvres cités par exemple);
-  * Faire une sortie du fichier entrées pour prawn for book (l'essayer)
+  * Faire une sortie du fichier entrées pour prawn for book (l'essayer pour produire le livre)
+
+  * mettre une commande pour exporter le fichier antidote/relecture
+    (exportAntidote/exportBetaLecture)
+    -> documenter (aide)
+  * mettre une commande pour exporter le fichier pour Prawn-for-book
+    (fichiersPFB — en fait, il prépare tous les fichiers utiles)
+    -> documenter (aide)
+
  
   * Il faudrait vraiment faire un utilitaire d'autocomplétion qui, à la
     base, servirait d'abord à autocompléter du texte, sans avoir forcément

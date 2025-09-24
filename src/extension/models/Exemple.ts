@@ -103,6 +103,10 @@ export class Exemple {
 		App.incAndCheckReadyCounter();
 	}
 	protected static finalizeCachedItem(item: ExempleType): ExempleType {
+		console.log("[finalized] Item", item);
+		if ( item.dbData.entry_id === 'unused') {
+			return item;
+		}
 		const entry = Entry.get(item.dbData.entry_id);
 		const entree = entry.cachedData.entree_min;
 		const oeuvre = Oeuvre.get(item.dbData.oeuvre_id);
