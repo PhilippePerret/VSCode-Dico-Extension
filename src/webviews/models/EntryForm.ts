@@ -309,8 +309,6 @@ export class EntryForm extends FormManager<EntryType, DBEntryType> {
   observeForm(): void {
     // Le bouton pour changer l'ID
     this.btnLockId.addEventListener('click', this.onLockId.bind(this));
-    // Pour attacher l'autocomplétion
-    // this.attachAutocompletion();
   }
   get btnLockId() { return this.obj.querySelector('button.btn-lock-id') as HTMLButtonElement; }
 

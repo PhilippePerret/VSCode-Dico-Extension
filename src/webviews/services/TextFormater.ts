@@ -51,7 +51,7 @@ export class TextFormater {
   private formateDefinition(content: string): string {
     return content
       // Tous les liens vers les définitions
-      .replace(/ttp\(([^)|]+)(?:\|([^)]+))?\)/g, this.replacerEntryLinkWithPage.bind(this, 'tt'))
+      .replace(/(?:ttp|term|index)\(([^)|]+)(?:\|([^)]+))?\)/g, this.replacerEntryLinkWithPage.bind(this, 'tt'))
       .replace(/tt\(([^)|]+)(?:\|([^)]+))?\)/g, this.replacerEntryLink.bind(this, 'tt'))
       .replace(/ttw\(([^)|]+)(?:\|([^)]+))?\)/g, this.replacerEntryLink.bind(this, 'no-style'))
       .replace(/\-\>\(([^)|]+)(?:\|([^)]+))?\)/g, this.replacerEntryLink.bind(this, 'arrowed'))

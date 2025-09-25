@@ -489,9 +489,10 @@
 
 
       ${this.buildShortcutsTable([
-            { s: "tt\u21E5", m: "EDIT", d: "Ajouter un mot technique index\xE9" },
-            { s: "->(\u21E5", m: "EDIT", d: "Ajouter un mot technique avec num\xE9ro de page" },
-            { s: "ttp\u21E5", m: "EDIT", d: "Ajouter la page d\u2019un mot technique" }
+            { s: "tt\u21E5", m: "EDIT", d: "Mot technique format\xE9 et index\xE9" },
+            { s: "->(\u21E5", m: "EDIT", d: "Mot technique format\xE9, index\xE9 avec num. de page" },
+            { s: "idx\u21E5", m: "EDIT", d: "Mot technique index\xE9, non format\xE9" },
+            { s: "erm(\u21E5", m: "EDIT", d: "Mot technique format\xE9, non index\xE9" }
           ])}
 
 
@@ -507,7 +508,7 @@
           return `
       ## Cr\xE9ation d'un \xE9l\xE9ment
       
-      Vous pouvez vous d\xE9placer de champ en champ avec les touches 
+      Vous pouvez vous placer de champ en champ avec les touches 
       <shortcut>a</shortcut>, <shortcut>b</shortcut>, etc. ou la touche 
       tabulation.`;
         // CRÉATION D'UNE OEUVRE
@@ -540,7 +541,8 @@
           return `
       ## \xC9dition d'un \xE9l\xE9ment
       
-      Vous pouvez aller de champ en champ avec les touches etc.`;
+      Vous pouvez aller de champ en champ avec les touches-raccourcis indiqu\xE9es en regard de chaque champ.
+      `;
         // ÉDITION D'UNE OEUVRE
         case "edit-oeuvre":
           return `
@@ -600,7 +602,11 @@
       kbb.set("q", this.closeCHelp.bind(this));
       let bypass;
       let content = _Help.get(context);
-      return [this.formate(content), kbb];
+      if (content) {
+        return [this.formate(content), kbb];
+      } else {
+        return ["", kbb];
+      }
     }
     formate(str) {
       return str.trim().replace(/^\s+/gm, "").replace(/>\n+/g, ">").replace(/\n+<\//g, "</").replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\*(.+?)\*/g, "<em>$1</em>").replace(/^### (.+)$/mg, "<h3>$1</h3>").replace(/^## (.+)$/mg, "<h2>$1</h2>").replace(/^# (.+)$/mg, "<h1>$1</h1>").split("\n\n").map((s) => {
@@ -891,17 +897,18 @@
             case "dim":
               ev.stopPropagation();
               return this.klass.autocompleteDim(ev);
+            case "tt(":
+              return this.autoCompleteBaliseTerm("tt", ev);
+            case "rm(":
+              return this.autoCompleteBaliseTerm("tt", ev);
           }
           switch (this.twolast.join("")) {
             case ">(":
-              ev.stopPropagation();
-              return this.klass.autoCompleteBaliseTerm("->", ev);
+              return this.autoCompleteBaliseTerm("->", ev);
             case "tp":
-              ev.stopPropagation();
-              return this.klass.autoCompleteBaliseTerm("ttp", ev);
+              return this.autoCompleteBaliseTerm("ttp", ev);
             case "tt":
-              ev.stopPropagation();
-              return this.klass.autoCompleteBaliseTerm("tt", ev);
+              return this.autoCompleteBaliseTerm("tt", ev);
           }
           ev.target.blur();
           return stopEvent(ev);
@@ -912,6 +919,10 @@
       this.twolast.shift();
       this.twolast.push(ev.key);
       return true;
+    }
+    autoCompleteBaliseTerm(balise, ev) {
+      ev.stopPropagation();
+      return this.klass.autoCompleteBaliseTerm("tt", ev);
     }
     twolast = ["", ""];
     threelast = ["", "", ""];
@@ -2607,7 +2618,7 @@
     }
     REG_EXEMPLES = /EXEMPLES\[([^\]]+)\]/g;
     formateDefinition(content) {
-      return content.replace(/ttp\(([^)|]+)(?:\|([^)]+))?\)/g, this.replacerEntryLinkWithPage.bind(this, "tt")).replace(/tt\(([^)|]+)(?:\|([^)]+))?\)/g, this.replacerEntryLink.bind(this, "tt")).replace(/ttw\(([^)|]+)(?:\|([^)]+))?\)/g, this.replacerEntryLink.bind(this, "no-style")).replace(/\-\>\(([^)|]+)(?:\|([^)]+))?\)/g, this.replacerEntryLink.bind(this, "arrowed")).replace(/dim\(([^)]+)\)/g, this.formateDiminutif.bind(this)).replace(this.REG_EXEMPLES, this.replacerExemples.bind(this));
+      return content.replace(/(?:ttp|term|index)\(([^)|]+)(?:\|([^)]+))?\)/g, this.replacerEntryLinkWithPage.bind(this, "tt")).replace(/tt\(([^)|]+)(?:\|([^)]+))?\)/g, this.replacerEntryLink.bind(this, "tt")).replace(/ttw\(([^)|]+)(?:\|([^)]+))?\)/g, this.replacerEntryLink.bind(this, "no-style")).replace(/\-\>\(([^)|]+)(?:\|([^)]+))?\)/g, this.replacerEntryLink.bind(this, "arrowed")).replace(/dim\(([^)]+)\)/g, this.formateDiminutif.bind(this)).replace(this.REG_EXEMPLES, this.replacerExemples.bind(this));
     }
     formateExemple(content) {
       return content;

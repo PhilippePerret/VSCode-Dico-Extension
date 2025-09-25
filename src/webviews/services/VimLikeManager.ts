@@ -278,18 +278,16 @@ export class VimLikeManager {
           case 'dim':
             ev.stopPropagation();
             return this.klass.autocompleteDim(ev);
+          case 'tt(': return this.autoCompleteBaliseTerm('tt(', ev);
+          case 'rm(': return this.autoCompleteBaliseTerm('tt(', ev);
+          case 'tp(': return this.autoCompleteBaliseTerm('tt(', ev); 
+
         }
         
         switch(this.twolast.join('')){
-          case '>(':
-            ev.stopPropagation();
-            return this.klass.autoCompleteBaliseTerm('->', ev);
-          case 'tp': 
-            ev.stopPropagation();
-            return this.klass.autoCompleteBaliseTerm('ttp', ev);
-          case 'tt':
-            ev.stopPropagation();
-            return this.klass.autoCompleteBaliseTerm('tt', ev);
+          case '>(': return this.autoCompleteBaliseTerm('->(', ev);
+          case 'tp': return this.autoCompleteBaliseTerm('ttp', ev);
+          case 'tt': return this.autoCompleteBaliseTerm('tt', ev);
         }
             //*/
         (ev.target as HTMLElement).blur();
@@ -306,6 +304,11 @@ export class VimLikeManager {
     // console.log("Deux dernières lettres = '%s'", this.twolast.join(''));
     return true;
 
+  }
+
+  private autoCompleteBaliseTerm(balise: string, ev: Event){
+    ev.stopPropagation();
+    return this.klass.autoCompleteBaliseTerm('tt', ev);
   }
   private twolast: [string, string] = ['', ''];
   private threelast: [string, string, string] = ['', '', ''];

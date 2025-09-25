@@ -53,9 +53,10 @@ export class Help {
 
 
       ${this.buildShortcutsTable([
-        {s: 'tt⇥', m:'EDIT', d: 'Ajouter un mot technique indexé'},
-        {s: '->(⇥', m:'EDIT', d: 'Ajouter un mot technique avec numéro de page'},
-        {s: 'ttp⇥', m:'EDIT', d: 'Ajouter la page d’un mot technique'}
+        {s: 'tt⇥', m:'EDIT', d: 'Mot technique formaté et indexé'},
+        {s: '->(⇥', m:'EDIT', d: 'Mot technique formaté, indexé avec num. de page'},
+        {s: 'idx⇥', m:'EDIT', d: 'Mot technique indexé, non formaté'},
+        {s: 'erm(⇥', m:'EDIT', d: 'Mot technique formaté, non indexé'},
       ])}
 
 
@@ -72,7 +73,7 @@ export class Help {
       case 'create-element': return `
       ## Création d'un élément
       
-      Vous pouvez vous déplacer de champ en champ avec les touches 
+      Vous pouvez vous placer de champ en champ avec les touches 
       <shortcut>a</shortcut>, <shortcut>b</shortcut>, etc. ou la touche 
       tabulation.`;
 
@@ -105,7 +106,8 @@ export class Help {
       case 'edit-element': return `
       ## Édition d'un élément
       
-      Vous pouvez aller de champ en champ avec les touches etc.`;
+      Vous pouvez aller de champ en champ avec les touches-raccourcis indiquées en regard de chaque champ.
+      `;
 
       // ÉDITION D'UNE OEUVRE
       case 'edit-oeuvre': return `
@@ -171,8 +173,10 @@ export class Help {
     const kbb = new Map();
     kbb.set('q', this.closeCHelp.bind(this));
     let bypass: {[x:string]: any};
-    let content: string = Help.get(context) as string;
-    return [this.formate(content as string) as string, kbb];
+    let content: string | undefined = Help.get(context);
+    if (content) {
+      return [this.formate(content) as string, kbb];
+    } else { return ['', kbb]; }
   }
 
   formate(str: string): string {
