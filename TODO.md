@@ -2,6 +2,8 @@
 
 * J'EN SUIS À :
   * Mettre l'identifiant de l'exemple dans le presse-papier en attendant, quand il n'y pas d'édition en cours.
+    - implémenter le fait de faire 'xx<lettre>' quand on est en édition pour jouer un shortcut.
+  * Documenter le fait de taper "xx<raccourci>" en mode édition, dans un champ de texte, donc.
   * Faire une sortie du fichier entrées pour prawn for book (l'essayer pour produire le livre)
   -> l'affecter à la commande 'exportPFB'
   -> Documenter l'aide générale

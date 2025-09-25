@@ -205,10 +205,12 @@ class EntryPanelClass extends PanelClient<EntryType> {
       this.activate();
       (this.form as EntryForm).insertInTextField('definition', exempleId);
     } else {
-      this.flash('Pour coller un identifiant d’exemple, il faut éditer une définition.', 'warn');
+      this.flash('Pour coller un identifiant d’exemple, il faut éditer une définition. Je le mets dans le presse-papier, vous pourrez le coller en tapant "xxp⇥" dans le texte.', 'warn');
+      this.clipboard.add(exempleId);
     }
   }
 }
+
 
 const EntryPanel = new EntryPanelClass({
   minName: 'entry',

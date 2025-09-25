@@ -1,5 +1,6 @@
 import { AnyDbType, AnyItemType } from "../../bothside/types";
 import { Entry } from "../models/Entry";
+import { EntryForm } from "../models/EntryForm";
 import { PanelClient } from "../PanelClient";
 import { AccessTable } from "./AccessTable";
 import { stopEvent } from "./DomUtils";
@@ -272,9 +273,9 @@ export class VimLikeManager {
   onKeyDownModeEdit(ev: KeyboardEvent) {
     if ( ev.metaKey ) { return this.onKeyDownWithMeta(ev) ; }
     switch(ev.key) {
-      case 'Tab': 
-      //*
-        switch(this.threelast.join('')){
+      case 'Tab':
+        const last3 = this.threelast.join('');
+        switch(last3){
           case 'dim':
             ev.stopPropagation();
             return this.klass.autocompleteDim(ev);
@@ -282,6 +283,11 @@ export class VimLikeManager {
           case 'rm(': return this.autoCompleteBaliseTerm('tt(', ev);
           case 'tp(':return this.autoCompleteBaliseTerm('tt(', ev);  
 
+          default: 
+            if (last3.startsWith('xx')){
+              this.executeShortcutInEditField(last3.substring(2, 3), (ev.target) as HTMLTextAreaElement | HTMLInputElement);
+              return stopEvent(ev);
+            }
         }
         
         switch(this.twolast.join('')){
@@ -304,6 +310,28 @@ export class VimLikeManager {
     // console.log("Deux dernières lettres = '%s'", this.twolast.join(''));
     return true;
 
+  }
+
+  /**
+   * Fonction appelée quand on table 'xx<lettre>' dans un champ de
+   * texte, avec <lettre> qui est un raccourci-clavier.
+   * 
+   * @param lettre Le raccourci clavier (une lettre)
+   * @param target Le textarea dans lequel a été joué le code xx<lettre>
+   */
+  private executeShortcutInEditField(lettre: string, target: HTMLTextAreaElement | HTMLInputElement){
+    switch(lettre){
+      case 'p':
+        // Il faut coller le texte du presse-papier au curseur
+        if ( target.id === 'entry-definition') {
+          (this.panel.form as EntryForm).insertInTextField('definition', this.panel.clipboard.paste(), 3);
+        } else {
+          console.error("Je ne sais pas paster dans le champ", target);
+        }
+        break;
+      default:
+        console.warn('Je ne sais pas quoi faire du shortcut "%s"', lettre);
+    }
   }
 
   private autoCompleteBaliseTerm(balise: string, ev: Event){

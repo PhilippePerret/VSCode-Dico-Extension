@@ -49,7 +49,6 @@ export class SelectionManager {
     if (this.current) {
       nextId = (this.accessTable.getNextVisible(this.current) as AnyItemType)?.id;
     }
-    console.log("nextId", nextId);
     nextId = nextId || (this.accessTable.getFirstVisible() as AnyItemType).id;
     
     this.debugit('Affectation de l’item', nextId);

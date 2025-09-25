@@ -53,12 +53,16 @@ export class EntryForm extends FormManager<EntryType, DBEntryType> {
    * Pour insérer du texte dans un champ d'édition (pour le moment,
    * je pense que ça ne fonctionne pour les textareas, mais il
    * faudrait essayer aussi avec les input-text)
+   * 
+   * @param fieldId Identifiant de la propriété, en réalité, PAS du champ.
+   * @param texte Le texte à insérer
+   * @param triggerLen Définit la longueur de trigger qu'il faut retirer. Si, par exemple, le trigger doit disparaitre complètement du texte (comme pour une commande 'xx<shortcut>'), on met la longueur complète du trigger (à savoir 3, ici).
    */
-  insertInTextField(fieldId: string, texte: string){
+  insertInTextField(fieldId: string, texte: string, triggerLen: number | undefined = 0){
     const target = this.field(fieldId) as HTMLTextAreaElement;
     target.setRangeText(
       texte,
-      target.selectionStart, target.selectionEnd, 'end'
+      target.selectionStart - triggerLen, target.selectionEnd, 'end'
     );
     // On simule le focus dans le champ (est-ce que ça suffira ?)
     setTimeout(target.focus.bind(target), 200);

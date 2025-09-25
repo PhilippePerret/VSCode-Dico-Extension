@@ -894,7 +894,8 @@
       }
       switch (ev.key) {
         case "Tab":
-          switch (this.threelast.join("")) {
+          const last3 = this.threelast.join("");
+          switch (last3) {
             case "dim":
               ev.stopPropagation();
               return this.klass.autocompleteDim(ev);
@@ -904,6 +905,11 @@
               return this.autoCompleteBaliseTerm("tt(", ev);
             case "tp(":
               return this.autoCompleteBaliseTerm("tt(", ev);
+            default:
+              if (last3.startsWith("xx")) {
+                this.executeShortcutInEditField(last3.substring(2, 3), ev.target);
+                return stopEvent(ev);
+              }
           }
           switch (this.twolast.join("")) {
             case ">(":
@@ -922,6 +928,26 @@
       this.twolast.shift();
       this.twolast.push(ev.key);
       return true;
+    }
+    /**
+     * Fonction appelée quand on table 'xx<lettre>' dans un champ de
+     * texte, avec <lettre> qui est un raccourci-clavier.
+     * 
+     * @param lettre Le raccourci clavier (une lettre)
+     * @param target Le textarea dans lequel a été joué le code xx<lettre>
+     */
+    executeShortcutInEditField(lettre, target) {
+      switch (lettre) {
+        case "p":
+          if (target.id === "entry-definition") {
+            this.panel.form.insertInTextField("definition", this.panel.clipboard.paste(), 3);
+          } else {
+            console.error("Je ne sais pas paster dans le champ", target);
+          }
+          break;
+        default:
+          console.warn('Je ne sais pas quoi faire du shortcut "%s"', lettre);
+      }
     }
     autoCompleteBaliseTerm(balise, ev) {
       ev.stopPropagation();
@@ -1014,6 +1040,29 @@
   Map.prototype.firstValue = function() {
     for (var v of this.values()) {
       return v;
+    }
+  };
+
+  // src/webviews/services/ClipboardManager.ts
+  var ClipboardManager = class {
+    constructor(panel) {
+      this.panel = panel;
+      this.container = [];
+    }
+    // La liste qui contient tout ce qui a été mis dans le
+    // presse-papier.
+    container = [];
+    size = 0;
+    add(foo) {
+      this.container.push(foo);
+      if (this.container.length > 100) {
+        this.container.shift();
+      } else {
+        ++this.size;
+      }
+    }
+    paste() {
+      return this.container[this.size - 1];
     }
   };
 
@@ -1398,6 +1447,10 @@
     _searchInput;
     _consInput;
     _keyManager;
+    _clipboardManager;
+    get clipboard() {
+      return this._clipboardManager;
+    }
     consoleManager;
     // type ConsoleManager
     _help;
@@ -1406,6 +1459,7 @@
       this.titName = data.titName;
       this._klass = data.klass;
       this.form = data.form;
+      this._clipboardManager = new ClipboardManager(this);
     }
     setPanelFocus(actif) {
       document.body.classList[actif ? "add" : "remove"]("actif");

@@ -8,6 +8,7 @@ import { VimLikeManager } from "./services/VimLikeManager";
 import "../bothside/class_extensions";
 import { AnyItemType } from "../bothside/types";
 import { stopEvent } from "./services/DomUtils";
+import { ClipboardManager } from "./services/ClipboardManager";
 
 
 export type FlashMessageType = 'notice' | 'warn' | 'error' | 'action';
@@ -395,6 +396,8 @@ export class PanelClient<T extends AnyItemType> {
   private _searchInput!: HTMLInputElement;
   private _consInput!: HTMLInputElement;
   protected _keyManager!: VimLikeManager;
+  protected _clipboardManager!: ClipboardManager<T>;
+  public get clipboard(){ return this._clipboardManager;}
   private consoleManager!: any; // type ConsoleManager
   private _help!: Help;
   
@@ -403,6 +406,7 @@ export class PanelClient<T extends AnyItemType> {
     this.titName = data.titName;
     this._klass = data.klass;
     this.form = data.form;
+    this._clipboardManager = new ClipboardManager<T>(this);
   }
 
   private setPanelFocus(actif: boolean) {
