@@ -197,7 +197,7 @@ header div#flash-message {
 }
 header div#flash-message div.notice {background-color:lightblue; color:blue;}
 header div#flash-message div.action {background-color: darkorange; color: darkred;}
-header div#flash-message div.warn {background-color: #FFEEEE; color: red;}
+header div#flash-message div.warn {color: red;}
 header div#flash-message div.error {background-color: red; color: white;}
 
 #search-bar {

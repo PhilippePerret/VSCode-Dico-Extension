@@ -898,13 +898,15 @@
               ev.stopPropagation();
               return this.klass.autocompleteDim(ev);
             case "tt(":
-              return this.autoCompleteBaliseTerm("tt", ev);
+              return this.autoCompleteBaliseTerm("tt(", ev);
             case "rm(":
-              return this.autoCompleteBaliseTerm("tt", ev);
+              return this.autoCompleteBaliseTerm("tt(", ev);
+            case "tp(":
+              return this.autoCompleteBaliseTerm("tt(", ev);
           }
           switch (this.twolast.join("")) {
             case ">(":
-              return this.autoCompleteBaliseTerm("->", ev);
+              return this.autoCompleteBaliseTerm("->(", ev);
             case "tp":
               return this.autoCompleteBaliseTerm("ttp", ev);
             case "tt":
@@ -1084,6 +1086,7 @@
      */
     flash(msg, type) {
       const msgbox = this.messageBox;
+      console.log("msgbox", msgbox);
       const o = document.createElement("div");
       o.className = type;
       o.innerHTML = msg;
@@ -1375,7 +1378,7 @@
       return this._consInput || (this._consInput = document.querySelector("input#panel-console"));
     }
     get messageBox() {
-      return document.querySelector("div#message");
+      return document.querySelector("div#flash-message");
     }
     get footer() {
       return document.querySelector("footer");
@@ -2900,7 +2903,7 @@
       AutoComplete.start({
         target: ev.target,
         accessTable: this.accessTable,
-        balIn: "(",
+        balIn: trigger.endsWith("(") ? "" : "(",
         balOut: ")"
       });
       return false;

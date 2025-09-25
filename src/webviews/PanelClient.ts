@@ -89,6 +89,7 @@ export class PanelClient<T extends AnyItemType> {
    */
   public flash(msg:string, type: FlashMessageType) {
     const msgbox = this.messageBox;
+    console.log("msgbox", msgbox);
     const o = document.createElement('div');
     o.className = type;
     o.innerHTML = msg;
@@ -381,7 +382,7 @@ export class PanelClient<T extends AnyItemType> {
   private get itemTemplate(){ return this._itemTemplate || (this._itemTemplate = document.querySelector('template#item-template') as HTMLTemplateElement);}
   private get searchInput(){ return this._searchInput || (this._searchInput = document.querySelector('input#search-input') as HTMLInputElement);}
   public get consoleInput(){return this._consInput || (this._consInput = document.querySelector('input#panel-console') as HTMLInputElement);}
-  private get messageBox(){ return document.querySelector('div#message') as HTMLDivElement;}
+  private get messageBox(){ return document.querySelector('div#flash-message') as HTMLDivElement;}
   private get footer(){return document.querySelector('footer') as HTMLElement; }
   private get help(){return this._help || (this._help = new Help(this));}
 

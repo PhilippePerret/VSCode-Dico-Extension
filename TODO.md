@@ -1,10 +1,9 @@
 # Todo list
 
 * J'EN SUIS À :
+  * flash déconne depuis ma dernière modification
   * [BUG] En mode de filtrage, quand on sélection le dernier élément, on ne peut plus remonter avec la touche "k"
     - En fait TOUT est bloqué.
-
-  * Ajouter l'autocompletion pour 'term(…)' qui ne fait qu'écrire le terme au format technique mais sans l'indexer ou indiquer une page — ou alors, si, ça ne fait qu'indexer ?)
   * Documenter le contexte 'edit-entry' ou 'create-entry' avec l'insertion d'un id d'exemple
     - en profiter pour développer l'assemblage de l'aide. create et edit partage des choses communes
   * Faire une sortie du fichier entrées pour prawn for book (l'essayer pour produire le livre)
