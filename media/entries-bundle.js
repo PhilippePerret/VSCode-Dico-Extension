@@ -2355,6 +2355,7 @@
         target.selectionEnd,
         "end"
       );
+      setTimeout(target.focus.bind(target), 200);
     }
     /**
      * Grande méthode de check de la validité de l'item. On ne l'envoie

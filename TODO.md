@@ -1,9 +1,6 @@
 # Todo list
 
 * J'EN SUIS À :
-  * Pouvoir réactiver l'édition (de la définition) après l'insertion d'un id dans le champ textarea.
-    - pour le moment, la fenêtre se réactive, mais pas le formulaire
-    - le mode reste affiché à "form", mais ce n'est plus le mode formulaire
   * [BUG] En mode de filtrage, quand on sélection le dernier élément, on ne peut plus remonter avec la touche "k"
     - En fait TOUT est bloqué.
   * Documenter le contexte 'edit-entry' ou 'create-entry' avec l'insertion d'un id d'exemple

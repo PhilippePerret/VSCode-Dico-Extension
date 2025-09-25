@@ -60,6 +60,8 @@ export class EntryForm extends FormManager<EntryType, DBEntryType> {
       texte,
       target.selectionStart, target.selectionEnd, 'end'
     );
+    // On simule le focus dans le champ (est-ce que ça suffira ?)
+    setTimeout(target.focus.bind(target), 200);
   }
   /**
    * Grande méthode de check de la validité de l'item. On ne l'envoie
