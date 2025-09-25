@@ -1,8 +1,9 @@
 # Todo list
 
 * J'EN SUIS À :
+  * Pouvoir réactiver l'édition (de la définition) après l'insertion d'un id dans le champ textarea.
   * [BUG] En mode de filtrage, quand on sélection le dernier élément, on ne peut plus remonter avec la touche "k"
-    - En fait TOUT est bloquer. Peut-être en profiter pour essayer de créer un bouton "Panique" (gros bouton rouge) qui permettrait de sortir de tout blocage…
+    - En fait TOUT est bloquer. Peut-être en profiter pour essayer de créer un bouton "Panique" (gros bouton rouge) qui permettrait de sortir de tout blocage… 
   * Documenter le contexte 'edit-entry' ou 'create-entry' avec l'insertion d'un id d'exemple
     - en profiter pour développer l'assemblage de l'aide. create et edit partage des choses communes
   * Faire une sortie du fichier entrées pour prawn for book (l'essayer pour produire le livre)

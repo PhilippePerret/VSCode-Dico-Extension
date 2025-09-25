@@ -201,13 +201,6 @@ class EntryPanelClass extends PanelClient<EntryType> {
 
   // Pour insérer l'identifiant de l'exemple dans la définition
   insertExempleIdInDefinition(exempleId: string): void {
-    console.log("Mettre '%s' en exemple dans la définition éditée", exempleId);
-    // =========> TODO <============
-    // Pour savoir si un élément est édité :
-    // - officiellement this.form.isActive
-    // - Ce panneau a le context 'edit-entry' ou 'create-entry'
-    // - form.editedItem est défini
-    // this.form
     if (this.form.isActive()){
       (this.form as EntryForm).insertInTextField('definition', exempleId);
     } else {

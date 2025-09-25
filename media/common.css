@@ -430,3 +430,7 @@ div.autocompleter select option.selected {
 	background-color: red;
 	color: white;
 } 
+
+footer a.btn-sos {
+	float: right;
+}
