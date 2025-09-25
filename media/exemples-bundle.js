@@ -1467,11 +1467,13 @@
      * @param type Le type de message
      */
     flash(msg, type) {
+      const msgbox = this.messageBox;
       const o = document.createElement("div");
       o.className = type;
       o.innerHTML = msg;
-      this.messageBox.appendChild(o);
-      this.messageBox.style.zIndex = "10";
+      msgbox.appendChild(o);
+      msgbox.style.zIndex = "10";
+      msgbox.style.opacity = "1";
       if (type === "notice") {
         setTimeout(() => {
           this.cleanFlash.call(this);
@@ -1487,6 +1489,7 @@
       const msgbox = this.messageBox;
       msgbox.innerHTML = "";
       msgbox.style.zIndex = "-1";
+      msgbox.style.opacity = "0.6";
     }
     cleanFooterShortcuts() {
       if (this.footer.querySelector("div#footer-shortcuts")) {
@@ -1681,8 +1684,23 @@
       const field = this.searchInput;
       field.addEventListener("input", this.filterItems.bind(this));
       field.addEventListener("keyup", this.filterItems.bind(this));
+      const btnPanic = document.querySelector(".btn-sos");
+      btnPanic.addEventListener("click", this.onClickPanicButton.bind(this));
     }
-    // Méthode générique de filtrage des items du panneau
+    /**
+     * Méthode appelée quand on clique sur le bouton 'SOS' du panneau 
+     * courant lorsqu'il est bloqué. Pour tenter de débloquer la
+     * situation.
+     * 
+     * @param ev Évènement souris qui a généré l'appel
+     */
+    onClickPanicButton(ev) {
+      console.log("[onClickPanicButton] Tentative de sortie de blocage");
+      if (this.form.isActive()) {
+        this.form.cancelEdit();
+      }
+      this.keyManager.setMode("normal");
+    }
     /**
      *  Méthode de filtrage des éléments affichés.
      */
@@ -1901,7 +1919,6 @@
           });
         }
       });
-      console.log("Item \xE0 enregistrer", this.editedItem);
       if (this.itemIsEmpty()) {
         this.panel.flash("Aucune donn\xE9e n'a \xE9t\xE9 founie\u2026", "error");
         return true;

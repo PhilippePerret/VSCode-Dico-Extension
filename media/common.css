@@ -432,5 +432,7 @@ div.autocompleter select option.selected {
 } 
 
 footer a.btn-sos {
-	float: right;
+	position:absolute;
+	right:2px;
+	bottom: 1px;
 }

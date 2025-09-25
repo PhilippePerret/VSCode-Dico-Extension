@@ -1,8 +1,6 @@
 # Todo list
 
 * J'EN SUIS À :
-  * Implémenter le bouton "Panique" (sos) pour se sortir de tout blocage.
-  * Lorsqu'un message (flash) est affiché, mettre l'opacity à 1 (et la retirer quand le message disparait)
   * Pouvoir réactiver l'édition (de la définition) après l'insertion d'un id dans le champ textarea.
   * [BUG] En mode de filtrage, quand on sélection le dernier élément, on ne peut plus remonter avec la touche "k"
     - En fait TOUT est bloqué.
