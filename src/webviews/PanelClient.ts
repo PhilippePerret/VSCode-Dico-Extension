@@ -84,11 +84,13 @@ export class PanelClient<T extends AnyItemType> {
    * @param type Le type de message
    */
   public flash(msg:string, type: FlashMessageType) {
+    const msgbox = this.messageBox;
     const o = document.createElement('div');
     o.className = type;
     o.innerHTML = msg;
-    this.messageBox.appendChild(o);
-    this.messageBox.style.zIndex = '10';
+    msgbox.appendChild(o);
+    msgbox.style.zIndex = '10';
+    msgbox.style.opacity = '1';
     if ( type === 'notice' ) {
       // Temporiser le message
       setTimeout(() => { this.cleanFlash.call(this); }, 10 * 1000);
@@ -103,6 +105,7 @@ export class PanelClient<T extends AnyItemType> {
     const msgbox = this.messageBox;
     msgbox.innerHTML = '';
     msgbox.style.zIndex = '-1';
+    msgbox.style.opacity = '0.6';
   }
   public cleanFooterShortcuts(){
     if ( this.footer.querySelector('div#footer-shortcuts')){

@@ -181,7 +181,7 @@ header h2 {
 	z-index: -1;
 }
 
-header div#message {
+header div#flash-message {
 	position: absolute;
 	display:block;
 	width: calc(100% - 28px);
@@ -195,10 +195,10 @@ header div#message {
 	z-index: 10;
 	opacity:0.6;
 }
-header div#message div.notice {background-color:lightblue; color:blue;}
-header div#message div.action {background-color: darkorange; color: darkred;}
-header div#message div.warn {background-color: #FFEEEE; color: red;}
-header div#message div.error {background-color: red; color: white;}
+header div#flash-message div.notice {background-color:lightblue; color:blue;}
+header div#flash-message div.action {background-color: darkorange; color: darkred;}
+header div#flash-message div.warn {background-color: #FFEEEE; color: red;}
+header div#flash-message div.error {background-color: red; color: white;}
 
 #search-bar {
 	display: flex;
