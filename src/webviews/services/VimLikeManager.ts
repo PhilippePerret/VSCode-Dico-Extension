@@ -280,7 +280,7 @@ export class VimLikeManager {
             return this.klass.autocompleteDim(ev);
           case 'tt(': return this.autoCompleteBaliseTerm('tt(', ev);
           case 'rm(': return this.autoCompleteBaliseTerm('tt(', ev);
-          case 'tp(': return this.autoCompleteBaliseTerm('tt(', ev); 
+          case 'tp(':return this.autoCompleteBaliseTerm('tt(', ev);  
 
         }
         
