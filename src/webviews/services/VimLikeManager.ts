@@ -355,7 +355,7 @@ export class VimLikeManager {
         this.consoleManager.backHistory();
         break;
       default:
-        console.log("Console. Lettre %s", ev.key);
+        // console.log("Console. Lettre %s", ev.key);
     }
   }
   async loadConsoleManager(){

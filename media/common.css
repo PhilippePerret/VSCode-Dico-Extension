@@ -381,8 +381,6 @@ div.aide-contextuelle {
 	font-size: 10pt;
 	position: fixed;
 	top: 26px;
-	left: 10%;
-	right: 10%;
 	overflow-y:hidden;
 }
 div.aide-contextuelle div.content {

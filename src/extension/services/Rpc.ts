@@ -104,6 +104,13 @@ class RpcEntry extends Rpc {
       CanalExemple.notify('entry-for-exemple', params);
     });
 
+    this.rpc.on('show-exemple', async (params: {exId: string}) => {
+      console.log("EXTENSION ENTRY] Demander à voir l'exemple", params.exId);
+      CanalExemple.notify('show-exemple', params);
+    });
+
+    // === COMMANDES CONSOLE ===
+
     this.rpc.on('export-all-data', async () => {
       console.log("[EXTENSION] Demande de sauvegarde des données");
       execSync(`ruby ${App._context.extensionPath}/src/data/export-data.rb`);
@@ -116,9 +123,14 @@ class RpcEntry extends Rpc {
       this.notify('flash', {message: "Dossier support ouvert dans le finder"});
     });
 
-    this.rpc.on('show-exemple', async (params: {exId: string}) => {
-      console.log("EXTENSION ENTRY] Demander à voir l'exemple", params.exId);
-      CanalExemple.notify('show-exemple', params);
+    this.rpc.on('export-antidote-relecture', async () => {
+      execSync(`ruby ${App._context.extensionPath}/src/data/export-for-antidote.rb`);
+      this.notify('flash', {message: "Export relecture (et Antidote) effectué."});
+    });
+    
+    this.rpc.on('export-pfb', async () => {
+      execSync(`ruby ${App._context.extensionPath}/src/data/export-pfb.rb`);
+     this.notify('flash', {message: "Export pour Prawn-for-book effectué avec succès."}); 
     });
   }
 }

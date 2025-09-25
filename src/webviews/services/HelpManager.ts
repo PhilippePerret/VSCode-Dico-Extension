@@ -45,6 +45,9 @@ export class Help {
       ${this.buildCommandsTable([
         {c: 'openSupport', d:'… pour ouvrir le dossier support dans le Finder, qui contient la base et tous les backups.' },
         {c: 'exportAllData', d: '… pour faire un export des données dans quatre formats, JSON, YAML, CSV et Simple Text.'},
+        {c: 'exportAntidote', d: '… pour faire une sortie du texte sans aucun balisage, pour correction Antidote'},
+        {c: 'exportLecture', d: '… pour une sortie du texte sans balisage, pour simple relecture (= exportAntidote)'},
+        {c: 'exportPFB', d: '… pour une sortie complète pour Prawn-for-book'},
       ])}
 
       ## Édition de la définition

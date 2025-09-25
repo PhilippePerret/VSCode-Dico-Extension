@@ -6,6 +6,17 @@ export class App {
    * nom en console (bas des panneaux — 'c' pour rejoindre la console)
    */
 
+  private static async exportAntidote() {
+    App.rpc.notify('export-antidote-relecture');
+    return "Export pour Antidote et relecture";
+  }
+  private static async exportLecture(){ return this.exportAntidote(); }
+
+  private static async exportPFB() {
+    App.rpc.notify('export-pfb');
+    return "Export pour Prawn-for-book";
+  }
+
   private static async openSupport() {
     console.log("-> openSupport");
     App.rpc.notify('open-support-folder');
@@ -35,7 +46,7 @@ export class App {
     else { return false; }
   }
   private static tryEval(code: string){
-    console.log("Code à évaluer dans App.tryEval", code);
+    // console.log("Code à évaluer dans App.tryEval", code);
     try {
       // eval(code);
       const result = new Function('return ' + code).call(this);

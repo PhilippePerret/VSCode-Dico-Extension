@@ -20,6 +20,17 @@
          * Les méthodes suivantes peuvent s'appeler en tapant simplement leur
          * nom en console (bas des panneaux — 'c' pour rejoindre la console)
          */
+        static async exportAntidote() {
+          _App.rpc.notify("export-antidote-relecture");
+          return "Export pour Antidote et relecture";
+        }
+        static async exportLecture() {
+          return this.exportAntidote();
+        }
+        static async exportPFB() {
+          _App.rpc.notify("export-pfb");
+          return "Export pour Prawn-for-book";
+        }
         static async openSupport() {
           console.log("-> openSupport");
           _App.rpc.notify("open-support-folder");
@@ -168,7 +179,6 @@
       if (this.current) {
         nextId = this.accessTable.getNextVisible(this.current)?.id;
       }
-      console.log("nextId", nextId);
       nextId = nextId || this.accessTable.getFirstVisible().id;
       this.debugit("Affectation de l\u2019item", nextId);
       this.setAsCurrentSelected(nextId);
@@ -928,7 +938,10 @@
 
       ${this.buildCommandsTable([
             { c: "openSupport", d: "\u2026 pour ouvrir le dossier support dans le Finder, qui contient la base et tous les backups." },
-            { c: "exportAllData", d: "\u2026 pour faire un export des donn\xE9es dans quatre formats, JSON, YAML, CSV et Simple Text." }
+            { c: "exportAllData", d: "\u2026 pour faire un export des donn\xE9es dans quatre formats, JSON, YAML, CSV et Simple Text." },
+            { c: "exportAntidote", d: "\u2026 pour faire une sortie du texte sans aucun balisage, pour correction Antidote" },
+            { c: "exportLecture", d: "\u2026 pour une sortie du texte sans balisage, pour simple relecture (= exportAntidote)" },
+            { c: "exportPFB", d: "\u2026 pour une sortie compl\xE8te pour Prawn-for-book" }
           ])}
 
       ## \xC9dition de la d\xE9finition
