@@ -71,7 +71,7 @@ export class Entry extends ClientItem<EntryType> {
     AutoComplete.start({
       target: ev.target as HTMLElement,
       accessTable: this.accessTable,
-      balIn: '(',
+      balIn: trigger.endsWith('(') ? '' : '(',
       balOut: ')',
     });
     //*/
