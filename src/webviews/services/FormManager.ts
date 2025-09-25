@@ -137,7 +137,7 @@ export abstract class FormManager<T extends AnyItemType, Tdb extends AnyDbType> 
         });
       }
     });
-    console.log("Item à enregistrer", this.editedItem);
+    // console.log("Item à enregistrer", this.editedItem);
     if ( this.itemIsEmpty()) {
       this.panel.flash("Aucune donnée n'a été founie…", 'error');
       return true;

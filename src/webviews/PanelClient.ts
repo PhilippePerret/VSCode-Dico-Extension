@@ -298,9 +298,26 @@ export class PanelClient<T extends AnyItemType> {
     const field = this.searchInput;
     field.addEventListener('input', this.filterItems.bind(this));
     field.addEventListener('keyup', this.filterItems.bind(this));
+    // Écouter le bouton de panique
+    const btnPanic = document.querySelector('.btn-sos') as HTMLAnchorElement;
+    btnPanic.addEventListener('click', this.onClickPanicButton.bind(this));
   };
-  // Méthode générique de filtrage des items du panneau
 
+  /**
+   * Méthode appelée quand on clique sur le bouton 'SOS' du panneau 
+   * courant lorsqu'il est bloqué. Pour tenter de débloquer la
+   * situation.
+   * 
+   * @param ev Évènement souris qui a généré l'appel
+   */
+  onClickPanicButton(ev: MouseEvent){
+    console.log("[onClickPanicButton] Tentative de sortie de blocage");
+    // Si un formulaire était ouvert, on le ferme
+    if (this.form.isActive()){ this.form.cancelEdit(); }
+    // On ré-initialise les shortcuts
+    this.keyManager.setMode('normal');
+    
+  }
   /**
    *  Méthode de filtrage des éléments affichés.
    */

@@ -202,6 +202,7 @@ class EntryPanelClass extends PanelClient<EntryType> {
   // Pour insérer l'identifiant de l'exemple dans la définition
   insertExempleIdInDefinition(exempleId: string): void {
     if (this.form.isActive()){
+      this.activate();
       (this.form as EntryForm).insertInTextField('definition', exempleId);
     } else {
       this.flash('Pour coller un identifiant d’exemple, il faut éditer une définition.', 'warn');
