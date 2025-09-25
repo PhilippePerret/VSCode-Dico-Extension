@@ -69,12 +69,17 @@ export class PanelManager {
 			});
 		});
 }
-	static activatePanelEntries() {
-		this.activatePanel(this._panels[0]);
-		this._panels[0].panel.reveal(); // on force son activation
-		this._panels[0].rpc.notify('start');
+	static startPanelEntries() {
+		const panel: PanelClass = this.revealAndActivatePanelByIndex(0);
+		panel.rpc.notify('start');
 	}
 
+	static revealAndActivatePanelByIndex(panelIndex: 0 | 1 | 2): PanelClass {
+		const panel = this._panels[panelIndex];
+		panel.panel.reveal(); // forcer sa réactivation
+		this.activatePanel(panel);
+		return panel;
+	}
 	static activatePanel(panel: PanelClass) {
 		// panel.webview.postMessage({ command: 'activate' });
 		panel.rpc.notify('activate');

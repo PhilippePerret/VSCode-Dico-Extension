@@ -229,6 +229,7 @@ class RpcExemple extends Rpc {
     this.rpc.on('send-id-exemple-to-definition', async (params: {exempleId: string}) => {
       // console.log("[EXTENSION Canal Exemple] Réception id-exemple '%s' pour définition", params.exempleId);
       CanalEntry.notify('send-id-exemple-to-definition', params);
+      App.activatePanel('entries');
     });
 
   }

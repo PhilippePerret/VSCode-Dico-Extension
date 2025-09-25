@@ -27,7 +27,16 @@ export class App {
     await PanelManager.openRpcChanels();
     await PanelManager.populatePanels();
     await PanelManager.observePanels();
-    PanelManager.activatePanelEntries();
+    PanelManager.startPanelEntries();
+  }
+
+  public static activatePanel(panelName: 'entries' | 'oeuvres' | 'exemples') {
+    const panelIndex = ((name) => { switch (name) {
+        case 'entries': return 0;
+        case 'oeuvres': return 1;
+        case 'exemples': return 2;
+    }})(panelName);
+    PanelManager.revealAndActivatePanelByIndex(panelIndex);
   }
   
 

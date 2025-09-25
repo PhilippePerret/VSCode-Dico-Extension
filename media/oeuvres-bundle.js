@@ -1024,6 +1024,9 @@
       this.setPanelFocus(true);
       if (this.form.isActive()) {
         this.form.__onFocusOnForm(void 0);
+        this.keyManager.setMode("form");
+      } else {
+        this.keyManager.setMode("normal");
       }
     }
     desactivate() {

@@ -103,7 +103,7 @@ export class Exemple {
 		App.incAndCheckReadyCounter();
 	}
 	protected static finalizeCachedItem(item: ExempleType): ExempleType {
-		console.log("[finalized] Item", item);
+		// console.log("[finalized] Item", item);
 		if ( item.dbData.entry_id === 'unused') {
 			return item;
 		}

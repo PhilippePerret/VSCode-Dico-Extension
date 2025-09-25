@@ -35,7 +35,11 @@ export class PanelClient<T extends AnyItemType> {
     // Si un formulaire était actif, il faut repasser en mode 'form'
     if (this.form.isActive()) {
       this.form.__onFocusOnForm(undefined);
+      this.keyManager.setMode('form');
+    } else {
+      this.keyManager.setMode('normal');
     }
+
   }
   public desactivate() { this.setPanelFocus(false); }
 
