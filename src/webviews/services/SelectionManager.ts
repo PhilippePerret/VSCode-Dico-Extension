@@ -46,10 +46,10 @@ export class SelectionManager {
    */
   public selectNextVisibleItem(){
     let nextId: string | undefined = undefined;
-    // Avant toute chose, on cherche le suivant
     if (this.current) {
-      nextId = (this.accessTable.getNextVisible(this.current) as AnyItemType).id;
+      nextId = (this.accessTable.getNextVisible(this.current) as AnyItemType)?.id;
     }
+    console.log("nextId", nextId);
     nextId = nextId || (this.accessTable.getFirstVisible() as AnyItemType).id;
     
     this.debugit('Affectation de l’item', nextId);
@@ -70,9 +70,9 @@ export class SelectionManager {
   public selectPreviousVisibleItem(){
     let prevId: string | undefined = undefined;
     if (this.current){
-      prevId = (this.accessTable.getPrevVisible(this.current) as AnyItemType).id;
+      prevId = (this.accessTable.getPrevVisible(this.current) as AnyItemType)?.id;
     }
-    prevId = prevId || (this.accessTable.getFirstVisible() as AnyItemType).id;
+    prevId = prevId || (this.accessTable.getLastVisible() as AnyItemType).id;
     // Et on sélectionne l'item précédent (ou le premier)
     this.setAsCurrentSelected(prevId);
     

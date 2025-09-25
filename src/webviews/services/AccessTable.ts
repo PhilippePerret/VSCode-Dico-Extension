@@ -36,6 +36,8 @@ export class AccessTable<T extends EntryType | OeuvreType | ExempleType> {
   // Le premier item, qui doit forcément être le premier chargé
   _firstItem!: T;
   public get firstItem(){ return this._firstItem || (this._firstItem = this.arrayItems[0]); }
+  _lastItem!: T;
+  public get lastItem(){return this._lastItem || (this._lastItem = this.arrayItems[this.arrayItems.length - 1]);}
 
   getSelection() { return this.selectionManager.getCurrent(); }
  
@@ -92,17 +94,43 @@ export class AccessTable<T extends EntryType | OeuvreType | ExempleType> {
   getFirstVisible(): T | undefined {
     return this.find((item: T) => this.getAccKey(item.id).visible === true);
   }
+  // Retourne le dernier élément visible
+  getLastVisible(): T | undefined {
+    return this.findLast((item: T) => this.getAccKey(item.id).visible === true);
+  }
 
-  getNextVisible(refId: string): T | undefined {
+  getNextVisible(refId: string | undefined): T | undefined {
     let ak: AccedableItem | undefined;
-    while (ak = this.getNextAccKey(refId)) {
-      if (ak.visible) {return this.get(ak.id);}
+    let icrashLoop = 0;
+    while (refId && (ak = this.getNextAccKey(refId))) {
+      if (ak.visible) {
+        return this.get(ak.id);
+      } else {
+        refId = ak.next;
+      }
+      ++icrashLoop;
+      if (icrashLoop > 100_000){
+        // Normalement, ne devrait pas arriver, mais bon…
+        this.panel.flash('Sortie de boucle sans fin.', 'error');
+        return undefined;
+      }
     }
   }
-  getPrevVisible(refId: string): AnyItemType | undefined {
+  getPrevVisible(refId: string | undefined): AnyItemType | undefined {
     let ak: AccedableItem | undefined;
-    while (ak = this.getPrevAccKey(refId)) {
-      if (ak.visible) {return this.get(ak.id);}
+    let icrashLoop = 0;
+    while (refId && (ak = this.getPrevAccKey(refId))) {
+      if (ak.visible) {
+        return this.get(ak.id);
+      } else {
+        refId = ak.prev;
+      }
+      ++icrashLoop;
+      if ( icrashLoop > 100_000){
+        // Normalement, ne devrait jamais arriver
+        this.panel.flash('Sortie forcée de boucle sans fin.', 'error');
+        return undefined;
+      }
     }
   }
   
@@ -131,14 +159,15 @@ export class AccessTable<T extends EntryType | OeuvreType | ExempleType> {
   getAccKey(itemId: string): AccedableItem { return this.keysMap.get(itemId) as AccedableItem ; }
 
   /**
-   * Actualise ou Crée le nouvel item Item après son enregistrement.
+   * Actualise ou Crée le nouvel item Item après son enregistrement
+   * dans la base de données.
    * 
    * Pour savoir si c'est une création ou une actualisation, il
    * suffit de voir si l'identifiant est connu de la table (noter
    * que pour les exemples, il n'y a pas d'identifiant autre que
    * volatile).
    * 
-   * Noter que ce sont toujours les données compolètes qui sont
+   * Noter que ce sont toujours les données complètes qui sont
    * remontées, même pour une actualisation. Car l'actualisation
    * a pu modifier des données qui servent pour le tri, le formatage,
    * etc.
@@ -184,12 +213,15 @@ export class AccessTable<T extends EntryType | OeuvreType | ExempleType> {
         Object.assign(nextAccKey, {prev: newItem.id});
         // console.log("Item avant le nouveau", this.get(prevItemId), prevAccKey);
       }
+    } else {
+      // Si le nouvel item n'a pas d'item suivant, c'est qu'il est 
+      // le dernier nouvel item. il faut redéfinir this.lastItem
+      this._lastItem = newItem;
     }
     const arrayIndex = this.arrayItems.length; // car l'item n'a pas encore été inséré
     const newAccKey: AccedableItem = this.addInTable(newItem, arrayIndex, nextItemId, prevItemId); 
     // console.log("Item nouveau", newItem, newAccKey);
     // console.log("Item après le nouveau", nextItem, nextAccKey);
-    // TODO il faut l'ajouter dans le DOM
     return [newItem, nextItem];
   }
   
@@ -315,7 +347,38 @@ export class AccessTable<T extends EntryType | OeuvreType | ExempleType> {
   ): T | undefined {
     return this.findAfter(condition, undefined);
   }
+  findLast(
+    condition: (item: T) => boolean
+  ): T | undefined {
+    return this.findLastBefore(condition, undefined);
+  }
   
+  findLastBefore(
+    condition: (item: T) => boolean,
+    id: string | undefined
+  ): T | undefined {
+    let item: T | undefined;
+    if ( id === undefined) {
+      item = this.lastItem;
+    } else {
+      item = this.getPrevItem(id);
+    }
+
+    let found: T | undefined = undefined;
+    do {
+      if (item) {
+        if (condition(item) === true) {
+          found = item;
+          break;
+        }
+        // Sinon, on prend l'item précédent
+        item = this.getPrevItem(item.id);
+      }
+
+    } while (item);
+    return found;
+  }
+
   findAfter(
     condition: (item: T) => boolean,
     id: string | undefined

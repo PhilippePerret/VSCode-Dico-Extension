@@ -166,8 +166,9 @@
     selectNextVisibleItem() {
       let nextId = void 0;
       if (this.current) {
-        nextId = this.accessTable.getNextVisible(this.current).id;
+        nextId = this.accessTable.getNextVisible(this.current)?.id;
       }
+      console.log("nextId", nextId);
       nextId = nextId || this.accessTable.getFirstVisible().id;
       this.debugit("Affectation de l\u2019item", nextId);
       this.setAsCurrentSelected(nextId);
@@ -182,9 +183,9 @@
     selectPreviousVisibleItem() {
       let prevId = void 0;
       if (this.current) {
-        prevId = this.accessTable.getPrevVisible(this.current).id;
+        prevId = this.accessTable.getPrevVisible(this.current)?.id;
       }
-      prevId = prevId || this.accessTable.getFirstVisible().id;
+      prevId = prevId || this.accessTable.getLastVisible().id;
       this.setAsCurrentSelected(prevId);
       this.add(prevId);
     }
@@ -451,6 +452,10 @@
     get firstItem() {
       return this._firstItem || (this._firstItem = this.arrayItems[0]);
     }
+    _lastItem;
+    get lastItem() {
+      return this._lastItem || (this._lastItem = this.arrayItems[this.arrayItems.length - 1]);
+    }
     getSelection() {
       return this.selectionManager.getCurrent();
     }
@@ -499,19 +504,39 @@
     getFirstVisible() {
       return this.find((item) => this.getAccKey(item.id).visible === true);
     }
+    // Retourne le dernier élément visible
+    getLastVisible() {
+      return this.findLast((item) => this.getAccKey(item.id).visible === true);
+    }
     getNextVisible(refId) {
       let ak;
-      while (ak = this.getNextAccKey(refId)) {
+      let icrashLoop = 0;
+      while (refId && (ak = this.getNextAccKey(refId))) {
         if (ak.visible) {
           return this.get(ak.id);
+        } else {
+          refId = ak.next;
+        }
+        ++icrashLoop;
+        if (icrashLoop > 1e5) {
+          this.panel.flash("Sortie de boucle sans fin.", "error");
+          return void 0;
         }
       }
     }
     getPrevVisible(refId) {
       let ak;
-      while (ak = this.getPrevAccKey(refId)) {
+      let icrashLoop = 0;
+      while (refId && (ak = this.getPrevAccKey(refId))) {
         if (ak.visible) {
           return this.get(ak.id);
+        } else {
+          refId = ak.prev;
+        }
+        ++icrashLoop;
+        if (icrashLoop > 1e5) {
+          this.panel.flash("Sortie forc\xE9e de boucle sans fin.", "error");
+          return void 0;
         }
       }
     }
@@ -544,14 +569,15 @@
       return this.keysMap.get(itemId);
     }
     /**
-     * Actualise ou Crée le nouvel item Item après son enregistrement.
+     * Actualise ou Crée le nouvel item Item après son enregistrement
+     * dans la base de données.
      * 
      * Pour savoir si c'est une création ou une actualisation, il
      * suffit de voir si l'identifiant est connu de la table (noter
      * que pour les exemples, il n'y a pas d'identifiant autre que
      * volatile).
      * 
-     * Noter que ce sont toujours les données compolètes qui sont
+     * Noter que ce sont toujours les données complètes qui sont
      * remontées, même pour une actualisation. Car l'actualisation
      * a pu modifier des données qui servent pour le tri, le formatage,
      * etc.
@@ -586,6 +612,8 @@
           Object.assign(prevAccKey, { next: newItem.id });
           Object.assign(nextAccKey, { prev: newItem.id });
         }
+      } else {
+        this._lastItem = newItem;
       }
       const arrayIndex = this.arrayItems.length;
       const newAccKey = this.addInTable(newItem, arrayIndex, nextItemId, prevItemId);
@@ -694,6 +722,28 @@
      */
     find(condition) {
       return this.findAfter(condition, void 0);
+    }
+    findLast(condition) {
+      return this.findLastBefore(condition, void 0);
+    }
+    findLastBefore(condition, id) {
+      let item;
+      if (id === void 0) {
+        item = this.lastItem;
+      } else {
+        item = this.getPrevItem(id);
+      }
+      let found = void 0;
+      do {
+        if (item) {
+          if (condition(item) === true) {
+            found = item;
+            break;
+          }
+          item = this.getPrevItem(item.id);
+        }
+      } while (item);
+      return found;
     }
     findAfter(condition, id) {
       let item;
@@ -1484,7 +1534,6 @@
      */
     flash(msg, type) {
       const msgbox = this.messageBox;
-      console.log("msgbox", msgbox);
       const o = document.createElement("div");
       o.className = type;
       o.innerHTML = msg;

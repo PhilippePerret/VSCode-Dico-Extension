@@ -1,18 +1,13 @@
 # Todo list
 
 * J'EN SUIS À :
-  * flash déconne depuis ma dernière modification
-  * [BUG] En mode de filtrage, quand on sélection le dernier élément, on ne peut plus remonter avec la touche "k"
-    - En fait TOUT est bloqué.
-  * Documenter le contexte 'edit-entry' ou 'create-entry' avec l'insertion d'un id d'exemple
-    - en profiter pour développer l'assemblage de l'aide. create et edit partage des choses communes
+  * Mettre l'identifiant de l'exemple dans le presse-papier en attendant, quand il n'y pas d'édition en cours.
   * Faire une sortie du fichier entrées pour prawn for book (l'essayer pour produire le livre)
+  -> l'affecter à la commande 'exportPFB'
+  -> Documenter l'aide générale
 
   * mettre une commande pour exporter le fichier antidote/relecture
     (exportAntidote/exportBetaLecture)
-    -> documenter (aide)
-  * mettre une commande pour exporter le fichier pour Prawn-for-book
-    (fichiersPFB — en fait, il prépare tous les fichiers utiles)
     -> documenter (aide)
  
   * Il faudrait vraiment faire un utilitaire d'autocomplétion qui, à la

@@ -89,7 +89,6 @@ export class PanelClient<T extends AnyItemType> {
    */
   public flash(msg:string, type: FlashMessageType) {
     const msgbox = this.messageBox;
-    console.log("msgbox", msgbox);
     const o = document.createElement('div');
     o.className = type;
     o.innerHTML = msg;
